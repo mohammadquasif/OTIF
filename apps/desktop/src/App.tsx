@@ -653,7 +653,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 `).join('\n') : 'No improvement items generated.'}
 
 ---
-*Report exported from OTIF Native Desktop Engine (Zero-Detection Academic Integrity)*
+*Report exported from OTIF Native Desktop Engine (Local-First Research Integrity & Verification Platform)*
 `;
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
@@ -662,6 +662,25 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     a.download = `OTIF_Detailed_Report_${uploadResult?.filename ?? 'thesis'}_${new Date().toISOString().slice(0, 10)}.md`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const downloadCreditStatement = async () => {
+    if (!uploadResult) return;
+    try {
+      const res = await axios.get(`${API_BASE}/analysis/credit-statement/${uploadResult.doc_id}`, {
+        params: { project_id: currentProject?.id },
+      });
+      const statement = res.data.credit_statement;
+      const blob = new Blob([statement], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `CRediT_AI_Disclosure_${uploadResult.filename ?? 'thesis'}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      alert('Failed to generate CRediT statement.');
+    }
   };
 
   const approveRewrite = async () => {
@@ -1365,21 +1384,45 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                         </div>
                       )}
 
+                      {/* Ethical Boundaries Banner */}
+                      <div className="card animate-scale" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.05)', marginBottom: '16px' }}>
+                        <div className="card-header" style={{ paddingBottom: '8px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <ShieldCheck size={18} style={{ color: '#10b981' }} />
+                            <span className="card-title" style={{ fontSize: '15px' }}>Active Ethical & Scope Boundaries</span>
+                          </div>
+                          <span className="badge badge-green">Strict Compliance Gate</span>
+                        </div>
+                        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
+                          <div style={{ marginBottom: '4px' }}>• <strong>No Data Fabrication:</strong> OTIF never generates empirical observations, statistical data, or false findings.</div>
+                          <div style={{ marginBottom: '4px' }}>• <strong>Deterministic Citation Locking:</strong> All DOIs and citations are extracted into immutable AST/Regex placeholders before syntactic revision.</div>
+                          <div>• <strong>CRediT Disclosure Ready:</strong> Every revision action is immutably logged for transparent journal AI disclosure compliance.</div>
+                        </div>
+                      </div>
+
                       {/* Improvement plan */}
                       {improvementPlan.length > 0 && (
                         <div className="card animate-scale improvement-plan-panel">
                           <div className="card-header">
                             <div>
                               <div className="card-title">Improvement Plan</div>
-                              <div className="card-subtitle">Tick items to approve for AI rewrite</div>
+                              <div className="card-subtitle">Select items to approve for Integrity-Preserving Revision</div>
                             </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <button
                                 className="btn btn-secondary btn-sm"
                                 onClick={downloadReport}
                                 title="Download detailed markdown report with page & chapter analysis"
                               >
                                 📥 Download Full Report (.md)
+                              </button>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={downloadCreditStatement}
+                                title="Generate formal CRediT AI Contribution Statement for publication"
+                                style={{ border: '1px solid #10b981', color: '#10b981' }}
+                              >
+                                📜 CRediT Statement (.md)
                               </button>
                               <div className="badge badge-amber">{approvedImprovementIds.length} selected</div>
                             </div>
@@ -1466,7 +1509,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                               disabled={isBusy || approvedImprovementIds.length === 0 || outputFormats.length === 0}
                             >
                               <Bot size={16} />
-                              Approve selected for AI rewrite
+                              Approve selected for Integrity-Preserving Revision
                               {drawDiagrams && ' + Diagram'}
                             </button>
                             {approvalResult && (
@@ -1481,7 +1524,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
                           {approvalResult?.rewrite_preview && (
                             <div className="rewrite-preview">
-                              <div className="settings-group-title">Rewrite Preview</div>
+                              <div className="settings-group-title">Integrity-Preserving Revision Preview</div>
                               <p>{approvalResult.rewrite_preview}</p>
                             </div>
                           )}
