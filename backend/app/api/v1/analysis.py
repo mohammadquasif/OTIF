@@ -380,19 +380,22 @@ def _build_improvement_plan(
             weak_signals.append("section structure")
         if not weak_signals:
             continue
+        start_pg = chapter.get("start_page", 1)
+        end_pg = chapter.get("end_page", start_pg + 12)
         plan.append(
             {
                 "id": f"{chapter['id']}-improvement",
-                "title": f"Improve {chapter['title']}",
+                "title": f"Improve {chapter['title']} (Pages {start_pg}–{end_pg})",
                 "priority": "high" if len(weak_signals) >= 2 else "medium",
-                "action": f"Revise this chapter for {', '.join(weak_signals)} while preserving claims and citations.",
+                "action": f"Revise pages {start_pg}–{end_pg} for {', '.join(weak_signals)} while preserving claims, TOC headings, and citations.",
                 "evidence": (
-                    f"{chapter['title']} scores: AI risk {chapter_scores['ai_pattern_risk']}, "
+                    f"[Page-Wise Audit Pages {start_pg}–{end_pg}] {chapter['title']} scores: AI risk {chapter_scores['ai_pattern_risk']}, "
                     f"originality {chapter_scores['originality_score']}, citation {chapter_scores['citation_signal']}, "
                     f"structure {chapter_scores['structure_signal']}."
                 ),
                 "requires_ai": True,
                 "chapter_id": chapter["id"],
+                "page_range": f"{start_pg}–{end_pg}",
             }
         )
 
