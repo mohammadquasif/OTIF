@@ -129,24 +129,34 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-#### Step 3: Build & Run the Native Desktop Application
+#### Step 3: Launch in Native Desktop View (No Browser Needed!)
+To run OTIF as a native desktop application window (exactly how end-users see it, without opening a web browser):
 ```bash
-# Return to the desktop app folder
+# Navigate to the desktop app folder
 cd ../apps/desktop
 
 # Install frontend UI dependencies
 npm install
 
-# Run the native desktop application in development mode
-# (Tauri will automatically boot the UI and manage local sidecars)
-npm run tauri dev
+# Launch native OS desktop window
+npm run desktop:dev
+```
+*(Running `npm run desktop:dev` boots the Tauri container and opens a standalone OS desktop window directly on your screen).*
+
+If you want to run only the browser-based web view for quick UI debugging:
+```bash
+npm run dev
 ```
 
-To compile the standalone production installer for distribution:
+#### Step 4: Compiling Standalone Installers & Populate GitHub Releases
+To generate the standalone `.exe` installer locally on your PC:
 ```bash
-npm run tauri build
+npm run desktop:build
 ```
-*The compiled native desktop installer (`.exe` / `.dmg` / `.deb`) will be output inside `apps/desktop/src-tauri/target/release/bundle/`.*
+*The compiled installer will be saved inside `apps/desktop/src-tauri/target/release/bundle/nsis/OTIF_Setup.exe`.*
+
+> [!TIP]
+> **Populating GitHub Releases**: We have included an automated GitHub Actions workflow (`.github/workflows/release.yml`). When repository maintainers push a git tag (e.g. `git tag v1.0.0` and `git push origin v1.0.0`), GitHub automatically compiles the native `.exe`, `.dmg`, and `.AppImage` installers in the cloud and attaches them to the **GitHub Releases** page.
 
 ---
 
