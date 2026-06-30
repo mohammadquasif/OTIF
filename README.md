@@ -1,11 +1,11 @@
 # OpenThesis Integrity Fabric (OTIF) — Academic Research Intelligence Platform
 
 <div align="center">
-  <img src="docs/assets/otif-banner.png" alt="OTIF Banner" width="100%">
+  <img src="apps/desktop/src/assets/hero.png" alt="OTIF Architecture" width="160">
 
   **The World's First Open-Source, Local-First Academic Integrity, AI Detection, Ethical Humanization & Thesis Formatting Platform**
   
-  [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+  [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
   [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
   [![React](https://img.shields.io/badge/React-19+-61DAFB.svg)](https://react.dev)
@@ -77,72 +77,67 @@ Why pay hundreds of dollars per year for closed-source tools that harvest your u
 
 ## 🚀 Step-by-Step Installation & Setup Guide
 
-### System Prerequisites
-Ensure your system has the following tools installed:
-- **Python 3.11+** (for FastAPI backend engine)
-- **Node.js 20+** & **npm** (for React 19 frontend)
-- **Rust & Cargo** *(only required if compiling the desktop Tauri binary)*
-- **Ollama** *(optional, recommended for local offline AI inference)*
+### 💻 For End-Users: Standalone Desktop App (Zero Configuration)
+**End-users do NOT need to clone repositories, configure Python virtual environments, or start command-line servers.**
+
+When you install the OTIF Desktop Application (`.exe` on Windows, `.dmg` on macOS, or `.AppImage` on Linux):
+1. Download and run the standalone installer.
+2. Launch **OTIF** from your Desktop or Start Menu.
+3. Behind the scenes, the native Tauri engine **automatically launches the local Python backend API and SQLite workspace service in the background**.
 
 ---
 
-### Step 1: Start the Python Backend Engine
+### 🛠️ For Developers & Contributors: Building from Source
 
-The backend powers the skill engine, document parsing, SQLite workspace storage, and AI verification routes.
+If you wish to modify the source code or compile the native desktop application yourself, follow these steps:
 
+#### System Prerequisites
+Ensure your development machine has:
+- **Git**
+- **Python 3.11+**
+- **Node.js 20+** & **npm**
+- **Rust & Cargo** (required by Tauri v2 compiler)
+- **Ollama** *(optional, for local offline AI models)*
+
+#### Step 1: Clone the Repository
 ```bash
-# Clone the repository
 git clone https://github.com/mohammadquasif/OTIF.git
-cd OTIF/backend
+cd OTIF
+```
 
-# Create virtual environment and install dependencies
+#### Step 2: Set Up & Test the Backend Engine
+```bash
+cd backend
+
+# Create and activate virtual environment
 python -m venv .venv
 # Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
 # macOS / Linux:
 # source .venv/bin/activate
 
+# Install requirements
 pip install -r requirements.txt
-# Or if using uv:
-# uv pip install -r requirements.txt
-
-# Start the FastAPI server on port 8000
-python -m uvicorn app.main:app --reload --port 8000
 ```
-*The backend API documentation will be available locally at `http://localhost:8000/docs`.*
 
----
-
-### Step 2: Run the Web Frontend (Development Mode)
-
+#### Step 3: Build & Run the Native Desktop Application
 ```bash
-# Open a new terminal window
-cd OTIF/apps/desktop
+# Return to the desktop app folder
+cd ../apps/desktop
 
-# Install Node dependencies
+# Install frontend UI dependencies
 npm install
 
-# Start Vite development server
-npm run dev
-```
-*Open your browser to `http://localhost:5173` to interact with the full OTIF workspace.*
-
----
-
-### Step 3: Build & Run as a Native Desktop App (Tauri v2)
-
-OTIF is engineered as a cross-platform desktop application using Tauri v2 for ultra-fast native performance and minimal memory overhead.
-
-```bash
-cd OTIF/apps/desktop
-
-# Run native desktop app in development mode
+# Run the native desktop application in development mode
+# (Tauri will automatically boot the UI and manage local sidecars)
 npm run tauri dev
+```
 
-# Build production installer (.exe for Windows, .dmg for macOS, .deb/.AppImage for Linux)
+To compile the standalone production installer for distribution:
+```bash
 npm run tauri build
 ```
-*Compiled desktop binaries and installers will be generated inside `apps/desktop/src-tauri/target/release/bundle/`.*
+*The compiled native desktop installer (`.exe` / `.dmg` / `.deb`) will be output inside `apps/desktop/src-tauri/target/release/bundle/`.*
 
 ---
 
@@ -173,7 +168,7 @@ To assist academic researchers, university departments, PhD scholars, and scient
 
 ## 📄 License & Contributing
 
-OTIF is released under the **MIT License**. It is 100% free for individual academic research, university adoption, open-source contribution, and enterprise integration.
+OTIF is released under the **Apache License 2.0** (`Apache-2.0`). It is 100% free and open for individual academic research, university adoption, open-source contribution, and enterprise integration.
 
 We welcome pull requests from PhD scholars, software engineers, and research institutions! See our [CONTRIBUTING.md](CONTRIBUTING.md) guide to submit new intelligence rules or frontend enhancements.
 
