@@ -46,6 +46,11 @@ jobs:
           cd apps/desktop
           npm install
 
+      - name: Update Cargo lockfile with pinned dependencies
+        run: |
+          cd apps/desktop/src-tauri
+          cargo update
+
       - name: Build and Publish Tauri Desktop App
         uses: tauri-apps/tauri-action@v0
         env:
