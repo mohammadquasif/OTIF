@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "desktop:dev": "tauri dev",
     "desktop:build": "tauri build",
+    "tauri": "tauri",
     "desktop:prepare-backend": "powershell -ExecutionPolicy Bypass -File ../../scripts/build_backend_sidecar.ps1"
   },
   "devDependencies": {
