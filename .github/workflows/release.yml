@@ -52,7 +52,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: apps/desktop
-          tauriScript: npm run desktop:build
+          tauriScript: npm run tauri
           tagName: ${{ github.ref_name }}
           releaseName: 'OTIF ${{ github.ref_name }} Windows Desktop Release'
           releaseBody: 'Automated standalone Windows installer (.exe) release.'
