@@ -619,6 +619,51 @@ function App() {
     );
   };
 
+  const downloadReport = () => {
+    if (!scores && improvementPlan.length === 0) return;
+    const content = `# OTIF Comprehensive Academic Verification & Improvement Report
+Generated: ${new Date().toLocaleString()}
+Document: ${uploadResult?.filename ?? 'Thesis Document'} | Type: ${docType} | Target Norm: ${targetFormat.toUpperCase()}
+
+---
+
+## 1. Preflight Evaluation Scores
+${scores ? Object.entries(scores).map(([k, v]) => `- **${k.replace(/_/g, ' ').toUpperCase()}**: ${typeof v === 'number' ? v.toFixed(1) : v}`).join('\n') : 'No scores generated yet.'}
+
+---
+
+## 2. Open Scholarly Research & Citation Check
+${researchSources ? researchSources.sources.map(s => `### 🌐 ${s.name} (${s.status})
+- **Status**: ${s.message ?? 'Checked'}
+- **Matches Retrieved**:
+${s.matches && s.matches.length > 0 ? s.matches.map(m => `  * [${m.year ?? 'N/A'}] ${m.title} (${m.url ?? 'No link'})`).join('\n') : '  * None found.'}
+`).join('\n') : 'No open sources queried.'}
+
+---
+
+## 3. Chapter Signals & Structural Audit
+${chapterResults.length > 0 ? chapterResults.map(c => `- **${c.title}**: Overall Preflight Score ${c.scores.overall_preflight}`).join('\n') : 'No chapters parsed.'}
+
+---
+
+## 4. Page-Wise & Chapter-Wise Actionable Improvement Plan
+${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${idx + 1}: ${item.title} [Priority: ${item.priority.toUpperCase()}]
+- **Recommended Action**: ${item.action}
+- **Original Evidence**: "${item.evidence}"
+`).join('\n') : 'No improvement items generated.'}
+
+---
+*Report exported from OTIF Native Desktop Engine (Zero-Detection Academic Integrity)*
+`;
+    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `OTIF_Detailed_Report_${uploadResult?.filename ?? 'thesis'}_${new Date().toISOString().slice(0, 10)}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const approveRewrite = async () => {
     if (!uploadResult) return;
     setIsBusy(true);
@@ -778,7 +823,11 @@ function App() {
         if (currentProject) void triggerSkillSync(currentProject.id);
         else void globalSync();
       }}
-      title={neonConnected ? 'Sync skills from Neon' : 'Neon offline'}
+      title={
+        neonConnected
+          ? `Neon Connected — Last Synced: ${status?.skill_engine.cache.loaded_at ? new Date(status.skill_engine.cache.loaded_at).toLocaleTimeString() : 'Just now'}`
+          : 'Neon offline — Using long-term local bundled seed skills'
+      }
       disabled={isSyncing}
     >
       <div className={`sync-dot ${neonConnected ? 'online' : 'offline'}`} />
@@ -1324,7 +1373,16 @@ function App() {
                               <div className="card-title">Improvement Plan</div>
                               <div className="card-subtitle">Tick items to approve for AI rewrite</div>
                             </div>
-                            <div className="badge badge-amber">{approvedImprovementIds.length} selected</div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={downloadReport}
+                                title="Download detailed markdown report with page & chapter analysis"
+                              >
+                                📥 Download Full Report (.md)
+                              </button>
+                              <div className="badge badge-amber">{approvedImprovementIds.length} selected</div>
+                            </div>
                           </div>
 
                           <div className="plan-list">
@@ -1537,6 +1595,17 @@ function App() {
                 <span className={`badge ${neonConnected ? 'badge-green' : 'badge-amber'}`}>
                   {neonConnected ? 'Connected' : 'Offline'}
                 </span>
+              </div>
+              <div className="settings-row">
+                <div>
+                  <div className="settings-label">Last Sync Time</div>
+                  <div className="settings-desc">Dual storage: Neon Cloud + Local Bundled Seeds</div>
+                </div>
+                <strong style={{ fontSize: '13px' }}>
+                  {status?.skill_engine.cache.loaded_at
+                    ? new Date(status.skill_engine.cache.loaded_at).toLocaleString()
+                    : 'Bundled Seed Active'}
+                </strong>
               </div>
               <div className="settings-row">
                 <div>
