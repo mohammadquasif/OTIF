@@ -345,6 +345,7 @@ function App() {
   const [diagramResult, setDiagramResult] = useState<DiagramResult | null>(null);
   const [editedMermaid, setEditedMermaid] = useState('');
   const [editingDiagram, setEditingDiagram] = useState(false);
+  const [expandConnectors, setExpandConnectors] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -1204,23 +1205,6 @@ function App() {
                           </div>
                         )}
 
-                        {researchSources && (
-                          <>
-                            <div className="divider" />
-                            <div className="settings-group-title">Open Research Sources</div>
-                            <div className="source-check-grid">
-                              {researchSources.sources.map((source) => (
-                                <div className="source-check" key={source.id}>
-                                  <span>{source.name}</span>
-                                  <span className={`badge ${source.status === 'checked' ? 'badge-green' : 'badge-amber'}`}>
-                                    {source.status}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        )}
-
                         {chapterResults.length > 0 && (
                           <>
                             <div className="divider" />
@@ -1254,6 +1238,83 @@ function App() {
                           </>
                         )}
                       </div>
+
+                      {/* Expandable Connector Intelligence Log (Thinking & Research) */}
+                      {researchSources && (
+                        <div className="card animate-scale research-connectors-panel">
+                          <div
+                            className="card-header"
+                            onClick={() => setExpandConnectors(!expandConnectors)}
+                            style={{ cursor: 'pointer', userSelect: 'none' }}
+                          >
+                            <div>
+                              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span>Thinking & Research Connectors</span>
+                                <span className="badge badge-cyan">{researchSources.sources.length} repositories checked</span>
+                              </div>
+                              <div className="card-subtitle">
+                                Active Query: "{researchSources.queries?.[0] ?? 'Scholarly document analysis'}"
+                              </div>
+                            </div>
+                            <div className="badge badge-purple" style={{ fontSize: '12px' }}>
+                              {expandConnectors ? '▲ Hide Log' : '▼ Expand Research Step'}
+                            </div>
+                          </div>
+
+                          {expandConnectors && (
+                            <div className="connector-accordion" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              {researchSources.sources.map((source) => (
+                                <div
+                                  className="connector-card"
+                                  key={source.id}
+                                  style={{
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    padding: '12px',
+                                    background: 'var(--bg-card-subtle, rgba(255,255,255,0.02))',
+                                  }}
+                                >
+                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <span style={{ fontSize: '16px' }}>🌐</span>
+                                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{source.name}</strong>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                      <span className={`badge ${source.status === 'checked' ? 'badge-green' : 'badge-amber'}`}>
+                                        {source.matches?.length ?? 0} results found
+                                      </span>
+                                      <span className="badge badge-purple">{source.status}</span>
+                                    </div>
+                                  </div>
+
+                                  {source.matches && source.matches.length > 0 ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingLeft: '8px', borderLeft: '2px solid var(--accent)' }}>
+                                      {source.matches.map((m, idx) => (
+                                        <div key={idx} style={{ fontSize: '13px', lineHeight: '1.4' }}>
+                                          <div style={{ fontWeight: 500 }}>
+                                            {m.url ? (
+                                              <a href={m.url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                                                {m.title} ↗
+                                              </a>
+                                            ) : (
+                                              <span style={{ color: 'var(--text-main)' }}>{m.title}</span>
+                                            )}
+                                          </div>
+                                          {m.year && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Published / Indexed: {m.year}</div>}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                      {source.message ?? 'No matching public entries found.'}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       {/* Improvement plan */}
                       {improvementPlan.length > 0 && (
