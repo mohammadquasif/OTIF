@@ -1,0 +1,46 @@
+{
+  "skill_id": "research-quality",
+  "name": "Research Quality & Contribution Assessment",
+  "category": "quality",
+  "version": "1.1.0",
+  "description": "Evaluates the overall quality of academic research: methodology strength, validation honesty, contribution clarity, originality defence, examiner readiness, and research gap identification.",
+  "ethical_boundary": "Never invent primary data, interviews, Delphi results, expert reviews, or field validation. Treat validation honestly. The goal is better research quality, not certification of readiness.",
+  "trigger_phrases": ["research quality", "improve quality", "originality score", "contribution", "methodology check", "examiner ready", "thesis quality", "doctoral quality"],
+  "rules": [
+    {"rule_code": "QUA-001", "rule_name": "Originality Claim Assessment", "rule_type": "score", "severity": "high", "description": "Score how clearly the research's originality is defended: applied integration, software artifact, novel configuration, or empirical contribution. Overclaiming penalised.", "confidence": 0.82},
+    {"rule_code": "QUA-002", "rule_name": "Validation Honesty Check", "rule_type": "detection", "severity": "critical", "description": "Detect if thesis claims primary validation (interviews/Delphi/field) that is not documented in the thesis. Must state validation boundary clearly.", "confidence": 0.90},
+    {"rule_code": "QUA-003", "rule_name": "Research Question Alignment", "rule_type": "detection", "severity": "high", "description": "Check if every major section connects back to the stated research questions. Misaligned sections flagged.", "confidence": 0.80},
+    {"rule_code": "QUA-004", "rule_name": "Methodology Transparency", "rule_type": "score", "severity": "high", "description": "Score methodology chapter completeness: source selection criteria, exclusion criteria, coding process, theme development, trustworthiness criteria.", "confidence": 0.84},
+    {"rule_code": "QUA-005", "rule_name": "Evidence-to-Finding Traceability", "rule_type": "detection", "severity": "high", "description": "Check if findings are traceable to specific evidence sources (not just restating the framework). Source-to-code-to-theme-to-finding chain.", "confidence": 0.83},
+    {"rule_code": "QUA-006", "rule_name": "Future Research Plan Check", "rule_type": "detection", "severity": "medium", "description": "Check if limitations section includes concrete future validation plan: sample size, method, output. Generic 'future research is needed' is insufficient.", "confidence": 0.79}
+    ,
+    {"rule_code": "QUA-007", "rule_name": "Originality Evidence Matrix (5-Dimension)", "rule_type": "score", "severity": "high", "description": "Score originality across five evidence dimensions, each worth 20 points (max 100): (1) LITERATURE GAP — Is there an explicit gap sentence supported by 2+ citations from different years? (2) APPLIED INTEGRATION — Does the framework cite and explicitly combine 3+ established models (e.g., TOGAF, NIST AI RMF, TAM, Dynamic Capabilities)? (3) ARTEFACT CONTRIBUTION — Is there a concrete named artefact: a tool, schema, process model, or prototype described with its components? (4) METHODOLOGICAL BOUNDARY — Is there a clear, explicit statement of what this study does NOT do (e.g., 'this study does not conduct field trials')? (5) PRACTICAL IMPLICATION — Is there at least one named, specific recommendation for a named type of organisation, role, or sector? Score each dimension: 20=fully present, 10=partially present, 0=absent or overclaimed. Total = Originality Evidence Score.", "confidence": 0.87},
+    {"rule_code": "QUA-008", "rule_name": "Citation Authority Distribution", "rule_type": "score", "severity": "high", "description": "Check whether citations include stable scholarly sources rather than relying heavily on blogs, wikis, generic web pages, or unsourced claims.", "confidence": 0.84},
+    {"rule_code": "QUA-009", "rule_name": "Research Question Traceback Score", "rule_type": "score", "severity": "high", "description": "For each stated research question (RQ1, RQ2...) in the introduction or methodology, verify that at least one findings paragraph explicitly references or connects back to that question. Score = (RQs with a traceable findings paragraph / total RQs) x 100. RQs with no traceable finding in the discussion or conclusion are flagged as unanswered. Target: 100% traceability. Below 75% requires an examiner response.", "confidence": 0.82}
+  ],
+  "word_lists": [
+    {"word_or_phrase": "first complete theory", "replacement": "applied integration", "severity": "critical", "list_type": "banned"},
+    {"word_or_phrase": "fully validated", "replacement": "demonstrated through design-science artefact", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "proves that the framework works", "replacement": "demonstrates practical feasibility", "severity": "high", "list_type": "banned"}
+  ],
+  "prompts": {
+    "strengthen_originality": {
+      "template": "Strengthen the originality claim for this section using examiner-safe wording.\n\nRequired position:\n- The research is grounded in existing literature (acknowledge foundations)\n- Its originality lies in applied integration and configuration\n- Its practical contribution is the framework/artefact implementation\n- Its limitation: full field validation remains future work\n\nDo NOT claim it is 'the first complete theory' or 'fully validated'.\n\nSection:\n{text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1500,
+      "temperature": 0.4
+    },
+    "add_validation_honesty": {
+      "template": "Add validation honesty to this section.\n\nMake clear what HAS been done:\n- Literature grounding\n- Documentary evidence review\n- Design-science artefact demonstration\n\nMake clear what REMAINS future work:\n- Expert review / Delphi validation\n- Organisational case testing\n- Field deployment\n- Longitudinal validation\n\nDo NOT imply primary validation has happened unless documented.\n\nSection:\n{text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1200,
+      "temperature": 0.4
+    }
+  },
+  "thresholds": [
+    {"metric_name": "research_quality", "excellent_min": 85, "good_min": 75, "fair_min": 62, "poor_min": 50, "critical_below": 50, "target_value": 75, "unit": "score"},
+    {"metric_name": "originality_score", "excellent_min": 85, "good_min": 75, "fair_min": 65, "poor_min": 50, "critical_below": 50, "target_value": 80, "unit": "percent"},
+    {"metric_name": "originality_evidence_matrix", "excellent_min": 90, "good_min": 75, "fair_min": 60, "poor_min": 40, "critical_below": 40, "target_value": 75, "unit": "score_100"},
+    {"metric_name": "rq_traceback_score", "excellent_min": 100, "good_min": 85, "fair_min": 75, "poor_min": 60, "critical_below": 60, "target_value": 100, "unit": "percent"}
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "skill_id": "citation-intelligence",
+  "name": "Citation Intelligence & Source Authority",
+  "category": "citation",
+  "version": "1.0.0",
+  "description": "Audits citation quality across four dimensions: source authority (peer-reviewed vs. grey literature), citation style conformance (APA7/IEEE/UGC/Harvard), reference-list completeness vs. in-text citations, and multi-citation stacking without synthesis. Separate from plagiarism-check (PLG) and research-quality (QUA) — this skill focuses entirely on citation integrity and evidence authority.",
+  "ethical_boundary": "Do not fabricate or invent any reference entry. Do not remove valid citations to lower similarity. Do not claim a DOI is invalid without checking it. Do not penalise legitimate grey literature when it is the primary source type for the field. Never replace a valid citation with a made-up one.",
+  "trigger_phrases": ["citation check", "reference list", "citation style", "apa format", "ieee format", "ugc format", "harvard format", "doi check", "citation authority", "missing references", "stacked citations", "check citations", "bibliography"],
+  "rules": [
+    {
+      "rule_code": "CIT-001",
+      "rule_name": "Source Authority Distribution",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Score what proportion of citations point to stable scholarly sources: peer-reviewed journal articles, conference papers with DOIs, published books, government/institutional reports. Penalise heavy reliance on blogs, Wikipedia, news articles, social media, or undated web pages.",
+      "thresholds_note": "80%+ scholarly = Excellent, 60-79% = Adequate, 40-59% = Needs work, <40% = Critical",
+      "confidence": 0.84
+    },
+    {
+      "rule_code": "CIT-002",
+      "rule_name": "In-Text to Reference List Matching",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Every in-text citation (Author, Year) or [N] must have a matching reference entry, and every reference entry must appear in-text at least once. Orphan in-text citations and orphan reference entries are both flagged.",
+      "confidence": 0.91
+    },
+    {
+      "rule_code": "CIT-003",
+      "rule_name": "Citation Style Conformance",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Verify in-text and reference list format matches the selected norm: APA7 (Author, Year), IEEE [N], UGC thesis (Author, Year with footnote backup), or Harvard (Author Year). Mixed styles in the same document are flagged.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "CIT-004",
+      "rule_name": "Multi-Citation Stacking Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Flag sentences with 4 or more consecutive citations without synthesis or interpretation between them. Stacking signals low-quality literature engagement. Recommend grouping by theme with researcher commentary.",
+      "confidence": 0.82
+    },
+    {
+      "rule_code": "CIT-005",
+      "rule_name": "DOI Validity & Format Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Verify DOIs follow the correct prefix pattern (10.XXXX/...). Flag malformed DOIs. Flag references missing DOIs where a DOI is likely available (journal articles, conference papers). Do NOT mark missing DOI as invalid for books or reports.",
+      "confidence": 0.86
+    },
+    {
+      "rule_code": "CIT-006",
+      "rule_name": "URL Stability Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Flag URLs from unstable sources: social media, blog platforms (Medium, Substack, Blogger), Wikipedia, wikis without editorial control, news sites (unless citing as news events). Flag URLs without access dates for web sources.",
+      "confidence": 0.80
+    },
+    {
+      "rule_code": "CIT-007",
+      "rule_name": "Citation Recency Distribution",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Check proportion of citations published within the last 5 years vs. seminal works (>10 years old). A strong thesis mixes recent evidence with foundational theory. Target: 50%+ citations from the last 5 years for fast-moving fields (AI, cloud, cybersecurity). 30%+ for established fields (law, philosophy).",
+      "confidence": 0.76
+    },
+    {
+      "rule_code": "CIT-008",
+      "rule_name": "Self-Citation Proportion",
+      "rule_type": "detection",
+      "severity": "low",
+      "description": "Detect whether the same author appears as the dominant citation source. More than 20% self-citation without acknowledged rationale may indicate confirmation bias or self-promotion.",
+      "confidence": 0.71
+    },
+    {
+      "rule_code": "CIT-009",
+      "rule_name": "Duplicate Reference Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Flag reference list entries that appear to be duplicates of the same source with minor formatting differences (same author surname, same year, similar title). Common after multiple editing rounds.",
+      "confidence": 0.87
+    },
+    {
+      "rule_code": "CIT-010",
+      "rule_name": "Citation Density per Chapter",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Score citation density by chapter. Literature Review should have highest density (2+ citations per claim paragraph). Methodology should cite the research design sources. Discussion should link findings back to cited literature. Conclusion with zero citations may be acceptable.",
+      "thresholds_note": "Lit Review: >60% cited sentences = Healthy. Methodology: >40%. Discussion: >30%.",
+      "confidence": 0.79
+    },
+    {
+      "rule_code": "CIT-011",
+      "rule_name": "Secondary Source Overuse Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Detect use of 'as cited in' more than 5 times per chapter. Secondary citations should be avoided — the researcher should access the original source. Flag and recommend finding the primary source.",
+      "confidence": 0.83
+    }
+  ],
+  "word_lists": [
+    {"word_or_phrase": "as cited in", "replacement": "find and cite the original source directly", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "cited by", "replacement": "cite the primary source", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "according to Wikipedia", "replacement": "cite the original peer-reviewed source instead", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "according to Google", "replacement": "cite the actual source found", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "ibid.", "replacement": "repeat the full citation — ibid causes confusion in digital documents", "severity": "low", "list_type": "banned"}
+  ],
+  "prompts": {
+    "fix_reference_style": {
+      "template": "Reformat these reference entries to comply with {norm} standard.\\n\\nFor APA7:\\n- Hanging indent, double-spaced\\n- Sentence case for article/chapter titles (capitalise first word and proper nouns only)\\n- Title case for journal names\\n- Include DOI as https://doi.org/... where available\\n- Alphabetical order by first author surname\\n- Year in parentheses after authors\\n\\nFor IEEE:\\n- Numbered list [1], [2], [3]...\\n- Author initials before surname\\n- Title in quotation marks for articles, italic for books\\n- Year at end of entry\\n\\nFor UGC:\\n- APA7 style with footnote number backup\\n- All entries must include place of publication for books\\n\\nFor Harvard:\\n- Author Surname, Initials. (Year) Title. Place: Publisher.\\n\\nDo NOT invent DOIs or publication details.\\nDo NOT change author names or publication years.\\n\\nReferences:\\n{text}\\n\\nTarget norm: {norm}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 2500,
+      "temperature": 0.2
+    },
+    "synthesise_stacked_citations": {
+      "template": "This sentence has stacked citations without synthesis. Rewrite it as evidence-led commentary.\\n\\nOriginal (stacked citations, no synthesis):\\n{text}\\n\\nRewrite rules:\\n1. Group the cited sources by the specific claim they support.\\n2. Add researcher interpretation connecting them.\\n3. Note any disagreement between sources.\\n4. Keep all citations — do not remove any.\\n5. Do not fabricate any source or data.\\n\\nDocument type: {doc_type}\\nNorm: {norm}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1200,
+      "temperature": 0.45
+    },
+    "find_missing_references": {
+      "template": "Audit this reference list against the in-text citations below.\\n\\nIn-text citations found:\\n{intext_citations}\\n\\nReference list entries:\\n{reference_list}\\n\\nOutput:\\n1. List every in-text citation with NO matching reference entry.\\n2. List every reference entry NOT cited in-text.\\n3. List any suspected duplicate reference entries.\\n\\nDo NOT invent any reference entries. Flag gaps only.",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1500,
+      "temperature": 0.1
+    }
+  },
+  "thresholds": [
+    {"metric_name": "citation_authority_score", "excellent_min": 85, "good_min": 75, "fair_min": 60, "poor_min": 40, "critical_below": 40, "target_value": 80, "unit": "percent"},
+    {"metric_name": "reference_completeness", "excellent_min": 95, "good_min": 85, "fair_min": 70, "poor_min": 50, "critical_below": 50, "target_value": 95, "unit": "percent"},
+    {"metric_name": "citation_style_conformance", "excellent_min": 90, "good_min": 80, "fair_min": 65, "poor_min": 50, "critical_below": 50, "target_value": 90, "unit": "percent"},
+    {"metric_name": "citation_recency_score", "excellent_min": 80, "good_min": 65, "fair_min": 50, "poor_min": 35, "critical_below": 35, "target_value": 65, "unit": "percent"}
+  ]
+}

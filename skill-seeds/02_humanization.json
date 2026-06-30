@@ -1,0 +1,162 @@
+{
+  "skill_id": "humanization",
+  "name": "Humanization & Authentic Researcher Voice",
+  "category": "humanization",
+  "version": "1.1.0",
+  "description": "Audits academic text for AI-like patterns and reduces them by improving specificity, researcher voice, evidence anchoring, and natural sentence variation. NOT a detector-bypass tool — an authenticity improvement tool.",
+  "ethical_boundary": "Never guarantee a detector score. Never invent citations, data, participants, or interviews. Never use synonym swapping or deliberate grammar damage. Goal is genuine academic quality improvement.",
+  "trigger_phrases": ["humanize", "reduce ai detection", "make it sound human", "authentic voice", "ai writing risk", "remove ai patterns"],
+  "rules": [
+    {
+      "rule_code": "HUM-001",
+      "rule_name": "Jargon Purity Scan",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Detect overused academic buzzwords that signal AI or template writing. Each banned word reduces the Jargon Purity score.",
+      "confidence": 0.93
+    },
+    {
+      "rule_code": "HUM-002",
+      "rule_name": "Sentence Readability Check",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Check average sentence length and count of sentences >35 words. Target: 15-22 word average, fewer than 10% over-long sentences.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "HUM-003",
+      "rule_name": "Passive Voice Ratio Analysis",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Calculate passive vs active voice ratio. Target: <15% passive voice. AI writing often overuses passive constructions.",
+      "pattern": "\\b(is|are|was|were|been|being)\\s+\\w+ed\\b",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "HUM-004",
+      "rule_name": "Template Opening Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag paragraphs starting with template AI openers: 'This section', 'In today's rapidly', 'It is important to note', 'Furthermore', 'Moreover'.",
+      "confidence": 0.91
+    },
+    {
+      "rule_code": "HUM-005",
+      "rule_name": "Researcher Voice Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Check for researcher voice markers: 'My interpretation is', 'The evidence suggests', 'A limitation is', 'This study treats'. Low count signals AI-like generic writing.",
+      "confidence": 0.82
+    },
+    {
+      "rule_code": "HUM-006",
+      "rule_name": "Symmetrical Paragraph Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Flag sections where every paragraph follows the same length and rhythm — a strong signal of AI generation.",
+      "confidence": 0.79
+    },
+    {
+      "rule_code": "HUM-007",
+      "rule_name": "Overclaim Language Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Detect language that sounds stronger than the evidence: 'revolutionary', 'game-changing', 'comprehensive solution', 'perfect framework', 'guaranteed success'.",
+      "confidence": 0.90
+    },
+    {
+      "rule_code": "HUM-008",
+      "rule_name": "Evidence Anchoring Check",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag paragraphs making claims that could appear in any paper on the topic — no specific actor, decision, artifact, limitation, or consequence mentioned.",
+      "confidence": 0.84
+    },
+    {
+      "rule_code": "HUM-009",
+      "rule_name": "Researcher Ownership Density",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Measure whether the chapter contains bounded interpretation, methodological choices, limitations, and consequence statements that show authentic researcher ownership.",
+      "confidence": 0.86
+    },
+    {
+      "rule_code": "HUM-010",
+      "rule_name": "Detector-Risk Disclaimer Rule",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Ensure reports label AI scores as writing-risk indicators only. Never claim a text is definitely human- or AI-written.",
+      "confidence": 0.94
+    },
+    {
+      "rule_code": "HUM-011",
+      "rule_name": "Emotional Flat-Line Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Detect sections of 500+ words where no sentence varies tone — no hedging ('may', 'suggests'), no caution ('however', 'despite'), no consequence ('therefore', 'this means'), and no enthusiasm ('notably', 'importantly'). Flat emotional register across long passages is a strong AI-generation signal and weakens academic engagement.",
+      "confidence": 0.78
+    },
+    {
+      "rule_code": "HUM-012",
+      "rule_name": "Discourse Marker Variety",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Measure diversity of discourse markers. AI text overuses 'furthermore', 'moreover', 'additionally', 'in conclusion'. Human academic text uses varied logical connectors: 'this implies', 'which raises the question', 'in contrast to', 'taken together', 'the exception is'. Score drops if more than 40% of all transition words are the same 3 markers.",
+      "confidence": 0.81
+    }
+  ],
+  "word_lists": [
+    {"word_or_phrase": "operationalise", "replacement": "put into practice", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "operationalize", "replacement": "put into practice", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "leverage", "replacement": "use", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "paradigm", "replacement": "approach", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "robust", "replacement": "reliable", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "holistic", "replacement": "complete", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "synergy", "replacement": "combined benefit", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "stakeholder ecosystem", "replacement": "everyone involved", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "facilitate", "replacement": "help", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "elucidate", "replacement": "explain", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "endeavour", "replacement": "effort", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "in today's rapidly evolving landscape", "replacement": "name the exact context", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "it is important to note that", "replacement": "state the point directly", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "plays a crucial role", "replacement": "say what it does", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "seamless integration", "replacement": "integration", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "transformative potential", "replacement": "what changes, for whom, and under what condition", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "comprehensive approach", "replacement": "name the actual components", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "delve into", "replacement": "examine", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "furthermore", "replacement": "the more important issue is", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "moreover", "replacement": "this matters because", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "in conclusion", "replacement": "use a section-specific closing sentence", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "serves as a testament", "replacement": "remove", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "My interpretation is", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "The evidence suggests", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "A limitation is", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "This study treats", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "The practical implication is", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "which raises the question", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "taken together", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "this implies", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "the exception is", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "in contrast to", "replacement": null, "severity": "low", "list_type": "preferred"}
+  ],
+  "prompts": {
+    "humanize_paragraph": {
+      "template": "Improve the authentic researcher voice in this academic paragraph. This is NOT about tricking detectors — it is about genuine quality improvement.\n\nApply these rules:\n1. Add one specific anchor: a named actor, artifact, decision, dataset, or limitation already in the research.\n2. Add friction: state the practical problem, trade-off, or risk that makes the point non-obvious.\n3. Vary sentence length: combine short analytical sentences with one longer explanatory sentence.\n4. Cut filler: delete any sentence that only says the topic is important.\n5. End with consequence: what changes in the argument or practice.\n6. Do NOT invent interviews, surveys, data, or validation.\n\nDocument type: {doc_type}\nSection type: {section_type}\nFormatting norm: {norm}\n\nParagraph:\n{text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1500,
+      "temperature": 0.6
+    },
+    "full_humanize_section": {
+      "template": "Perform a full humanization improvement on this academic section. Preserve all citations, structure, and factual claims.\n\nHumanization targets:\n- Jargon: Replace banned words ({banned_word_count} found)\n- Passive voice: Reduce below 15%\n- Sentence length: Target 15-22 word average\n- Researcher voice: Add evidence role language\n- Specificity: Replace generic terms with specific ones\n- Variation: Ensure no two consecutive paragraphs follow same pattern\n\nSection:\n{text}\n\nBanned words found:\n{banned_words_found}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 3000,
+      "temperature": 0.65
+    }
+  },
+  "thresholds": [
+    {"metric_name": "humanization_score", "excellent_min": 90, "good_min": 75, "fair_min": 60, "poor_min": 40, "critical_below": 40, "target_value": 85, "unit": "percent"},
+    {"metric_name": "jargon_purity", "excellent_min": 90, "good_min": 75, "fair_min": 60, "poor_min": 40, "critical_below": 40, "target_value": 85, "unit": "percent"},
+    {"metric_name": "passive_voice_ratio", "excellent_min": 0, "good_min": 0, "fair_min": 0, "poor_min": 0, "critical_below": 0, "target_value": 15, "unit": "percent_max"},
+    {"metric_name": "ai_writing_risk", "excellent_min": 0, "good_min": 0, "fair_min": 0, "poor_min": 0, "critical_below": 0, "target_value": 30, "unit": "percent_max"}
+  ]
+}

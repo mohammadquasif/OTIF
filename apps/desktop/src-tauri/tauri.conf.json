@@ -1,0 +1,46 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "OTIF",
+  "version": "0.1.0",
+  "identifier": "in.otif.desktop",
+  "build": {
+    "beforeDevCommand": "npm run dev -- --host 127.0.0.1",
+    "devUrl": "http://127.0.0.1:5173",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "OTIF - OpenThesis Integrity Fabric",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1100,
+        "minHeight": 720,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "OTIF",
+    "category": "Education",
+    "shortDescription": "Local-first academic research intelligence platform",
+    "longDescription": "OTIF is a local-first academic research intelligence desktop app for document analysis, skill-pack-guided review, and evidence-backed improvement workflows.",
+    "resources": [
+      "binaries/otif-backend.exe"
+    ],
+    "windows": {
+      "nsis": {
+        "displayLanguageSelector": false,
+        "installMode": "perMachine",
+        "languages": ["English"]
+      }
+    }
+  }
+}

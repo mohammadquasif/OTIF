@@ -1,0 +1,127 @@
+{
+  "skill_id": "plagiarism-check",
+  "name": "Plagiarism Self-Check & Similarity Audit",
+  "category": "plagiarism",
+  "version": "1.1.0",
+  "description": "Multi-layer plagiarism risk audit: internal duplication, citation coverage, quote hygiene, source stability, and similarity pattern detection. Separates actual plagiarism risk from similarity noise.",
+  "ethical_boundary": "Do not remove citations to reduce similarity. Do not hide source dependence. Do not invent sources. Do not damage citation integrity. The goal is academic integrity, not detector manipulation.",
+  "trigger_phrases": ["check plagiarism", "similarity audit", "citation coverage", "plagiarism risk", "turnitin check", "similarity score"],
+  "rules": [
+    {
+      "rule_code": "PLG-001",
+      "rule_name": "Internal Text Duplication Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Find near-duplicate paragraphs (>80% similarity) within the document. Common in theses where framework pillars are re-explained across chapters.",
+      "thresholds_note": "0-5 pairs=Low, 6-15=Medium, 16+=High",
+      "confidence": 0.92
+    },
+    {
+      "rule_code": "PLG-002",
+      "rule_name": "Citation Coverage Audit",
+      "rule_type": "score",
+      "severity": "critical",
+      "description": "Count factual, non-opinion sentences and check if they have in-text citations. Patterns: (Author, Year), Author (Year), [N]",
+      "thresholds_note": "80%+=Healthy, 60-79%=Needs work, <60%=Critical",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "PLG-003",
+      "rule_name": "Direct Quote Hygiene Check",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Find long quoted text (>40 words) and check: quotation marks present, immediate citation after, source traceable.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "PLG-004",
+      "rule_name": "Source Stability Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Check URLs and DOIs: still accessible, not from unstable platforms (blogs, social media, wikis), all factual claims point to stable sources.",
+      "confidence": 0.80
+    },
+    {
+      "rule_code": "PLG-005",
+      "rule_name": "Close Paraphrase Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag passages keeping same sentence order, concept sequence, distinctive phrases, examples, list structure as source. Must rewrite as synthesis.",
+      "confidence": 0.82
+    },
+    {
+      "rule_code": "PLG-006",
+      "rule_name": "Framework Comparison Citation Rule",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "When comparing to existing frameworks, always cite originals: McKinsey 7S, Kotter, TOGAF, NIST AI RMF, ISO/IEC 42001, OECD AI Principles, TAM, UTAUT, Dynamic Capabilities.",
+      "confidence": 0.78
+    },
+    {
+      "rule_code": "PLG-007",
+      "rule_name": "Self-Plagiarism Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Detect text copied from researcher's own prior work without citation. Repeated definitions without cross-reference.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "PLG-008",
+      "rule_name": "Evidence-Safe Similarity Classification",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Classify similarity into legitimate citation/reference overlap, method terminology, internal repetition, long quote dependence, and suspicious close paraphrase. Report adjusted similarity instead of raw scare score.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "PLG-009",
+      "rule_name": "Chapter-Level Similarity Hotspot Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Identify which chapter or section creates most plagiarism/similarity risk so improvement can be targeted without rewriting safe sections.",
+      "confidence": 0.86
+    },
+    {
+      "rule_code": "PLG-010",
+      "rule_name": "Citation-to-Reference Mismatch Detection",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Verify every in-text citation (Author, Year) or [N] has a matching entry in the reference list, and every reference list entry appears in-text at least once. Orphan in-text citations signal uncited borrowed ideas. Orphan reference entries signal padding without use. Both are plagiarism indicators.",
+      "confidence": 0.91
+    },
+    {
+      "rule_code": "PLG-011",
+      "rule_name": "Malformed or Unresolvable DOI Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag DOIs that do not follow the standard 10.XXXX/... format, DOIs missing the https://doi.org/ prefix in the reference list, and DOIs where the prefix number has fewer than 4 digits. Malformed DOIs may indicate fabricated or inaccurately recorded sources. Do not mark missing DOIs as violations for books or technical reports where DOIs are uncommon.",
+      "confidence": 0.87
+    }
+  ],
+  "word_lists": [
+    {"word_or_phrase": "proves", "replacement": "suggests", "severity": "medium", "list_type": "overclaim"},
+    {"word_or_phrase": "confirms", "replacement": "supports", "severity": "medium", "list_type": "overclaim"},
+    {"word_or_phrase": "validates", "replacement": "demonstrates practical feasibility of", "severity": "medium", "list_type": "overclaim"},
+    {"word_or_phrase": "universally applicable", "replacement": "applicable within the study boundary", "severity": "high", "list_type": "overclaim"},
+    {"word_or_phrase": "guarantees", "replacement": "indicates", "severity": "high", "list_type": "overclaim"}
+  ],
+  "prompts": {
+    "turnitin_safe_synthesis": {
+      "template": "Rewrite the following passage as academically safe synthesis. Do not remove citations.\n\nApply this structure:\n1. State the research issue in thesis-specific language.\n2. Group sources by claim instead of summarising one source at a time.\n3. Explain the tension or gap between sources.\n4. Connect to the researcher's own framework or argument.\n5. Keep direct quotes only where necessary with proper attribution.\n\nPassage:\n{text}\n\nDocument type: {doc_type}\nFormatting norm: {norm}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1500,
+      "temperature": 0.4
+    },
+    "close_paraphrase_rewrite": {
+      "template": "The following passage is too close to its source. Rewrite it as genuine synthesis:\n\n{text}\n\nRules:\n- Keep all citations\n- Add researcher interpretation\n- Add comparison with other sources\n- Add limitation\n- Change structure, not just wording\n- Do not fabricate any source or data",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1200,
+      "temperature": 0.5
+    }
+  },
+  "thresholds": [
+    {"metric_name": "plagiarism_risk", "excellent_min": 0, "good_min": 5, "fair_min": 10, "poor_min": 15, "critical_below": 0, "target_value": 5, "unit": "percent_risk"},
+    {"metric_name": "citation_coverage", "excellent_min": 90, "good_min": 80, "fair_min": 60, "poor_min": 40, "critical_below": 40, "target_value": 90, "unit": "percent"},
+    {"metric_name": "adjusted_similarity", "excellent_min": 0, "good_min": 3, "fair_min": 8, "poor_min": 15, "critical_below": 0, "target_value": 5, "unit": "percent"}
+  ]
+}

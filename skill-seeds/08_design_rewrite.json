@@ -1,0 +1,129 @@
+{
+  "skill_id": "design-rewrite",
+  "name": "Approved Plan → Design-Led Document Rewrite",
+  "category": "formatting",
+  "version": "1.0.0",
+  "description": "After a user approves a research or framework plan (with or without a diagram), this skill extracts the design elements (framework layers, component names, objectives, methodology), generates Mermaid diagrams matching the approved design, and produces section-by-section rewrite proposals aligned to the plan. Every rewrite proposal is shown as a diff and requires explicit per-section user approval before being applied. The system only rewrites sections referenced in the approved plan.",
+  "ethical_boundary": "Never rewrite sections NOT referenced in the approved plan. Never invent framework components, citations, data, or validation that are not present in the existing document. Never silently overwrite content — every change must be reviewed as a diff before application. Never generate a diagram that implies primary research validation if only design-science artefact work has been done. Preserve all existing citations in the rewritten output.",
+  "trigger_phrases": ["rewrite from plan", "apply plan", "plan approved", "diagram approved", "redesign document", "align to framework", "implement plan", "rewrite based on design", "restructure from diagram"],
+  "rules": [
+    {
+      "rule_code": "DRW-001",
+      "rule_name": "Plan Approval Gate",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Block all design-rewrite operations unless the user has explicitly approved the improvement plan. The approval record must include the plan_id, approved_item_ids, and a timestamp. No rewrite may proceed without this gate.",
+      "confidence": 0.99
+    },
+    {
+      "rule_code": "DRW-002",
+      "rule_name": "Design Element Extraction",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Parse the approved plan text to extract: framework/model name, numbered layers or components, research objectives/questions (RQ1, RQ2...), methodology phases, and named artefacts. These elements drive the diagram and rewrite scope.",
+      "confidence": 0.83
+    },
+    {
+      "rule_code": "DRW-003",
+      "rule_name": "Section-to-Plan Mapping",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Map each extracted design element to the most relevant document section (chapter, heading, paragraph). Only mapped sections are candidates for rewrite. Flag any plan element that has no matching section — these may require new content, not rewriting existing content.",
+      "confidence": 0.81
+    },
+    {
+      "rule_code": "DRW-004",
+      "rule_name": "Mermaid Diagram Generation",
+      "rule_type": "rewrite",
+      "severity": "medium",
+      "description": "Generate a Mermaid flowchart or architecture diagram from the extracted design elements. Use 'flowchart TD' for vertical frameworks, 'flowchart LR' for process flows, and 'classDiagram' for component relationships. Label each node with the exact framework component name from the plan.",
+      "confidence": 0.78
+    },
+    {
+      "rule_code": "DRW-005",
+      "rule_name": "Diff-Only Rewrite Output",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "All rewrite output must be presented as a before/after diff. The system must never silently apply rewrites. Each diff item must include: section_id, original_text, proposed_text, reason (which plan element drove the change), and a requires_approval=true flag.",
+      "confidence": 0.97
+    },
+    {
+      "rule_code": "DRW-006",
+      "rule_name": "Format Continuity Check",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Verify that rewritten sections maintain the same heading style, citation norm, figure numbering, and table numbering as the rest of the document. Rewriting must not break existing formatting consistency.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "DRW-007",
+      "rule_name": "Diagram Caption & Numbering",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "When a diagram is generated, automatically propose a caption and figure number matching the document sequence. Caption format: 'Figure X.Y: [Diagram title] (Source: [Author, Year] / Researcher's Own Design)'. Researcher-designed diagrams must be labelled as such.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "DRW-008",
+      "rule_name": "Rewrite History Log",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Every approved rewrite must be logged: timestamp, user_id, doc_id, section_id, original_text hash, approved_text hash, plan_id, and diagram_id if applicable. The log is immutable and used for rollback and audit.",
+      "confidence": 0.93
+    },
+    {
+      "rule_code": "DRW-009",
+      "rule_name": "Validation Boundary Preservation",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "During design rewrite, if the plan claims field validation, expert review, Delphi validation, or empirical testing, verify these are documented in the existing document. If not documented, the rewrite must add a validation boundary clause rather than implying validation has occurred.",
+      "confidence": 0.96
+    },
+    {
+      "rule_code": "DRW-010",
+      "rule_name": "Rollback Support",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Before applying any approved rewrite, store a snapshot of the original section text. Provide a rollback option in the UI. Rollback must restore the exact pre-rewrite content, not a summarised version.",
+      "confidence": 0.91
+    }
+  ],
+  "word_lists": [
+    {"word_or_phrase": "as per the plan", "replacement": "as described in [section reference]", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "the diagram shows", "replacement": "Figure X.Y illustrates", "severity": "low", "list_type": "banned"},
+    {"word_or_phrase": "see above", "replacement": "refer to Figure X.Y or Section X.X", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "Researcher's Own Diagram", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "Source: Author's Own Design", "replacement": null, "severity": "low", "list_type": "preferred"}
+  ],
+  "prompts": {
+    "extract_design_elements": {
+      "template": "Extract all design elements from this approved research plan.\\n\\nReturn a JSON object with:\\n{\\n  \\\"framework_name\\\": \\\"\\\",\\n  \\\"layers\\\": [\\\"\\\"],\\n  \\\"components\\\": [\\\"\\\"],\\n  \\\"research_questions\\\": [\\\"\\\"],\\n  \\\"methodology_phases\\\": [\\\"\\\"],\\n  \\\"artefacts\\\": [\\\"\\\"],\\n  \\\"validation_claims\\\": [\\\"\\\"]\\n}\\n\\nRules:\\n- Extract ONLY what is explicitly stated in the plan.\\n- Do not invent components or layers.\\n- List validation_claims only if the plan explicitly claims field validation, Delphi, expert review, or empirical testing.\\n\\nApproved plan:\\n{plan_text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 1000,
+      "temperature": 0.1
+    },
+    "generate_mermaid_diagram": {
+      "template": "Generate a Mermaid diagram for this framework design.\\n\\nFramework name: {framework_name}\\nLayers: {layers}\\nComponents: {components}\\nMethodology phases: {methodology_phases}\\n\\nDiagram rules:\\n- Use 'flowchart TD' for vertical frameworks (top-to-bottom hierarchy).\\n- Use 'flowchart LR' for process/pipeline flows.\\n- Use 'classDiagram' only if the design has explicit class/component relationships.\\n- Each node label = exact name from the plan (do not rename).\\n- Add a subgraph block per layer if layers > 2.\\n- Keep the diagram to maximum 20 nodes for readability.\\n- Do not add nodes, connections, or labels not present in the design elements.\\n\\nOutput: only the Mermaid source code block, no explanation.",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 800,
+      "temperature": 0.2
+    },
+    "rewrite_section_from_plan": {
+      "template": "Rewrite this document section to align with the approved design plan.\\n\\nApproved plan element: {plan_element}\\nSection type: {section_type}\\nDocument type: {doc_type}\\nFormat norm: {norm}\\n\\nRewrite rules:\\n1. Keep the same section heading.\\n2. Preserve all existing citations — do not remove any.\\n3. Align the content with the approved plan element without fabricating new evidence.\\n4. If the section requires reference to a newly generated diagram, insert a placeholder: [DIAGRAM: Figure X.Y — {diagram_title}].\\n5. Add a validation boundary if the plan_element implies validation not documented in the existing text.\\n6. Keep researcher voice: specific, bounded, evidence-led.\\n7. Output ONLY the rewritten section text — no explanation or preamble.\\n\\nOriginal section:\\n{original_text}\\n\\nApproved plan element summary:\\n{plan_element}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 2500,
+      "temperature": 0.4
+    },
+    "generate_rewrite_diff": {
+      "template": "Compare the original and proposed sections and produce a structured diff summary.\\n\\nFor each changed paragraph output:\\n{\\n  \\\"paragraph_index\\\": N,\\n  \\\"change_type\\\": \\\"modified|added|unchanged\\\",\\n  \\\"original\\\": \\\"...\\\",\\n  \\\"proposed\\\": \\\"...\\\",\\n  \\\"reason\\\": \\\"which plan element drove this change\\\"\\n}\\n\\nOriginal:\\n{original_text}\\n\\nProposed:\\n{proposed_text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 2000,
+      "temperature": 0.1
+    }
+  },
+  "thresholds": [
+    {"metric_name": "plan_element_coverage", "excellent_min": 90, "good_min": 75, "fair_min": 60, "poor_min": 40, "critical_below": 40, "target_value": 80, "unit": "percent"},
+    {"metric_name": "rewrite_approval_rate", "excellent_min": 80, "good_min": 60, "fair_min": 40, "poor_min": 20, "critical_below": 0, "target_value": 70, "unit": "percent"},
+    {"metric_name": "format_continuity_score", "excellent_min": 95, "good_min": 85, "fair_min": 70, "poor_min": 55, "critical_below": 55, "target_value": 90, "unit": "percent"}
+  ]
+}

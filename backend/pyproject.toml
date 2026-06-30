@@ -1,0 +1,94 @@
+[project]
+name = "otif-backend"
+version = "0.1.0"
+description = "OTIF — OpenThesis Integrity Fabric Backend"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    # ── Web Framework ─────────────────────────────────────
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "python-multipart>=0.0.12",
+    "sse-starlette>=2.1.0",
+
+    # ── Database ──────────────────────────────────────────
+    "asyncpg>=0.30.0",          # Neon PostgreSQL async driver
+    "psycopg2-binary>=2.9.9",   # Sync fallback
+    "sqlmodel>=0.0.22",          # SQLite ORM (local)
+    "aiosqlite>=0.20.0",
+
+    # ── Configuration ─────────────────────────────────────
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+    "python-dotenv>=1.0.0",
+
+    # ── Document Parsing ──────────────────────────────────
+    "pymupdf>=1.24.0",          # PDF parsing (fitz)
+    "pdfplumber>=0.11.0",       # PDF table extraction
+    "python-docx>=1.1.0",       # DOCX reading/writing
+
+    # ── NLP & Embeddings ──────────────────────────────────
+    "sentence-transformers>=3.3.0",
+    "scikit-learn>=1.5.0",
+    "numpy>=2.0.0",
+    "faiss-cpu>=1.9.0",         # Vector similarity search
+
+    # ── AI Providers ──────────────────────────────────────
+    "openai>=1.55.0",            # OpenAI + DeepSeek (OpenAI-compat)
+    "google-generativeai>=0.8.0",
+    "httpx>=0.27.0",             # Ollama + async HTTP
+
+    # ── Research Connectors ───────────────────────────────
+    "arxiv>=2.1.0",
+    "requests>=2.32.0",
+    "aiohttp>=3.11.0",
+
+    # ── Text Analysis ─────────────────────────────────────
+    "textstat>=0.7.3",           # Readability scores
+    "nltk>=3.9.0",               # Tokenization
+    "spacy>=3.8.0",              # NLP pipeline
+
+    # ── Export / Formatting ───────────────────────────────
+    "reportlab>=4.2.0",          # PDF generation
+    "jinja2>=3.1.0",             # Template engine
+
+    # ── Utilities ─────────────────────────────────────────
+    "python-slugify>=8.0.0",
+    "tenacity>=9.0.0",           # Retry logic for API calls
+    "rich>=13.9.0",              # Console output
+    "structlog>=24.4.0",         # Structured logging
+    "uuid7>=0.1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "httpx>=0.27.0",             # Testing HTTP client
+    "ruff>=0.8.0",               # Linting
+    "mypy>=1.13.0",              # Type checking
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = false
+ignore_missing_imports = true

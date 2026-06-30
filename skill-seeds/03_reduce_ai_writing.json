@@ -1,0 +1,148 @@
+{
+  "skill_id": "reduce-ai-writing",
+  "name": "Reduce AI-Like Academic Writing",
+  "category": "ai_detection",
+  "version": "1.1.0",
+  "description": "Audit and revise academic writing flagged as AI-like, repetitive, formulaic, overly balanced, generic, or insufficiently critical. Improve authentic researcher voice, argument quality, sentence variation, evidence-led interpretation, citation safety, methodological precision, and defensibility. Does NOT use detector-bypass tactics.",
+  "ethical_boundary": "Never guarantee a detector score or claim human authorship can be proved computationally. Never invent citations, quotations, data, participants, interviews, validation, or statistics. Never remove valid citations. Do not use synonym swapping, grammar damage, invisible text, homoglyphs, or other evasion tactics. Respect institutional AI-use and disclosure policies.",
+  "trigger_phrases": ["reduce ai", "ai detection", "ai writing", "sounds ai generated", "template like", "formulaic writing", "perplexity score"],
+  "rules": [
+    {
+      "rule_code": "AID-001",
+      "rule_name": "Perplexity Analysis",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Measure text perplexity using language model. Low perplexity = highly predictable = likely AI-generated. Human text has naturally higher perplexity.",
+      "confidence": 0.82
+    },
+    {
+      "rule_code": "AID-002",
+      "rule_name": "Burstiness Score",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Measure variance in sentence length and complexity. AI text has low burstiness (uniform rhythm). Human text has high burstiness (natural variation).",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "AID-003",
+      "rule_name": "Repetitive Opening Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Count paragraphs starting with same pattern: 'This section', 'The framework', 'In today's rapidly', 'It is important'. More than 3 per chapter is flagged.",
+      "pattern": "^(This section|The framework|In today|It is important|Furthermore|Moreover|Additionally)",
+      "confidence": 0.91
+    },
+    {
+      "rule_code": "AID-004",
+      "rule_name": "Generic Claim Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag claims that could belong to any paper on the topic without any specific actor, artifact, decision, or evidence. 'AI adoption is accelerating' with no citation or specifics.",
+      "confidence": 0.79
+    },
+    {
+      "rule_code": "AID-005",
+      "rule_name": "Excessive Balance Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Flag paragraphs structured as: 'On one hand X, on the other hand Y' repeated across multiple consecutive paragraphs — a strong AI generation pattern.",
+      "confidence": 0.83
+    },
+    {
+      "rule_code": "AID-006",
+      "rule_name": "Summary vs Analysis Ratio",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Ratio of descriptive/summary sentences to analytical/interpretive sentences. AI text tends toward high summary, low analysis ratio.",
+      "confidence": 0.76
+    },
+    {
+      "rule_code": "AID-007",
+      "rule_name": "Transition Word Overuse",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Count overused AI transition words per chapter: furthermore, moreover, additionally, in conclusion, it is worth noting. >5 per chapter is flagged.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "AID-008",
+      "rule_name": "Imperfection Presence Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Check for honest limitations, uncertainties, and bounded claims. AI text often sounds too certain. Low imperfection presence = high AI risk.",
+      "confidence": 0.78
+    },
+    {
+      "rule_code": "AID-009",
+      "rule_name": "Promotional Tone Detection",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag consultancy-style promotional language: 'revolutionary', 'game-changing', 'cutting-edge', 'state-of-the-art', 'best-in-class'.",
+      "confidence": 0.92
+    },
+    {
+      "rule_code": "AID-010",
+      "rule_name": "Chapter-Level AI Risk Attribution",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Attribute AI-writing risk to specific chapters using template openers, low burstiness, generic claims, transition overuse, and weak researcher voice.",
+      "confidence": 0.87
+    },
+    {
+      "rule_code": "AID-011",
+      "rule_name": "Ethical Rewrite Guardrail",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Require every AI-risk rewrite to preserve citations, meaning, claims, and disclosure boundaries. Reject detector-bypass tactics.",
+      "confidence": 0.95
+    },
+    {
+      "rule_code": "AID-012",
+      "rule_name": "Sentence Opener Variety",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Detect when more than 2 consecutive paragraphs start with the same grammatical word class (e.g., three consecutive paragraphs each starting with 'The', or four consecutive paragraphs starting with a verb). AI text produces highly uniform paragraph-opening patterns. Flag sequences of 3+ same-class openers and propose structural variation.",
+      "confidence": 0.84
+    },
+    {
+      "rule_code": "AID-013",
+      "rule_name": "Hedging Language Presence",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Measure density of epistemic hedging markers per 1000 words: 'may', 'might', 'could', 'suggests', 'indicates', 'appears to', 'tends to', 'arguably', 'it is possible that', 'there is evidence that'. Human academic writers hedge appropriately; AI text often makes unqualified assertions. Target: 4–12 hedging markers per 1000 words. Below 4 = over-assertive AI risk. Above 20 = excessive hedging.",
+      "confidence": 0.80
+    }
+  ],
+  "word_lists": [
+    {"word_or_phrase": "revolutionary", "replacement": "significant", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "game-changing", "replacement": "notable", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "cutting-edge", "replacement": "latest", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "state-of-the-art", "replacement": "current", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "best-in-class", "replacement": "among the best available", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "innovative solution", "replacement": "proposed approach", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "AI is revolutionising business", "replacement": null, "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "This proves that", "replacement": "The evidence suggests that", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "clearly demonstrates", "replacement": "indicates", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "This chapter clearly explains", "replacement": "This chapter examines", "severity": "medium", "list_type": "banned"}
+  ],
+  "_note": "Banned word lists for generic/AI-like vocabulary are owned by skill 02_humanization. This skill owns sentence-pattern and structural AI-risk detectors only.",
+  "prompts": {
+    "reduce_ai_paragraph": {
+      "template": "Revise this academic paragraph to reduce AI-like writing patterns. Preserve meaning, citations, and academic tone.\n\nApply the EIGCB rewrite model:\n- E (Evidence): What source or artefact supports this?\n- I (Interpretation): What does the researcher conclude?\n- G (Gap): What remains unresolved?\n- C (Connection): How does the framework respond?\n- B (Boundary): What is NOT claimed?\n\nDo not invent any data, interview, or validation.\nDo not use synonym swapping.\nVary sentence length naturally.\n\nSection type: {section_type}\nDocument type: {doc_type}\n\nParagraph:\n{text}",
+      "model_hint": "deepseek-reasoner",
+      "max_tokens": 1500,
+      "temperature": 0.55
+    },
+    "add_critical_tension": {
+      "template": "Add critical tension and intellectual depth to this passage without fabricating evidence.\n\nAsk and answer:\n- Which evidence contradicts or weakens this claim?\n- What are the boundary conditions?\n- What would a sceptical examiner challenge?\n- What does the framework NOT prove?\n\nPassage:\n{text}",
+      "model_hint": "deepseek-reasoner",
+      "max_tokens": 1200,
+      "temperature": 0.6
+    }
+  },
+  "thresholds": [
+    {"metric_name": "ai_writing_risk", "excellent_min": 0, "good_min": 0, "fair_min": 0, "poor_min": 0, "critical_below": 0, "target_value": 30, "unit": "percent_max"},
+    {"metric_name": "burstiness", "excellent_min": 70, "good_min": 55, "fair_min": 40, "poor_min": 25, "critical_below": 25, "target_value": 60, "unit": "score"},
+    {"metric_name": "perplexity_score", "excellent_min": 70, "good_min": 55, "fair_min": 40, "poor_min": 25, "critical_below": 25, "target_value": 60, "unit": "score"}
+  ]
+}

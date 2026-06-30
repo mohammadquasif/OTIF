@@ -1,0 +1,112 @@
+{
+  "skill_id": "writing-improvement",
+  "name": "Academic Writing Improvement (EIGCB Model)",
+  "category": "writing",
+  "version": "1.1.0",
+  "description": "Improves academic writing quality using the EIGCB model (Evidence-Interpretation-Gap-Connection-Boundary). Detects generic, repetitive, over-polished, unsupported, or descriptive writing and rewrites it as critical, evidence-led, researcher-owned academic prose.",
+  "ethical_boundary": "Do not fabricate sources, statistics, interviews, or validation. Do not remove valid citations. Do not overstate what the evidence proves. Originality comes from synthesis, critique, and interpretation — not from removing source dependence.",
+  "trigger_phrases": ["improve writing", "academic quality", "writing improvement", "strengthen argument", "add researcher voice", "generic writing", "improve originality"],
+  "rules": [
+    {
+      "rule_code": "WRT-001",
+      "rule_name": "EIGCB Pattern Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Check if major argument paragraphs follow EIGCB structure: Evidence → Interpretation → Gap → Connection → Boundary. Missing elements reduce quality score.",
+      "confidence": 0.82
+    },
+    {
+      "rule_code": "WRT-002",
+      "rule_name": "Descriptive vs Analytical Ratio",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Flag sections that summarise one author at a time without synthesis, comparison, or researcher interpretation. Literature reviews especially prone.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "WRT-003",
+      "rule_name": "Repetition Detection",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Detect the same concept defined or explained multiple times across chapters. Strong frameworks should be defined once and applied/referenced thereafter.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "WRT-004",
+      "rule_name": "Storytelling Opening Check",
+      "rule_type": "detection",
+      "severity": "low",
+      "description": "Check if chapters open with a relatable scene-setter (named person, specific situation, tension). Missing story openers reduce engagement score.",
+      "confidence": 0.70
+    },
+    {
+      "rule_code": "WRT-005",
+      "rule_name": "Researcher Voice Density",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Measure density of researcher voice markers per 1000 words. Target: 3-8 markers. Too few = generic. Too many = repetitive.",
+      "confidence": 0.80
+    },
+    {
+      "rule_code": "WRT-006",
+      "rule_name": "Claim Strength vs Evidence Alignment",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Flag claims that are stronger than the evidence supporting them. Every strong claim needs a citation, limitation, or boundary statement.",
+      "confidence": 0.83
+    },
+    {
+      "rule_code": "WRT-007",
+      "rule_name": "Tension-Maintenance Pattern",
+      "rule_type": "detection",
+      "severity": "low",
+      "description": "Check if long sections use the tension-maintenance rhythm: State → Show → Complicate → Connect every 500-700 words.",
+      "confidence": 0.72
+    },
+    {
+      "rule_code": "WRT-008",
+      "rule_name": "Citation-to-Interpretation Balance",
+      "rule_type": "score",
+      "severity": "high",
+      "description": "Check whether citations are followed by researcher interpretation instead of stacked summaries. Strong originality needs source use plus authorial judgment.",
+      "confidence": 0.84
+    },
+    {
+      "rule_code": "WRT-009",
+      "rule_name": "Chapter Rewrite Boundary",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Only rewrite chapters or sections approved by the user. Preserve safe sections and avoid whole-document flattening.",
+      "confidence": 0.93
+    }
+  ],
+  "word_lists": [
+    {"word_or_phrase": "AI is important in modern organisations", "replacement": "specify what AI does in this exact context", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "best practices", "replacement": "evidence-backed approaches", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "key stakeholders", "replacement": "name the specific people or roles", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "this clearly shows", "replacement": "this indicates", "severity": "medium", "list_type": "banned"},
+    {"word_or_phrase": "The evidence suggests", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "My interpretation of the evidence is", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "This study does not claim", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "A limitation of this interpretation is", "replacement": null, "severity": "low", "list_type": "preferred"},
+    {"word_or_phrase": "The practical implication is", "replacement": null, "severity": "low", "list_type": "preferred"}
+  ],
+  "prompts": {
+    "eigcb_rewrite": {
+      "template": "Rewrite this academic passage using the EIGCB model. Preserve all citations and factual accuracy.\n\nEIGCB structure:\n- Evidence: What source, artefact, or data supports this?\n- Interpretation: What does the researcher conclude from this evidence?\n- Gap: What remains unresolved or contested in the literature?\n- Connection: How does the researcher's framework/argument respond to this gap?\n- Boundary: What does this study NOT claim?\n\nDocument type: {doc_type}\nSection type: {section_type}\nTarget norm: {norm}\n\nPassage:\n{text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 2000,
+      "temperature": 0.5
+    },
+    "literature_synthesis": {
+      "template": "Rewrite this literature review passage as genuine synthesis (not author-by-author summary).\n\nSynthesis structure:\n1. What the literature agrees on\n2. Where key sources diverge or disagree\n3. What gap or tension remains\n4. How the researcher's framework responds\n5. Cite all sources grouped by claim\n\nDo not summarise one author at a time.\nDo not remove any citations.\n\nPassage:\n{text}",
+      "model_hint": "deepseek-chat",
+      "max_tokens": 2000,
+      "temperature": 0.5
+    }
+  },
+  "thresholds": [
+    {"metric_name": "writing_quality", "excellent_min": 80, "good_min": 70, "fair_min": 55, "poor_min": 40, "critical_below": 40, "target_value": 75, "unit": "score"},
+    {"metric_name": "originality_score", "excellent_min": 85, "good_min": 75, "fair_min": 65, "poor_min": 50, "critical_below": 50, "target_value": 80, "unit": "percent"}
+  ]
+}

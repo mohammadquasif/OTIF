@@ -1,0 +1,40 @@
+{
+  "skill_id": "design-formatting",
+  "name": "Design, Formatting & Academic Standards Compliance",
+  "category": "formatting",
+  "version": "1.0.0",
+  "description": "Checks and enforces academic formatting standards: heading hierarchy, table/figure numbering, citation style (APA7/IEEE/UGC), TOC accuracy, page numbering, appendix structure, and professional presentation.",
+  "ethical_boundary": "Do not invent citations or sources. Do not fabricate data or validation. Only enforce formatting rules appropriate to the selected norm standard.",
+  "trigger_phrases": ["format document", "apply formatting", "ugc format", "ieee format", "apa format", "toc", "table of contents", "heading check", "citation style"],
+  "rules": [
+    {"rule_code": "FMT-001", "rule_name": "Heading Hierarchy Check", "rule_type": "detection", "severity": "medium", "description": "Verify consistent heading levels (H1 Chapter, H2 Section, H3 Subsection). No skipped levels.", "confidence": 0.92},
+    {"rule_code": "FMT-002", "rule_name": "Table Numbering & Caption Check", "rule_type": "detection", "severity": "medium", "description": "Tables: caption ABOVE, sequential numbering across document, note/source attribution.", "confidence": 0.90},
+    {"rule_code": "FMT-003", "rule_name": "Figure Numbering & Caption Check", "rule_type": "detection", "severity": "medium", "description": "Figures: caption BELOW, sequential numbering, source note, minimum 150 DPI.", "confidence": 0.90},
+    {"rule_code": "FMT-004", "rule_name": "TOC Accuracy Check", "rule_type": "detection", "severity": "high", "description": "TOC headings and page numbers must match actual document. Missing or mismatched entries flagged.", "confidence": 0.88},
+    {"rule_code": "FMT-005", "rule_name": "APA7 Citation Format Check", "rule_type": "detection", "severity": "high", "description": "Verify APA7: (Author, Year) format, hanging indents in reference list, sentence case for article titles, title case for journals.", "confidence": 0.85},
+    {"rule_code": "FMT-006", "rule_name": "Page Numbering Check", "rule_type": "detection", "severity": "medium", "description": "Front matter: Roman numerals (i, ii...). Main body: Arabic (1, 2...). Title page: No number.", "confidence": 0.87},
+    {"rule_code": "FMT-007", "rule_name": "Self-Review Language Detection", "rule_type": "detection", "severity": "critical", "description": "Detect and remove internal review language in final document: 'examiner-ready', 'supervisor-ready', 'this section was added', 'no fabrication'.", "confidence": 0.95},
+    {"rule_code": "FMT-008", "rule_name": "Appendix Structure Check", "rule_type": "detection", "severity": "low", "description": "Verify all appendices are referenced in body. No reviewer instructions or internal notes in appendices.", "confidence": 0.82},
+    {"rule_code": "FMT-009", "rule_name": "DOI/URL Validity Check", "rule_type": "detection", "severity": "medium", "description": "Check all DOIs and URLs in references are well-formed and not from unstable sources.", "confidence": 0.80},
+    {"rule_code": "FMT-010", "rule_name": "Diagram Caption & Numbering from Approved Plan", "rule_type": "detection", "severity": "medium", "description": "When the system generates a diagram from an approved plan, verify it has a caption in the correct format: 'Figure X.Y: [Title] (Source: Author's Own Design / [Author, Year])'. Figure number must be sequential with existing figures in the document. Figures without captions or with incorrect numbering are flagged before export.", "confidence": 0.88},
+    {"rule_code": "FMT-011", "rule_name": "Design Rewrite Format Lock", "rule_type": "detection", "severity": "high", "description": "Before applying any plan-driven rewrite, verify the proposed output maintains the same heading hierarchy level, citation style (APA7/IEEE/UGC/Harvard), table and figure numbering sequence, and page number continuity as the surrounding document. A rewrite that breaks format continuity must be flagged and blocked until corrected.", "confidence": 0.91}
+  ],
+  "word_lists": [
+    {"word_or_phrase": "examiner-ready", "replacement": "remove from thesis body", "severity": "critical", "list_type": "banned"},
+    {"word_or_phrase": "supervisor-ready", "replacement": "remove from thesis body", "severity": "critical", "list_type": "banned"},
+    {"word_or_phrase": "submission-ready", "replacement": "remove from thesis body", "severity": "critical", "list_type": "banned"},
+    {"word_or_phrase": "this section was added", "replacement": "remove", "severity": "high", "list_type": "banned"},
+    {"word_or_phrase": "no fabrication", "replacement": "remove if excessive", "severity": "medium", "list_type": "banned"}
+  ],
+  "prompts": {
+    "format_references": {
+      "template": "Format these references according to {norm} standard.\n\nFor APA7:\n- Hanging indent, double-spaced\n- Sentence case for article/chapter titles\n- Title case for journal names\n- Include DOI where available\n- Alphabetical order by first author surname\n\nReferences:\n{text}",
+      "model_hint": "gpt-4o-mini",
+      "max_tokens": 2000,
+      "temperature": 0.2
+    }
+  },
+  "thresholds": [
+    {"metric_name": "formatting_score", "excellent_min": 90, "good_min": 80, "fair_min": 65, "poor_min": 50, "critical_below": 50, "target_value": 90, "unit": "percent"}
+  ]
+}
