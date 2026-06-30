@@ -80,10 +80,19 @@ Why pay hundreds of dollars per year for closed-source tools that harvest your u
 ### 💻 For End-Users: Standalone Desktop App (Zero Configuration)
 **End-users do NOT need to clone repositories, configure Python virtual environments, or start command-line servers.**
 
-When you install the OTIF Desktop Application (`.exe` on Windows, `.dmg` on macOS, or `.AppImage` on Linux):
-1. Download and run the standalone installer.
-2. Launch **OTIF** from your Desktop or Start Menu.
-3. Behind the scenes, the native Tauri engine **automatically launches the local Python backend API and SQLite workspace service in the background**.
+<div align="center">
+
+[![Download Windows (.exe)](https://img.shields.io/badge/Download-Windows_Installer_(.exe)-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/mohammadquasif/OTIF/releases/latest)
+[![Download macOS (.dmg)](https://img.shields.io/badge/Download-macOS_Installer_(.dmg)-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/mohammadquasif/OTIF/releases/latest)
+[![Download Linux (.AppImage)](https://img.shields.io/badge/Download-Linux_(.AppImage)-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/mohammadquasif/OTIF/releases/latest)
+
+</div>
+
+#### Installation Steps:
+1. **Download**: Click one of the buttons above or go to [GitHub Releases](https://github.com/mohammadquasif/OTIF/releases/latest) and download the installer for your OS (`OTIF_Setup.exe` for Windows).
+2. **Install**: Run the installer. It will install the application along with all necessary bundled dependencies.
+3. **Launch**: Open **OTIF** from your Desktop or Start Menu.
+4. **Auto-Start**: Behind the scenes, the native desktop application automatically starts the local Python backend API and SQLite workspace service in the background—**ready for instant analysis**.
 
 ---
 
