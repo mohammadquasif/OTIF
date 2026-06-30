@@ -96,6 +96,22 @@
       "severity": "high",
       "description": "Flag DOIs that do not follow the standard 10.XXXX/... format, DOIs missing the https://doi.org/ prefix in the reference list, and DOIs where the prefix number has fewer than 4 digits. Malformed DOIs may indicate fabricated or inaccurately recorded sources. Do not mark missing DOIs as violations for books or technical reports where DOIs are uncommon.",
       "confidence": 0.87
+    },
+    {
+      "rule_code": "PLG-012",
+      "rule_name": "Ghost Citation Verification",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Detect in-text citations that have no matching bibliographic entry in the reference list or vice-versa.",
+      "confidence": 0.95
+    },
+    {
+      "rule_code": "PLG-013",
+      "rule_name": "Self-Plagiarism & Thesis Recycling Check",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Flag unreferenced blocks of text recycled verbatim from earlier master theses or published papers by the same author.",
+      "confidence": 0.89
     }
   ],
   "word_lists": [
