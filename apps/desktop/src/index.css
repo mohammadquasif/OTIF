@@ -1804,3 +1804,159 @@ select.settings-input {
     grid-template-columns: 1fr;
   }
 }
+
+/* ══════════════════════════════════════════════════════════════
+   Splash / Startup Screen
+   ══════════════════════════════════════════════════════════════ */
+
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-base);
+  z-index: 9999;
+  background-image:
+    radial-gradient(ellipse 60% 50% at 50% 0%, hsla(258, 75%, 30%, 0.25) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 80% 80%, hsla(191, 90%, 30%, 0.12) 0%, transparent 60%);
+}
+
+.splash-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem 3.5rem;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  box-shadow:
+    0 0 0 1px hsla(258, 75%, 55%, 0.08),
+    0 32px 80px -12px hsla(225, 25%, 4%, 0.7),
+    inset 0 1px 0 hsla(258, 50%, 70%, 0.08);
+  backdrop-filter: blur(16px);
+  max-width: 420px;
+  width: 90vw;
+  text-align: center;
+}
+
+.splash-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.splash-logo-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--brand-600), var(--brand-400));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px -4px hsla(258, 75%, 55%, 0.45);
+  flex-shrink: 0;
+}
+
+.splash-logo-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(135deg, #fff 30%, var(--brand-300));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  line-height: 1;
+}
+
+.splash-logo-sub {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* Animated ring */
+.splash-spinner {
+  position: relative;
+  width: 52px;
+  height: 52px;
+}
+
+.splash-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  border-top-color: var(--brand-400);
+  border-right-color: hsla(258, 80%, 64%, 0.3);
+  animation: splash-spin 0.9s linear infinite;
+}
+
+@keyframes splash-spin {
+  to { transform: rotate(360deg); }
+}
+
+.splash-status {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+  min-height: 1.4em;
+  letter-spacing: 0.01em;
+}
+
+.splash-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  max-width: 300px;
+  line-height: 1.55;
+}
+
+.splash-error-icon {
+  font-size: 2rem;
+}
+
+.splash-retry-btn {
+  margin-top: 0.5rem;
+  min-width: 120px;
+}
+
+/* Attribution footer */
+.splash-attribution {
+  margin-top: 0.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--glass-border);
+  width: 100%;
+}
+
+.splash-attr-name {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: 0.01em;
+}
+
+.splash-attr-role {
+  font-size: 0.78rem;
+  color: var(--brand-300);
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.splash-attr-meta {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.splash-link {
+  color: var(--accent-cyan);
+  text-decoration: none;
+}
+.splash-link:hover {
+  text-decoration: underline;
+}
+

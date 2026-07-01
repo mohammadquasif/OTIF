@@ -385,6 +385,12 @@ const THREAD_ICON: Record<string, { icon: LucideIcon; label: string; color: stri
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>('projects');
 
+  // ── Backend startup ────────────────────────────────────────────
+  type BackendPhase = 'starting' | 'ready' | 'error';
+  const [backendPhase, setBackendPhase] = useState<BackendPhase>('starting');
+  const [startupMsg, setStartupMsg]   = useState('Initialising backend engine…');
+  const [startupDot, setStartupDot]   = useState(0);
+
   // ── System status ──────────────────────────────────────────────
   const [status, setStatus] = useState<SkillStatus | null>(null);
   const [skills, setSkills] = useState<SkillSummary[]>([]);
@@ -513,10 +519,59 @@ function App() {
     } catch { /* non-fatal */ }
   }, []);
 
+  // ── Backend startup poll ───────────────────────────────────────
   useEffect(() => {
+    const MESSAGES = [
+      'Initialising backend engine…',
+      'Loading academic skill rules…',
+      'Connecting to research APIs…',
+      'Preparing integrity services…',
+      'Almost ready…',
+    ];
+    let attempt = 0;
+    let msgIdx  = 0;
+    let stopped = false;
+
+    const dotTimer = setInterval(() => setStartupDot((d) => (d + 1) % 4), 400);
+    const msgTimer = setInterval(() => {
+      msgIdx = (msgIdx + 1) % MESSAGES.length;
+      setStartupMsg(MESSAGES[msgIdx]);
+    }, 2200);
+
+    const poll = async () => {
+      while (!stopped && attempt < 60) {
+        attempt++;
+        try {
+          await axios.get(`${API_BASE}/health`, { timeout: 1500 });
+          if (!stopped) {
+            setBackendPhase('ready');
+            void refreshData();
+            void loadProjects();
+          }
+          return;
+        } catch {
+          // still starting — wait and retry
+          await new Promise((r) => setTimeout(r, 800));
+        }
+      }
+      if (!stopped) setBackendPhase('error');
+    };
+
+    void poll();
+    return () => {
+      stopped = true;
+      clearInterval(dotTimer);
+      clearInterval(msgTimer);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    if (backendPhase !== 'ready') return;
     void refreshData();
     void loadProjects();
-  }, [refreshData, loadProjects]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [backendPhase]);
 
   useEffect(() => {
     if (currentProject) {
@@ -1141,6 +1196,67 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   // ─────────────────────────────────────────────────────────────
   // Render
   // ─────────────────────────────────────────────────────────────
+
+  /* ── Splash / startup overlay ── */
+  const dots = '.'.repeat(startupDot + 1).padEnd(3, ' ');
+  if (backendPhase !== 'ready') {
+    return (
+      <div className="splash-overlay">
+        <div className="splash-card">
+          {/* Logo */}
+          <div className="splash-logo">
+            <div className="splash-logo-icon">
+              <Activity size={28} color="white" />
+            </div>
+            <div>
+              <div className="splash-logo-title">OTIF</div>
+              <div className="splash-logo-sub">OpenThesis Integrity Fabric</div>
+            </div>
+          </div>
+
+          {backendPhase === 'starting' && (
+            <>
+              <div className="splash-spinner">
+                <div className="splash-ring" />
+              </div>
+              <p className="splash-status">{startupMsg}{dots}</p>
+              <p className="splash-hint">Starting local research engine — this takes a few seconds on first launch</p>
+            </>
+          )}
+
+          {backendPhase === 'error' && (
+            <>
+              <div className="splash-error-icon">⚠️</div>
+              <p className="splash-status" style={{ color: 'var(--accent-rose)' }}>Backend did not start</p>
+              <p className="splash-hint">
+                Ensure the installer completed successfully and try relaunching OTIF.
+                If running from source, start the backend with{' '}
+                <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8em' }}>npm run desktop:dev</code>.
+              </p>
+              <button
+                className="btn btn-primary splash-retry-btn"
+                onClick={() => { setBackendPhase('starting'); setStartupMsg('Retrying backend…'); window.location.reload(); }}
+              >
+                Retry
+              </button>
+            </>
+          )}
+
+          {/* Attribution */}
+          <div className="splash-attribution">
+            <div className="splash-attr-name">Mohammad Quasif</div>
+            <div className="splash-attr-role">DBA in AI · Doctoral Research Project</div>
+            <div className="splash-attr-meta">
+              Free &amp; Open Source &nbsp;·&nbsp; Apache-2.0 &nbsp;·&nbsp;
+              <a href="https://github.com/mohammadquasif/OTIF" target="_blank" rel="noreferrer" className="splash-link">
+                github.com/mohammadquasif/OTIF
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="app-layout">
