@@ -1923,6 +1923,64 @@ select.settings-input {
   min-width: 120px;
 }
 
+.splash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.splash-log-btn {
+  min-width: 140px;
+}
+
+.splash-log-panel {
+  width: min(720px, calc(100vw - 3rem));
+  max-height: 260px;
+  margin-top: 1rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(5, 8, 18, 0.86);
+  overflow: hidden;
+  text-align: left;
+}
+
+.splash-log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.8rem;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.splash-log-close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.splash-log-output {
+  max-height: 200px;
+  margin: 0;
+  padding: 0.8rem;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
 /* Attribution footer */
 .splash-attribution {
   margin-top: 0.5rem;
@@ -1959,4 +2017,3 @@ select.settings-input {
 .splash-link:hover {
   text-decoration: underline;
 }
-

@@ -6,4 +6,5 @@ function isTauriRuntime(): boolean {
 }
 
 export const API_BASE =
-  import.meta.env.VITE_API_BASE ?? (isTauriRuntime() ? DESKTOP_API_BASE : BROWSER_API_BASE);
+  import.meta.env.VITE_API_BASE ??
+  (isTauriRuntime() || !import.meta.env.DEV ? DESKTOP_API_BASE : BROWSER_API_BASE);

@@ -23,6 +23,36 @@ fn app_data_dir(app_handle: &tauri::AppHandle) -> PathBuf {
         .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
 }
 
+fn read_log_tail(path: &Path) -> String {
+    const MAX_LOG_BYTES: usize = 120_000;
+    match fs::read(path) {
+        Ok(bytes) => {
+            let start = bytes.len().saturating_sub(MAX_LOG_BYTES);
+            String::from_utf8_lossy(&bytes[start..]).to_string()
+        }
+        Err(error) => format!("Unable to read {}: {error}", path.display()),
+    }
+}
+
+#[tauri::command]
+fn read_startup_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let data_dir = app_data_dir(&app_handle);
+    let files = ["startup.log", "backend.stderr.log", "backend.stdout.log"];
+    let mut output = format!("OTIF diagnostic logs\nFolder: {}\n", data_dir.display());
+
+    for file_name in files {
+        let path = data_dir.join(file_name);
+        output.push_str(&format!("\n\n===== {file_name} =====\n"));
+        if path.exists() {
+            output.push_str(&read_log_tail(&path));
+        } else {
+            output.push_str("Log file has not been created yet.");
+        }
+    }
+
+    Ok(output)
+}
+
 fn write_startup_log(data_dir: &Path, message: &str) {
     let _ = fs::create_dir_all(data_dir);
     let log_path = data_dir.join("startup.log");
@@ -197,13 +227,18 @@ fn wait_for_backend(data_dir: PathBuf) -> Result<(), String> {
     let port: u16 = backend_port().parse().unwrap_or(18765);
     let start = Instant::now();
     while start.elapsed() < Duration::from_secs(90) {
-        if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
+        if is_backend_port_open() {
             write_startup_log(&data_dir, "[OTIF] backend ready");
             return Ok(());
         }
         thread::sleep(Duration::from_millis(500));
     }
     Err(format!("Backend did not start within 90 s on port {port}"))
+}
+
+fn is_backend_port_open() -> bool {
+    let port: u16 = backend_port().parse().unwrap_or(18765);
+    std::net::TcpStream::connect(("127.0.0.1", port)).is_ok()
 }
 
 fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Result<(), String> {
@@ -215,6 +250,10 @@ fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Resul
     let data_dir = app_data_dir(app_handle);
     fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
     write_startup_log(&data_dir, "[OTIF] starting backend");
+    if is_backend_port_open() {
+        write_startup_log(&data_dir, "[OTIF] backend already listening; reusing it");
+        return Ok(());
+    }
 
     let (program, args, cwd) = backend_command(app_handle, &data_dir)?;
     write_startup_log(
@@ -256,6 +295,7 @@ fn stop_backend(state: &BackendProcess) {
 fn main() {
     tauri::Builder::default()
         .manage(BackendProcess(Mutex::new(None)))
+        .invoke_handler(tauri::generate_handler![read_startup_logs])
         .setup(|app| {
             let handle = app.handle().clone();
             let state = app.state::<BackendProcess>();

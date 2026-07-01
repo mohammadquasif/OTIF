@@ -33,6 +33,18 @@ import {
 
 import { API_BASE } from './api';
 
+type TauriCoreBridge = {
+  invoke?: <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
+};
+
+declare global {
+  interface Window {
+    __TAURI__?: {
+      core?: TauriCoreBridge;
+    };
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────
 // Interfaces
 // ─────────────────────────────────────────────────────────────────
@@ -390,6 +402,8 @@ function App() {
   const [backendPhase, setBackendPhase] = useState<BackendPhase>('starting');
   const [startupMsg, setStartupMsg]   = useState('Initialising backend engine…');
   const [startupDot, setStartupDot]   = useState(0);
+  const [startupLog, setStartupLog] = useState<string | null>(null);
+  const [isReadingStartupLog, setIsReadingStartupLog] = useState(false);
 
   // ── System status ──────────────────────────────────────────────
   const [status, setStatus] = useState<SkillStatus | null>(null);
@@ -517,6 +531,28 @@ function App() {
       const res = await axios.get<{ discoveries: Discovery[] }>(`${API_BASE}/projects/${projectId}/discoveries`);
       setDiscoveries(res.data.discoveries);
     } catch { /* non-fatal */ }
+  }, []);
+
+  const viewStartupLog = useCallback(async () => {
+    setIsReadingStartupLog(true);
+    try {
+      const invoke = window.__TAURI__?.core?.invoke;
+      if (!invoke) {
+        setStartupLog(
+          'Diagnostic logs are available inside the installed desktop app only.\n\n' +
+          'On Windows, check:\n%APPDATA%\\in.otif.desktop\\startup.log\n' +
+          '%APPDATA%\\in.otif.desktop\\backend.stderr.log\n' +
+          '%APPDATA%\\in.otif.desktop\\backend.stdout.log',
+        );
+        return;
+      }
+      const logs = await invoke<string>('read_startup_logs');
+      setStartupLog(logs);
+    } catch (err) {
+      setStartupLog(`Unable to read OTIF startup logs.\n\n${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsReadingStartupLog(false);
+    }
   }, []);
 
   // ── Backend startup poll ───────────────────────────────────────
@@ -1233,12 +1269,32 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                 If running from source, start the backend with{' '}
                 <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8em' }}>npm run desktop:dev</code>.
               </p>
-              <button
-                className="btn btn-primary splash-retry-btn"
-                onClick={() => { setBackendPhase('starting'); setStartupMsg('Retrying backend…'); window.location.reload(); }}
-              >
-                Retry
-              </button>
+              <div className="splash-actions">
+                <button
+                  className="btn btn-primary splash-retry-btn"
+                  onClick={() => { setBackendPhase('starting'); setStartupMsg('Retrying backend…'); window.location.reload(); }}
+                >
+                  Retry
+                </button>
+                <button
+                  className="btn btn-secondary splash-log-btn"
+                  onClick={() => void viewStartupLog()}
+                  disabled={isReadingStartupLog}
+                >
+                  {isReadingStartupLog ? 'Reading log…' : 'View error log'}
+                </button>
+              </div>
+              {startupLog && (
+                <div className="splash-log-panel">
+                  <div className="splash-log-header">
+                    <span>Startup diagnostics</span>
+                    <button className="splash-log-close" onClick={() => setStartupLog(null)} aria-label="Close startup diagnostics">
+                      ×
+                    </button>
+                  </div>
+                  <pre className="splash-log-output">{startupLog}</pre>
+                </div>
+              )}
             </>
           )}
 
