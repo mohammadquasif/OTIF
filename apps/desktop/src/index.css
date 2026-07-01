@@ -2017,3 +2017,123 @@ select.settings-input {
 .splash-link:hover {
   text-decoration: underline;
 }
+
+.alert {
+  gap: 0.75rem;
+}
+
+.alert-actions,
+.thread-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.diagnostics-panel {
+  margin: 0 0 1.25rem;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(12, 17, 29, 0.92);
+  overflow: hidden;
+}
+
+.workflow-strip,
+.chapter-progress-strip,
+.finalize-dock {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+.workflow-strip > div,
+.chapter-progress-strip > div,
+.finalize-dock {
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  padding: 0.85rem;
+}
+
+.workflow-strip span {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: var(--brand-600);
+  color: white;
+  font-weight: 800;
+  font-size: 0.76rem;
+  margin-bottom: 0.45rem;
+}
+
+.workflow-strip strong,
+.chapter-progress-strip strong {
+  display: block;
+  color: var(--text-primary);
+  font-size: 0.92rem;
+}
+
+.workflow-strip small,
+.chapter-progress-strip span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+
+.empty-inline {
+  padding: 0.9rem;
+  border: 1px dashed var(--glass-border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.completed-plan-list {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.completed-plan-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 36px;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 8px;
+  color: var(--text-secondary);
+  background: rgba(16, 185, 129, 0.07);
+}
+
+.chapter-tab.complete {
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.chapter-tab.complete small {
+  color: var(--accent-green);
+}
+
+.finalize-dock {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+@media (max-width: 900px) {
+  .workflow-strip,
+  .chapter-progress-strip,
+  .finalize-dock {
+    grid-template-columns: 1fr;
+  }
+
+  .alert-actions,
+  .thread-header-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+}

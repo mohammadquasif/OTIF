@@ -1,6 +1,6 @@
 [package]
 name = "otif-desktop"
-version = "1.0.19"
+version = "1.0.20"
 description = "OpenThesis Integrity Fabric desktop app"
 authors = ["OTIF Contributors"]
 edition = "2021"

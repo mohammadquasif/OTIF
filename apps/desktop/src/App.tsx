@@ -259,6 +259,7 @@ interface StreamEvent {
 
 interface RewriteApprovalResult {
   doc_id: string;
+  approved_item_ids: string[];
   approved_items: ImprovementItem[];
   active_provider: ProviderOption['id'];
   active_model: string | null;
@@ -452,6 +453,7 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [thread, setThread] = useState<ThreadMessage[]>([]);
+  const [showFullReviewLog, setShowFullReviewLog] = useState(false);
   const [discoveries, setDiscoveries] = useState<Discovery[]>([]);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDocType, setNewProjectDocType] = useState('thesis');
@@ -467,6 +469,7 @@ function App() {
   const [targetFormat, setTargetFormat] = useState('ugc');
   const [improvementPlan, setImprovementPlan] = useState<ImprovementItem[]>([]);
   const [approvedImprovementIds, setApprovedImprovementIds] = useState<string[]>([]);
+  const [completedImprovementIds, setCompletedImprovementIds] = useState<string[]>([]);
   const [approvalResult, setApprovalResult] = useState<RewriteApprovalResult | null>(null);
   const [chapterResults, setChapterResults] = useState<ChapterResult[]>([]);
   const [researchSources, setResearchSources] = useState<ResearchSourcesReport | null>(null);
@@ -482,12 +485,16 @@ function App() {
   const [expandConnectors, setExpandConnectors] = useState(true);
   const [chapterDrafts, setChapterDrafts] = useState<EditableChapter[]>([]);
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+  const [completedChapterIds, setCompletedChapterIds] = useState<string[]>([]);
   const [chapterGuidance, setChapterGuidance] = useState<string | null>(null);
   const [finalizeResult, setFinalizeResult] = useState<FinalizeResult | null>(null);
   const [isFinalizing, setIsFinalizing] = useState(false);
   const [isRewritingChapter, setIsRewritingChapter] = useState(false);
   const [chapterProposal, setChapterProposal] = useState<ChapterRewriteProposal | null>(null);
   const [showCompiledPreview, setShowCompiledPreview] = useState(true);
+  const [serviceDiagnostics, setServiceDiagnostics] = useState<string | null>(null);
+  const [isCheckingServices, setIsCheckingServices] = useState(false);
+  const [isRestartingBackend, setIsRestartingBackend] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -509,6 +516,23 @@ function App() {
   const inactiveProviders = aiStatus?.providers.filter((p) => p.id !== aiDraft?.provider) ?? [];
   const neonConnected = status?.neon_connected ?? false;
   const activeChapter = chapterDrafts.find((chapter) => chapter.id === activeChapterId) ?? chapterDrafts[0] ?? null;
+  const activeImprovementPlan = useMemo(
+    () => improvementPlan.filter((item) => !completedImprovementIds.includes(item.id)),
+    [improvementPlan, completedImprovementIds],
+  );
+  const completedImprovementPlan = useMemo(
+    () => improvementPlan.filter((item) => completedImprovementIds.includes(item.id)),
+    [improvementPlan, completedImprovementIds],
+  );
+  const approvedScopeIds = approvalResult?.approved_item_ids ?? approvedImprovementIds;
+  const changedChapterCount = useMemo(
+    () => chapterDrafts.filter((chapter) => chapter.edited_text !== chapter.original_text).length,
+    [chapterDrafts],
+  );
+  const completionPercent = chapterDrafts.length
+    ? Math.round((completedChapterIds.length / chapterDrafts.length) * 100)
+    : 0;
+  const visibleThread = showFullReviewLog ? thread : thread.slice(-6);
   const compiledPreview = useMemo(
     () =>
       chapterDrafts
@@ -589,6 +613,65 @@ function App() {
       setIsReadingStartupLog(false);
     }
   }, []);
+
+  const checkBackendServices = useCallback(async () => {
+    setIsCheckingServices(true);
+    try {
+      const invoke = window.__TAURI__?.core?.invoke;
+      if (!invoke) {
+        setServiceDiagnostics(
+          `Browser mode service check\n\nAPI base: ${API_BASE}\nBrowser fallback: ${apiRoot}/app\nDesktop restart is available only in the installed app.`,
+        );
+        return;
+      }
+      const diagnostics = await invoke<string>('check_backend_services');
+      setServiceDiagnostics(diagnostics);
+    } catch (err) {
+      setServiceDiagnostics(`Service check failed.\n\n${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setIsCheckingServices(false);
+    }
+  }, [apiRoot]);
+
+  const restartDesktopBackend = useCallback(async () => {
+    setIsRestartingBackend(true);
+    setError(null);
+    try {
+      const invoke = window.__TAURI__?.core?.invoke;
+      if (!invoke) {
+        setServiceDiagnostics('Backend restart is available only in the installed desktop app.');
+        return;
+      }
+      const result = await invoke<string>('restart_backend');
+      setServiceDiagnostics(result);
+      setBackendPhase('ready');
+      await refreshData();
+      await loadProjects();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      setError(message);
+      setServiceDiagnostics(`Restart failed.\n\n${message}`);
+    } finally {
+      setIsRestartingBackend(false);
+    }
+  }, [loadProjects, refreshData]);
+
+  const openBrowserFallback = useCallback(async () => {
+    const fallbackUrl = `${apiRoot}/app`;
+    try {
+      const invoke = window.__TAURI__?.core?.invoke;
+      if (invoke) {
+        await invoke<string>('open_browser_fallback');
+      } else {
+        window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+      }
+      setServiceDiagnostics(`Opened browser fallback:\n${fallbackUrl}`);
+    } catch (err) {
+      setServiceDiagnostics(
+        `Open this URL in your browser:\n${fallbackUrl}\n\n${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }, [apiRoot]);
 
   // ── Backend startup poll ───────────────────────────────────────
   useEffect(() => {
@@ -694,11 +777,13 @@ function App() {
     setFindings([]);
     setImprovementPlan([]);
     setApprovedImprovementIds([]);
+    setCompletedImprovementIds([]);
     setApprovalResult(null);
     setIntegrityReport(null);
     setDiagramResult(null);
     setChapterDrafts([]);
     setActiveChapterId(null);
+    setCompletedChapterIds([]);
     setChapterGuidance(null);
     setChapterProposal(null);
     setFinalizeResult(null);
@@ -772,6 +857,7 @@ function App() {
     setFindings([]);
     setImprovementPlan([]);
     setApprovedImprovementIds([]);
+    setCompletedImprovementIds([]);
     setApprovalResult(null);
     setChapterResults([]);
     setResearchSources(null);
@@ -779,6 +865,7 @@ function App() {
     setDiagramResult(null);
     setChapterDrafts([]);
     setActiveChapterId(null);
+    setCompletedChapterIds([]);
     setChapterGuidance(null);
     setChapterProposal(null);
     setFinalizeResult(null);
@@ -859,6 +946,11 @@ function App() {
     setApprovedImprovementIds((prev) =>
       prev.includes(itemId) ? prev.filter((existing) => existing !== itemId) : [...prev, itemId],
     );
+    setApprovalResult(null);
+  };
+
+  const approveAllRemainingImprovements = () => {
+    setApprovedImprovementIds(activeImprovementPlan.map((item) => item.id));
     setApprovalResult(null);
   };
 
@@ -943,12 +1035,16 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
   const approveRewrite = async () => {
     if (!uploadResult) return;
+    const selectedIds = approvedImprovementIds.filter((itemId) =>
+      activeImprovementPlan.some((item) => item.id === itemId),
+    );
+    if (selectedIds.length === 0) return;
     setIsBusy(true);
     setError(null);
     try {
       const res = await axios.post<RewriteApprovalResult>(`${API_BASE}/analysis/approve-rewrite`, {
         doc_id: uploadResult.doc_id,
-        approved_item_ids: approvedImprovementIds,
+        approved_item_ids: selectedIds,
         doc_type: docType,
         norm: targetFormat,
         draw_diagrams: drawDiagrams,
@@ -959,6 +1055,8 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         maintain_front_matter: true,
       });
       setApprovalResult(res.data);
+      setCompletedImprovementIds((prev) => Array.from(new Set([...prev, ...selectedIds])));
+      setApprovedImprovementIds([]);
 
       // Log to thread
       if (currentProject) {
@@ -1068,6 +1166,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
   const draftChapterRewrite = async () => {
     if (!uploadResult || !activeChapter) return;
+    if (approvedScopeIds.length === 0) {
+      setError('Approve at least one improvement item before drafting a chapter revision.');
+      return;
+    }
     setIsRewritingChapter(true);
     setError(null);
     try {
@@ -1076,7 +1178,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         chapter_id: activeChapter.id,
         title: activeChapter.title,
         text: activeChapter.edited_text,
-        approved_item_ids: approvedImprovementIds,
+        approved_item_ids: approvedScopeIds,
         doc_type: docType,
         norm: targetFormat,
       });
@@ -1095,7 +1197,17 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     if (!chapterProposal) return;
     updateChapterDraft(chapterProposal.chapter_id, chapterProposal.proposed_text);
     setActiveChapterId(chapterProposal.chapter_id);
+    setCompletedChapterIds((prev) =>
+      prev.includes(chapterProposal.chapter_id) ? prev : [...prev, chapterProposal.chapter_id],
+    );
     setChapterProposal(null);
+  };
+
+  const markActiveChapterComplete = () => {
+    if (!activeChapter) return;
+    setCompletedChapterIds((prev) =>
+      prev.includes(activeChapter.id) ? prev.filter((id) => id !== activeChapter.id) : [...prev, activeChapter.id],
+    );
   };
 
   const finalizeThesis = async () => {
@@ -1502,6 +1614,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                 <RefreshCw size={16} />
                 Refresh
               </button>
+              <button className="btn btn-secondary" onClick={() => void checkBackendServices()} disabled={isCheckingServices}>
+                <Server size={16} />
+                {isCheckingServices ? 'Checking...' : 'Services'}
+              </button>
             </div>
           </div>
         </header>
@@ -1510,6 +1626,32 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
           <div className="alert alert-error">
             <AlertCircle size={16} />
             <span>{error}</span>
+            <div className="alert-actions">
+              <button className="btn btn-secondary btn-sm" onClick={() => void viewStartupLog()} disabled={isReadingStartupLog}>
+                {isReadingStartupLog ? 'Reading...' : 'View log'}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => void checkBackendServices()} disabled={isCheckingServices}>
+                Check services
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => void restartDesktopBackend()} disabled={isRestartingBackend}>
+                {isRestartingBackend ? 'Restarting...' : 'Restart backend'}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => void openBrowserFallback()}>
+                Open in browser
+              </button>
+            </div>
+          </div>
+        )}
+
+        {serviceDiagnostics && (
+          <div className="diagnostics-panel">
+            <div className="splash-log-header">
+              <span>Desktop diagnostics</span>
+              <button className="splash-log-close" onClick={() => setServiceDiagnostics(null)} aria-label="Close diagnostics">
+                x
+              </button>
+            </div>
+            <pre className="splash-log-output">{serviceDiagnostics}</pre>
           </div>
         )}
 
@@ -1648,11 +1790,23 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                 {thread.length > 0 && (
                   <div className="card thread-card mb-6">
                     <div className="card-header">
-                      <div className="card-title">Review Log</div>
-                      <div className="badge badge-brand">{thread.length} entries</div>
+                      <div>
+                        <div className="card-title">Review Log</div>
+                        <div className="card-subtitle">
+                          {showFullReviewLog ? 'Showing all project events.' : 'Showing latest events. Older entries are hidden.'}
+                        </div>
+                      </div>
+                      <div className="thread-header-actions">
+                        {thread.length > 6 && (
+                          <button className="btn btn-secondary btn-sm" onClick={() => setShowFullReviewLog((value) => !value)}>
+                            {showFullReviewLog ? 'Show recent only' : `Show ${thread.length - 6} older`}
+                          </button>
+                        )}
+                        <div className="badge badge-brand">{thread.length} entries</div>
+                      </div>
                     </div>
                     <div className="thread-scroll">
-                      {thread.map((msg) => <ThreadEntry key={msg.id} msg={msg} />)}
+                      {visibleThread.map((msg) => <ThreadEntry key={msg.id} msg={msg} />)}
                       <div ref={threadEndRef} />
                     </div>
                   </div>
@@ -1944,8 +2098,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                         <div className="card animate-scale improvement-plan-panel">
                           <div className="card-header">
                             <div>
-                              <div className="card-title">Improvement Plan</div>
-                              <div className="card-subtitle">Select items to approve for Integrity-Preserving Revision</div>
+                              <div className="card-title">Improvement Work Queue</div>
+                              <div className="card-subtitle">
+                                Approve a set, revise chapter by chapter, then compile the full document.
+                              </div>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <button
@@ -1964,11 +2120,30 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                 📜 CRediT Statement (.md)
                               </button>
                               <div className="badge badge-amber">{approvedImprovementIds.length} selected</div>
+                              <div className="badge badge-green">{completedImprovementPlan.length} approved</div>
+                            </div>
+                          </div>
+
+                          <div className="workflow-strip">
+                            <div>
+                              <span>1</span>
+                              <strong>{activeImprovementPlan.length} active suggestion(s)</strong>
+                              <small>Approve only the changes you want.</small>
+                            </div>
+                            <div>
+                              <span>2</span>
+                              <strong>{chapterDrafts.length || chapterResults.length} chapter block(s)</strong>
+                              <small>Work one chapter at a time.</small>
+                            </div>
+                            <div>
+                              <span>3</span>
+                              <strong>{finalizeResult ? 'Package ready' : 'Finalize pending'}</strong>
+                              <small>Download full DOCX/PDF in one shot.</small>
                             </div>
                           </div>
 
                           <div className="plan-list">
-                            {improvementPlan.map((item) => (
+                            {activeImprovementPlan.map((item) => (
                               <label className="plan-item" key={item.id}>
                                 <input
                                   type="checkbox"
@@ -1988,7 +2163,24 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                 </div>
                               </label>
                             ))}
+                            {activeImprovementPlan.length === 0 && (
+                              <div className="empty-inline">
+                                All suggestions in this analysis have been approved. Continue chapter edits or finalize the package.
+                              </div>
+                            )}
                           </div>
+
+                          {completedImprovementPlan.length > 0 && (
+                            <div className="completed-plan-list">
+                              <div className="settings-group-title">Approved and removed from active queue</div>
+                              {completedImprovementPlan.map((item) => (
+                                <div className="completed-plan-item" key={item.id}>
+                                  <CheckCircle2 size={14} />
+                                  <span>{item.title}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                           {/* Diagram toggle */}
                           <div className="rewrite-options">
@@ -2066,16 +2258,23 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
                           <div className="approval-actions">
                             <button
+                              className="btn btn-secondary"
+                              onClick={approveAllRemainingImprovements}
+                              disabled={isBusy || activeImprovementPlan.length === 0}
+                            >
+                              Select all remaining
+                            </button>
+                            <button
                               id="approve-rewrite-btn"
                               className="btn btn-primary"
                               onClick={() => void approveRewrite()}
                               disabled={isBusy || approvedImprovementIds.length === 0 || outputFormats.length === 0 || !designAccentValid}
                             >
                               <Bot size={16} />
-                              Approve selected for Integrity-Preserving Revision
+                              Approve selected and open chapter workflow
                               {drawDiagrams && ' + Diagram'}
                             </button>
-                            {approvalResult && (
+                            {(approvalResult || completedImprovementPlan.length > 0) && (
                               <button
                                 className="btn btn-secondary"
                                 onClick={() => void loadChapterEditor()}
@@ -2176,18 +2375,34 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                             </div>
                           )}
 
+                          <div className="chapter-progress-strip">
+                            <div>
+                              <strong>{completedChapterIds.length}/{chapterDrafts.length}</strong>
+                              <span>chapters marked complete</span>
+                            </div>
+                            <div>
+                              <strong>{changedChapterCount}</strong>
+                              <span>chapter(s) edited</span>
+                            </div>
+                            <div>
+                              <strong>{completionPercent}%</strong>
+                              <span>ready for final compile</span>
+                            </div>
+                          </div>
+
                           <div className="chapter-editor-layout">
                             <div className="chapter-rail">
                               {chapterDrafts.map((chapter, index) => {
                                 const changed = chapter.edited_text !== chapter.original_text;
+                                const completed = completedChapterIds.includes(chapter.id);
                                 return (
                                   <button
                                     key={chapter.id}
-                                    className={`chapter-tab ${activeChapter?.id === chapter.id ? 'active' : ''}`}
+                                    className={`chapter-tab ${activeChapter?.id === chapter.id ? 'active' : ''} ${completed ? 'complete' : ''}`}
                                     onClick={() => selectChapter(chapter.id)}
                                   >
                                     <span>{index + 1}. {chapter.title}</span>
-                                    <small>{changed ? 'edited' : `${chapter.word_count ?? 0} words`}</small>
+                                    <small>{completed ? 'complete' : changed ? 'edited' : `${chapter.word_count ?? 0} words`}</small>
                                   </button>
                                 );
                               })}
@@ -2204,6 +2419,9 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                     <div className="chapter-toolbar-actions">
                                       <button className="btn btn-secondary btn-sm" onClick={resetActiveChapter}>
                                         Reset chapter
+                                      </button>
+                                      <button className="btn btn-secondary btn-sm" onClick={markActiveChapterComplete}>
+                                        {completedChapterIds.includes(activeChapter.id) ? 'Reopen chapter' : 'Mark chapter complete'}
                                       </button>
                                       <button
                                         className="btn btn-primary btn-sm"
@@ -2276,13 +2494,32 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                   disabled={isFinalizing || outputFormats.length === 0 || !designAccentValid}
                                 >
                                   <FileText size={16} />
-                                  {isFinalizing ? 'Finalizing...' : 'Finalize approved thesis'}
+                                  {isFinalizing ? 'Finalizing...' : 'Finalize full document package'}
                                 </button>
                               </div>
                               <pre>{compiledPreview.slice(0, 12000)}</pre>
                               {compiledPreview.length > 12000 && (
                                 <div className="settings-desc">Preview truncated for speed. Full edited text is exported.</div>
                               )}
+                            </div>
+                          )}
+
+                          {!showCompiledPreview && (
+                            <div className="finalize-dock">
+                              <div>
+                                <div className="settings-group-title">Final full document package</div>
+                                <span className="settings-desc">
+                                  Compile all edited chapters into one downloadable DOCX/PDF.
+                                </span>
+                              </div>
+                              <button
+                                className="btn btn-primary"
+                                onClick={() => void finalizeThesis()}
+                                disabled={isFinalizing || outputFormats.length === 0 || !designAccentValid}
+                              >
+                                <FileText size={16} />
+                                {isFinalizing ? 'Finalizing...' : 'Finalize and download full document'}
+                              </button>
                             </div>
                           )}
 

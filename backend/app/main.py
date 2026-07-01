@@ -4,12 +4,15 @@ OpenThesis Integrity Fabric — Academic Research Intelligence Platform
 """
 import logging
 import os
+import sys
 import time
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.core import neon_db
@@ -28,6 +31,14 @@ logger = logging.getLogger("otif")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifecycle manager."""
+    desktop_data_dir = os.environ.get("OTIF_DATA_DIR")
+    if desktop_data_dir:
+        data_dir = Path(desktop_data_dir)
+        settings.LOCAL_DB_PATH = str(data_dir / "otif_local.db")
+        settings.UPLOADS_PATH = str(data_dir / "uploads")
+        settings.EMBEDDINGS_PATH = str(data_dir / "embeddings")
+        settings.PROJECTS_PATH = str(data_dir / "projects")
+
     logger.info("═" * 60)
     logger.info("🚀 OTIF — OpenThesis Integrity Fabric")
     logger.info(f"   Version: {settings.APP_VERSION}")
@@ -120,6 +131,37 @@ app.include_router(documents.router, prefix="/api/v1/documents", tags=["Document
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["Analysis"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects"])
 app.include_router(diagrams_router.router, prefix="/api/v1/diagrams", tags=["Diagrams"])
+
+
+def _frontend_dist_dir() -> Path | None:
+    bundle_root = Path(getattr(sys, "_MEIPASS", Path.cwd()))
+    candidates = [
+        Path(os.environ.get("OTIF_FRONTEND_DIST", "")),
+        bundle_root / "frontend-dist",
+        Path(sys.executable).resolve().parent / "frontend-dist" if getattr(sys, "frozen", False) else Path(),
+        Path(__file__).resolve().parents[3] / "apps" / "desktop" / "dist",
+    ]
+    for candidate in candidates:
+        if candidate and (candidate / "index.html").exists():
+            return candidate
+    if getattr(sys, "frozen", False) and bundle_root.exists():
+        for index_path in bundle_root.rglob("index.html"):
+            if "frontend-dist" in index_path.parts:
+                return index_path.parent
+    return None
+
+
+frontend_dist = _frontend_dist_dir()
+if frontend_dist:
+    app.mount("/app/assets", StaticFiles(directory=frontend_dist / "assets"), name="desktop-assets")
+
+    @app.get("/app", include_in_schema=False)
+    @app.get("/app/{path:path}", include_in_schema=False)
+    async def desktop_browser_fallback(path: str = ""):
+        requested = frontend_dist / path
+        if path and requested.exists() and requested.is_file():
+            return FileResponse(requested)
+        return FileResponse(frontend_dist / "index.html")
 
 
 # ── Root ──────────────────────────────────────────────────────────

@@ -18,10 +18,57 @@ fn backend_port() -> String {
 }
 
 fn app_data_dir(app_handle: &tauri::AppHandle) -> PathBuf {
-    app_handle
-        .path()
-        .app_data_dir()
-        .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
+    let mut candidates = Vec::new();
+
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(local_app_data) = env::var("LOCALAPPDATA") {
+            candidates.push(PathBuf::from(local_app_data).join("OTIF"));
+        }
+        if let Ok(app_data) = env::var("APPDATA") {
+            candidates.push(PathBuf::from(app_data).join("OTIF"));
+        }
+        if let Ok(user_profile) = env::var("USERPROFILE") {
+            candidates.push(PathBuf::from(user_profile).join("OTIF"));
+        }
+    }
+
+    if let Ok(app_dir) = app_handle.path().app_data_dir() {
+        candidates.push(app_dir);
+    }
+    candidates.push(env::temp_dir().join("OTIF"));
+    candidates.push(
+        env::current_dir()
+            .unwrap_or_else(|_| PathBuf::from("."))
+            .join("otif-data"),
+    );
+
+    candidates
+        .into_iter()
+        .find(|candidate| data_dir_is_writable(candidate))
+        .unwrap_or_else(|| env::temp_dir().join("OTIF"))
+}
+
+fn data_dir_is_writable(path: &Path) -> bool {
+    if fs::create_dir_all(path).is_err() {
+        return false;
+    }
+
+    let probe = path.join(".otif-write-test");
+    match OpenOptions::new()
+        .create(true)
+        .truncate(true)
+        .write(true)
+        .open(&probe)
+    {
+        Ok(mut file) => {
+            let wrote = file.write_all(b"ok").is_ok();
+            drop(file);
+            let _ = fs::remove_file(&probe);
+            wrote
+        }
+        Err(_) => false,
+    }
 }
 
 fn read_log_tail(path: &Path) -> String {
@@ -52,6 +99,65 @@ fn read_startup_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
     }
 
     Ok(output)
+}
+
+#[tauri::command]
+fn check_backend_services(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let data_dir = app_data_dir(&app_handle);
+    let port = backend_port();
+    let port_open = is_backend_port_open();
+    let current_api = backend_has_current_api();
+    let support_url = support_browser_url();
+    let localhost_url = format!("http://localhost:{port}/app");
+    let status = if !port_open {
+        "Backend port is not listening."
+    } else if current_api {
+        "Backend is listening and supports the current desktop API."
+    } else {
+        "Backend is listening, but it looks older than this desktop UI."
+    };
+
+    Ok(format!(
+        "OTIF backend service check\n\nStatus: {status}\nPort: 127.0.0.1:{port}\nCurrent API: {}\nBrowser fallback: {support_url}\nLocalhost URL: {localhost_url}\nLog folder: {}\n\n{}",
+        if current_api { "available" } else { "not available" },
+        data_dir.display(),
+        read_startup_logs(app_handle)?
+    ))
+}
+
+#[tauri::command]
+fn restart_backend(
+    app_handle: tauri::AppHandle,
+    state: tauri::State<'_, BackendProcess>,
+) -> Result<String, String> {
+    let data_dir = app_data_dir(&app_handle);
+    write_startup_log(&data_dir, "[OTIF] restart requested from desktop UI");
+    stop_backend(&state);
+
+    if is_backend_port_open() {
+        kill_backend_on_port(&data_dir)?;
+        let start = Instant::now();
+        while start.elapsed() < Duration::from_secs(10) {
+            if !is_backend_port_open() {
+                break;
+            }
+            thread::sleep(Duration::from_millis(250));
+        }
+    }
+
+    spawn_backend(&app_handle, &state)?;
+    wait_for_backend(data_dir)?;
+    Ok(format!(
+        "Backend restarted. Browser fallback: {}",
+        support_browser_url()
+    ))
+}
+
+#[tauri::command]
+fn open_browser_fallback() -> Result<String, String> {
+    let url = support_browser_url();
+    open_url(&url)?;
+    Ok(url)
 }
 
 fn write_startup_log(data_dir: &Path, message: &str) {
@@ -270,6 +376,75 @@ fn backend_has_current_api() -> bool {
     }
 }
 
+fn support_browser_url() -> String {
+    format!("http://127.0.0.1:{}/app", backend_port())
+}
+
+fn open_url(url: &str) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        Command::new("cmd")
+            .args(["/C", "start", "", url])
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {e}"))?;
+        return Ok(());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        Command::new("open")
+            .arg(url)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {e}"))?;
+        return Ok(());
+    }
+
+    #[cfg(all(unix, not(target_os = "macos")))]
+    {
+        Command::new("xdg-open")
+            .arg(url)
+            .spawn()
+            .map_err(|e| format!("Failed to open browser: {e}"))?;
+        return Ok(());
+    }
+}
+
+fn kill_backend_on_port(data_dir: &Path) -> Result<(), String> {
+    #[cfg(target_os = "windows")]
+    {
+        let port = backend_port();
+        let output = Command::new("netstat")
+            .args(["-ano", "-p", "tcp"])
+            .output()
+            .map_err(|e| format!("Failed to inspect backend port: {e}"))?;
+        let text = String::from_utf8_lossy(&output.stdout);
+        let needle = format!("127.0.0.1:{port}");
+        let mut pids = Vec::new();
+        for line in text.lines().filter(|line| line.contains(&needle)) {
+            if let Some(pid) = line.split_whitespace().last() {
+                if pid.chars().all(|ch| ch.is_ascii_digit()) && !pids.iter().any(|seen| seen == pid)
+                {
+                    pids.push(pid.to_string());
+                }
+            }
+        }
+        for pid in pids {
+            write_startup_log(data_dir, &format!("[OTIF] stopping backend PID {pid}"));
+            let _ = Command::new("taskkill").args(["/PID", &pid, "/F"]).output();
+        }
+        return Ok(());
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        write_startup_log(
+            data_dir,
+            "[OTIF] automatic external backend stop is only enabled on Windows",
+        );
+        Ok(())
+    }
+}
+
 fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Result<(), String> {
     let mut guard = state.0.lock().map_err(|_| "Backend state lock failed")?;
     if guard.is_some() {
@@ -329,7 +504,12 @@ fn stop_backend(state: &BackendProcess) {
 fn main() {
     tauri::Builder::default()
         .manage(BackendProcess(Mutex::new(None)))
-        .invoke_handler(tauri::generate_handler![read_startup_logs])
+        .invoke_handler(tauri::generate_handler![
+            read_startup_logs,
+            check_backend_services,
+            restart_backend,
+            open_browser_fallback
+        ])
         .setup(|app| {
             let handle = app.handle().clone();
             let state = app.state::<BackendProcess>();

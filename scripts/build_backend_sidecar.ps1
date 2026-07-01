@@ -29,20 +29,31 @@ if ($LASTEXITCODE -ne 0) {
 $workDir = Join-Path $backendPath "build\pyinstaller"
 $distDir = Join-Path $backendPath "dist\pyinstaller"
 $seedsDir = Join-Path $root "skill-seeds"
+$frontendDist = Join-Path $root "apps\desktop\dist"
 
-& $python -m PyInstaller `
-    --clean `
-    --onefile `
-    --name "otif-backend" `
-    --workpath $workDir `
-    --distpath $distDir `
-    --paths $backendPath `
-    --add-data "$seedsDir;skill-seeds" `
-    --collect-all app `
-    --collect-submodules uvicorn `
-    --collect-submodules fastapi `
-    --collect-submodules pydantic `
-    (Join-Path $backendPath "run_desktop.py")
+$pyInstallerArgs = @(
+    "--clean",
+    "--onefile",
+    "--name", "otif-backend",
+    "--workpath", $workDir,
+    "--distpath", $distDir,
+    "--paths", $backendPath,
+    "--add-data", "$seedsDir;skill-seeds",
+    "--collect-all", "app",
+    "--collect-submodules", "uvicorn",
+    "--collect-submodules", "fastapi",
+    "--collect-submodules", "pydantic"
+)
+
+if (Test-Path -LiteralPath (Join-Path $frontendDist "index.html")) {
+    $pyInstallerArgs += @("--add-data", "$frontendDist;frontend-dist")
+} else {
+    Write-Warning "Desktop frontend dist not found at $frontendDist. Browser fallback /app will not be bundled."
+}
+
+$pyInstallerArgs += (Join-Path $backendPath "run_desktop.py")
+
+& $python -m PyInstaller @pyInstallerArgs
 
 $exe = Join-Path $distDir "otif-backend.exe"
 if (-not (Test-Path -LiteralPath $exe)) {
