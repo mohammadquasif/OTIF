@@ -13,7 +13,7 @@
   <img src="apps/desktop/src/assets/hero.png" alt="OTIF Logo" width="140">
 
   [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-  [![Release](https://img.shields.io/badge/Release-v1.0.14-00E5FF.svg)](https://github.com/mohammadquasif/OTIF/releases)
+  [![Release](https://img.shields.io/badge/Release-v1.0.15-00E5FF.svg)](https://github.com/mohammadquasif/OTIF/releases)
   [![Platform](https://img.shields.io/badge/Platform-Windows%20x64%20Desktop-7C3AED.svg)](#installation--getting-started)
   [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0+-FFC131.svg)](https://tauri.app)
