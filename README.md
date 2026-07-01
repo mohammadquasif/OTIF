@@ -1,193 +1,252 @@
-# OpenThesis Integrity Fabric (OTIF) — Academic Research Intelligence Platform
+﻿# OpenThesis Integrity Fabric (OTIF)
+### Academic Research Intelligence Platform — Local-First, Privacy-Preserving, Integrity-Driven
 
 <div align="center">
-  <img src="apps/desktop/src/assets/hero.png" alt="OTIF Architecture" width="160">  **An Open-Source, Local-First Academic Integrity, Research Verification & Structural Formatting Platform**
-  
+  <img src="apps/desktop/src/assets/hero.png" alt="OTIF" width="140">
+
   [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
   [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://python.org)
   [![FastAPI](https://img.shields.io/badge/FastAPI-0.115+-green.svg)](https://fastapi.tiangolo.com)
   [![React](https://img.shields.io/badge/React-19+-61DAFB.svg)](https://react.dev)
   [![Tauri](https://img.shields.io/badge/Tauri-2.0+-FFC131.svg)](https://tauri.app)
+  [![Platform](https://img.shields.io/badge/Platform-Windows%20Desktop-blue.svg)](#installation)
   [![Neon](https://img.shields.io/badge/Neon-PostgreSQL-purple.svg)](https://neon.tech)
 </div>
 
 ---
 
-## 🌟 What is OTIF?
+## What is OTIF?
 
-**OTIF (OpenThesis Integrity Fabric)** is an autonomous, open-source desktop and web platform designed to elevate academic integrity, research verification, and publication workflows. Rather than treating scholarly writing as generic copywriting, **OTIF elevates the researcher's authentic academic voice** while enforcing rigorous compliance standards.
+**OTIF (OpenThesis Integrity Fabric)** is an open-source, desktop-first academic research integrity platform that helps doctoral candidates, post-graduate researchers, and academics:
 
-OTIF operates on a strict **1 Project = 1 Document** workspace model, keeping your thesis, dissertation, or manuscript completely secure on your local machine using local SQLite storage and local AI inference (Ollama), while synchronizing structured intelligence rules with a global **Living Skill Engine**.
+- **Detect AI-written patterns** in their own manuscripts before submission
+- **Assess and reduce plagiarism risk** through real-time structural analysis
+- **Strengthen originality** by scoring literature gap, artefact contribution, and methodological boundaries
+- **Preserve citations byte-identically** during any revision workflow
+- **Export publication-ready DOCX/PDF** with chapter-level editing and themed academic formatting
+- **Generate formal CRediT AI Disclosure Statements** for peer-reviewed journal submission compliance
 
----
-
-## 🔥 Key Features
-
-### 1. 📂 1:1 Project Workspace & Structured Review Log
-- **Dedicated Project Scope**: Each project is bound to exactly one research document (1:1 mapping).
-- **Immutable Audit Thread**: Every action—file upload, preflight verification run, similarity score, improvement plan, revision diff, and diagram generation—is appended to a persistent local SQLite event log (`project_thread`).
-- **Complete Verification Audit Trail**: Proves scholarly rigor and authentic authorship progression from early draft to final thesis submission.
-
-### 2. 🛡️ Strict Preflight Verification & AI Gates
-- **🌐 Active Internet Gate**: Analysis is blocked if scholarly validation infrastructure (such as CrossRef or open research APIs) is unreachable, guaranteeing that all citation checks and DOI validations run against live global registries.
-- **🤖 Active AI Model Gate**: Automated revision generation and diagram structuring are blocked unless an approved local (Ollama) or cloud AI provider is actively connected.
-- **Preflight Scoring Matrix**: Scored across 86 intelligence rules spanning **Originality**, **Authenticity**, **Scholarly Citations**, **Formatting Norms**, and **Research Quality (5-Dimension Matrix)**.
-
-### 3. 🔬 Breakthrough Innovation: Integrity-Preserving Revision & Deterministic Citation Locking
-- **Deterministic Citation Locking**: Extracts all DOIs, author-date citations, and numerical reference marks into immutable placeholder tokens (`[[CIT_LOCK_...]]`) before revision, guaranteeing byte-identical citation preservation.
-- **Automated CRediT Disclosure Generator**: One-click generation of publication-ready CRediT AI Contribution & Disclosure Statements (`📜 CRediT Statement (.md)`) derived directly from your immutable project audit trail.
-- **Detailed Preflight Report Export**: Export a comprehensive markdown report (`📥 Download Full Report (.md)`) containing evaluation matrices, chapter signals, repository hits, and exact actionable plans for doctoral review committees.
-
-### 4. 📐 Dynamic Themed Diagram Studio
-- **Automated Conceptual Modeling**: Transforms approved improvement plans into structured Mermaid diagrams (`academic`, `method_flow`, or `conceptual_model`).
-- **4 Academic Design Themes**:
-  - 🔵 **Classic Blue**: Standard IEEE / ACM engineering color hierarchy.
-  - ✒️ **Mono Formal**: High-contrast, monochromatic serif layout tailored for university print theses.
-  - 🌿 **Emerald Academic**: Clean teal and green palette for life sciences and environmental studies.
-  - 🍷 **Maroon Submission**: Rich university submission styling with dignified maroon accents.
-- **Interactive Source Editor**: Inspect, modify, and fine-tune generated Mermaid source code before locking it with one-click **Save & Approve**.
-
-### 5. 🧠 The Living Skill Engine & Community Intelligence
-- **Antivirus-Style Definition Pulls**: On startup, OTIF pulls the newest academic detection rules, citation schemas, and authenticity rules from Neon PostgreSQL.
-- **Anonymous Pattern Contribution**: When you approve an AI improvement, OTIF shares *only the structural skill pattern* (rule code + confidence delta) with the global community database—**never your thesis text, citations, or author identity**.
-- **Research Privacy Guarantee**: Opt-in contribution switch enabled by default with full transparency: *your research stays private; the community gets smarter.*
-
-### 6. 📚 Multi-Database Scholarly Verification
-Verifies claims, citations, and research gaps against 8+ free open-access academic repositories:
-- **OpenAlex** (300M+ academic works)
-- **CrossRef** (DOI validity & metadata)
-- **arXiv & CORE** (Preprints & full-text open access)
-- **Semantic Scholar & Europe PMC** (Citation graphs & biomedical literature)
+OTIF is built on a strict **1 Project = 1 Document** model. Your unpublished thesis stays on your local machine.
 
 ---
 
-## 🛡️ Active Ethical Boundaries & Research Integrity
+## Installation (Windows Desktop)
 
-OTIF is built on strict design-science ethical principles. Unlike commercial or evasion-focused tools, OTIF enforces defensible academic integrity boundaries across every workflow:
+> **Platform:** Windows standalone installer is available today. macOS and Linux CI builds are configured, pending testing.
 
-1. **Deterministic Citation Preservation**: Every DOI, author-date reference, and bracketed citation is extracted into immutable token placeholders before revision. No reference can ever be dropped, invented, or distorted.
-2. **Zero Data Fabrication**: OTIF refuses to invent empirical findings, statistical observations, or synthetic sources.
-3. **Automated CRediT AI Disclosure**: Every analysis and revision event is immutably appended to your local SQLite project thread, allowing one-click generation of formal CRediT & AI Tools Disclosure Statements required by peer-reviewed academic journals.
-4. **Local-First Data Privacy**: Your unpublished thesis never leaves your hardware (`data/otif_local.db` + local Ollama inference).
+### Download the Installer (Recommended)
 
----
+1. Go to **[Releases](https://github.com/mohammadquasif/OTIF/releases)**
+2. Download `OTIF_Setup_x64.exe`
+3. Run the installer — OTIF opens as a native desktop window, no browser required
+4. Launch Ollama locally for AI revision, or configure a cloud key in Settings
 
-## 🚀 Step-by-Step Installation & Setup Guide
+### Run from Source
 
-### 💻 For End-Users: Standalone Desktop App (Zero Configuration)
-**End-users do NOT need to clone repositories, configure Python virtual environments, or start command-line servers.**
-
-<div align="center">
-
-[![Download Windows (.exe)](https://img.shields.io/badge/Download-Windows_Installer_(.exe)-0078D4?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/mohammadquasif/OTIF/releases/latest)
-[![Download macOS (.dmg)](https://img.shields.io/badge/Download-macOS_Installer_(.dmg)-000000?style=for-the-badge&logo=apple&logoColor=white)](https://github.com/mohammadquasif/OTIF/releases/latest)
-[![Download Linux (.AppImage)](https://img.shields.io/badge/Download-Linux_(.AppImage)-FCC624?style=for-the-badge&logo=linux&logoColor=black)](https://github.com/mohammadquasif/OTIF/releases/latest)
-
-</div>
-
-#### Installation Steps:
-1. **Download**: Click one of the buttons above or go to [GitHub Releases](https://github.com/mohammadquasif/OTIF/releases/latest) and download the installer for your OS (`OTIF_Setup.exe` for Windows).
-2. **Install**: Run the installer. It will install the application along with all necessary bundled dependencies.
-3. **Launch**: Open **OTIF** from your Desktop or Start Menu.
-4. **Auto-Start**: Behind the scenes, the native desktop application automatically starts the local Python backend API and SQLite workspace service in the background—**ready for instant analysis**.
-
----
-
-### 🛠️ For Developers & Contributors: Building from Source
-
-If you wish to modify the source code or compile the native desktop application yourself, follow these steps:
-
-#### System Prerequisites
-Ensure your development machine has:
-- **Git**
-- **Python 3.11+**
-- **Node.js 20+** & **npm**
-- **Rust & Cargo** (required by Tauri v2 compiler)
-- **Ollama** *(optional, for local offline AI models)*
-
-#### Step 1: Clone the Repository
 ```bash
 git clone https://github.com/mohammadquasif/OTIF.git
 cd OTIF
-```
 
-#### Step 2: Set Up & Test the Backend Engine
-```bash
+# Backend
 cd backend
-
-# Create and activate virtual environment
 python -m venv .venv
-# Windows PowerShell:
 .\.venv\Scripts\Activate.ps1
-# macOS / Linux:
-# source .venv/bin/activate
-
-# Install backend dependencies (from pyproject.toml)
 pip install -e .
-```
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
-#### Step 3: Launch in Native Desktop View (No Browser Needed!)
-To run OTIF as a native desktop application window (exactly how end-users see it, without opening a web browser):
-```bash
-# Navigate to the desktop app folder
+# Desktop
 cd ../apps/desktop
-
-# Install frontend UI dependencies
 npm install
-
-# Launch native OS desktop window
 npm run desktop:dev
 ```
-*(Running `npm run desktop:dev` boots the Tauri container and opens a standalone OS desktop window directly on your screen).*
-
-If you want to run only the browser-based web view for quick UI debugging:
-```bash
-npm run dev
-```
-
-#### Step 4: Compiling Standalone Installers & Populate GitHub Releases
-To generate the standalone `.exe` installer locally on your PC:
-```bash
-npm run desktop:build
-```
-*The compiled installer will be saved inside `apps/desktop/src-tauri/target/release/bundle/nsis/OTIF_Setup.exe`.*
-
-> [!TIP]
-> **Populating GitHub Releases**: We have included an automated GitHub Actions workflow (`.github/workflows/release.yml`). When repository maintainers push a git tag (e.g. `git tag v1.0.0` and `git push origin v1.0.0`), GitHub automatically compiles the native `.exe`, `.dmg`, and `.AppImage` installers in the cloud and attaches them to the **GitHub Releases** page.
 
 ---
 
-## 💡 Step-by-Step User Workflow
+## What is Currently Built
 
-1. **Launch OTIF & Verify Status**: Check the top-right status pills. Ensure the **Online** pill confirms active scholarly verification infrastructure and your **AI Provider** (e.g., local Ollama or cloud Gemini/OpenAI) is ready.
-2. **Create a Project Workspace**: Navigate to the **Projects** tab. Click **Start a New Project**, enter your thesis or chapter title, select your document type (e.g., *PhD Thesis*), and pick your formatting standard (e.g., *UGC Thesis* or *APA 7*).
-3. **Upload Document**: Click **Browse Local Files** inside your project workspace and upload your PDF, DOCX, or TXT file.
-4. **Run Verification Stream**: Watch real-time streaming verification logs as OTIF executes preflight checks across 86 rules (plagiarism patterns, AI flat-line phrasing, hedging density, and citation mismatches).
-5. **Review Findings & Select Improvements**: Review the generated **Improvement Plan**. Tick the specific items you wish to improve.
-6. **Generate Themed Diagrams**: Enable the checkbox for **Generate diagram from plan**, select your preferred style (*Academic Top-Down* or *Method Flow*), and choose an academic design theme (*Classic Blue*, *Mono Formal*, etc.).
-7. **Approve AI Rewrite**: Click **Approve selected for AI rewrite**. OTIF processes the rewrite, logs the approval to your immutable review thread, and renders the editable Mermaid diagram.
-8. **Contribute to Research Quality**: In the **Community DB** tab, review detected skill discoveries and approve them to anonymously share structural detection patterns with researchers worldwide.
+### Backend Engine
+
+| Module | Status |
+|:---|:---:|
+| Document Ingestion (.docx, .pdf, .txt) | DONE |
+| 86-Rule Skill Engine (Neon sync) | DONE |
+| Preflight Scoring Pipeline (6 dimensions) | DONE |
+| 5-Dimension Originality Evidence Matrix | DONE |
+| Chapter Detection and Independent Scoring | DONE |
+| Research Question Traceback (RQ Score) | DONE |
+| Epistemic Hedging Density Analysis | DONE |
+| Citation Metrics (DOI, coverage, quality) | DONE |
+| Near-Duplicate Paragraph Detection | DONE |
+| Burstiness and Voice Analysis | DONE |
+| Deterministic Citation Locking | DONE |
+| Multi-Source Research Verification (6 APIs) | DONE |
+| Prioritized Improvement Plan Generator | DONE |
+| Integrity-Preserving Revision (Ollama + Cloud) | DONE |
+| Chapter-Level Approved Rewriting | DONE |
+| Mermaid Diagram Studio | DONE |
+| DOCX Export with 4 Academic Themes | DONE |
+| PDF Export | DONE |
+| CRediT AI Disclosure Statement Generator | DONE |
+| Immutable Audit Thread (SQLite) | DONE |
+| Academic Integrity Certificate | DONE |
+
+### Desktop App (Windows)
+
+| Feature | Status |
+|:---|:---:|
+| Native Windows Desktop (.exe installer) | DONE |
+| Real-time streaming analysis (SSE) | DONE |
+| Chapter-by-chapter score breakdown | DONE |
+| Research connector API hits panel | DONE |
+| Active Ethical Boundaries panel | DONE |
+| Improvement Plan with per-item approval | DONE |
+| Download Full Report (.md) | DONE |
+| Download CRediT Statement (.md) | DONE |
+| Diagram Studio + 4 academic themes | DONE |
+| Living Skill Engine (sync + last-sync time) | DONE |
+| AI provider settings (Ollama/OpenAI/DeepSeek/Gemini) | DONE |
+| Privacy mode controls | DONE |
+| macOS / Linux installers | IN PROGRESS |
 
 ---
 
-## 🔍 SEO & AI Search Indexing Keywords
+## How the Advanced Report Works
 
-To assist academic researchers, university departments, PhD scholars, and scientific developers in discovering this open-source tool via AI search engines (ChatGPT Search, Perplexity AI, Claude Search, Google Gemini Search) and traditional search engines, OTIF addresses the following core research areas:
+### Preflight Score Dashboard — 6 Dimensions
 
-- **Academic Plagiarism & AI Detection**: Open source academic integrity checker, turnitin alternative free, local plagiarism checker for phd thesis, open source AI detector for research papers, bypass AI detection ethically, academic voice humanizer tool.
-- **Thesis & Dissertation Formatting**: UGC thesis formatting tool software, APA 7 citation checker automated, IEEE paper format compliance checker, dissertation formatting software open source, shodhganga thesis compliance AI.
-- **Local & Offline AI Research Tools**: Local LLM academic writing assistant, Ollama thesis checker, private AI research paper editor, offline scholarly writing verification, self-hosted academic writing software.
-- **Automated Research Diagrams**: Mermaid diagram generator for research papers, thesis conceptual model auto-generator, academic flow diagram builder themed, scholarly figure generator AI.
-- **Scholarly Verification & Citations**: CrossRef DOI validator software, OpenAlex research gap finder, academic citation reference mismatch detector, research question traceback verification AI.
+| Dimension | What It Measures | Direction |
+|:---|:---|:---|
+| Plagiarism Risk | Near-duplicate pairs + citation gaps + quote density | Lower = Better |
+| Originality Score | Evidence Matrix (60%) + heuristic blend (40%) | Higher = Better |
+| Citation Quality | Coverage, DOI presence, reference section, format | Higher = Better |
+| Humanization Score | Burstiness, researcher voice, passive ratio, template openers | Higher = Better |
+| AI Writing Risk | Template openers + low burstiness + banned phrase density | Lower = Better |
+| Structure Signal | Word depth, vocabulary uniqueness, chapter boundaries | Higher = Better |
+
+### Originality Evidence Matrix — 5 Dimensions (0-100)
+
+Each dimension scored 0, 10, or 20:
+
+1. **Literature Gap** — Explicit gap language backed by 5+ citations
+2. **Applied Integration** — Established theoretical models (TOGAF, TAM, UTAUT, etc.)
+3. **Artefact Contribution** — Named framework/model components
+4. **Methodological Boundary** — Stated limitations, scope exclusions
+5. **Practical Implication** — Actionable practitioner recommendations
+
+### Research Quality Checks
+
+- **RQ Traceback Score** — Auto-detects Research Questions and checks if each is answered in findings/discussion
+- **Hedging Density** — Flags over-assertive (< 4/1000 words) and excessive (> 20/1000 words) hedge language
+
+### Chapter-Wise Page-Level Audit
+
+- Independently scores up to 12 chapters
+- Each chapter: AI risk, originality, citation signal, structure signal
+- Generates page-range-specific improvement items (e.g., Revise pages 45-67 for citation support)
+
+### Live Research Connector Evidence
+
+Queries 6 open academic repositories concurrently:
+- arXiv, CrossRef, Europe PMC, Zenodo, Semantic Scholar, OpenAlex
+- Returns matching papers with titles, years, URLs
+- Flags possible similarity risk matches for manual review
+
+### Prioritized Improvement Plan
+
+Every weakness automatically generates an action item with:
+- Priority (high / medium)
+- Exact action describing what to change
+- Evidence showing the specific score that triggered it
+- Page range for chapter-level items
+- AI requirement flag
+
+The plan drives Integrity-Preserving Revision:
+1. Select items to address and approve
+2. OTIF locks all citations as immutable placeholder tokens
+3. AI revises only the approved scope
+4. Citations restored byte-identically from the lock map
+5. Revision preview shown; author retains full editorial control
 
 ---
 
-## 📄 License & Contributing
+## How OTIF Differs From Competitors
 
-OTIF is released under the **Apache License 2.0** (`Apache-2.0`). It is 100% free and open for individual academic research, university adoption, open-source contribution, and enterprise integration.
+| Capability | Turnitin | Grammarly | StealthWriter / AI Humanizer | OTIF |
+|:---|:---:|:---:|:---:|:---:|
+| Plagiarism detection | vs. vendor DB | No | No | Local + 6 open APIs |
+| AI writing detection | Flag only | No | No | Risk score + analysis |
+| Constructive improvement plan | No | Grammar only | No | Prioritized, evidence-based |
+| Citation preservation | N/A | No | Destroys citations | Byte-identical locking |
+| Originality evidence matrix | No | No | No | 5-dimension scored |
+| Research question traceback | No | No | No | Auto-detected |
+| Live scholarly API verification | No | No | No | CrossRef, OpenAlex, arXiv+ |
+| Thesis text stays local | No — uploaded | No — cloud | No — cloud logged | 100% local |
+| DOCX/PDF export with themes | No | No | No | 4 academic themes |
+| CRediT AI disclosure statement | No | No | No | Auto-generated |
+| Immutable revision audit trail | No | No | No | Local SQLite |
+| Diagram generation | No | No | No | Mermaid Studio |
+| Format compliance (APA/UGC/IEEE) | Partial | Basic | No | 7 formats |
 
-We welcome pull requests from PhD scholars, software engineers, and research institutions! See our [CONTRIBUTING.md](CONTRIBUTING.md) guide to submit new intelligence rules or frontend enhancements.
+### Key Differentiators
 
-<div align="center">
-  **Built with ❤️ for Global Academic Integrity & Open Research Excellence.**
-</div>
+**vs. Turnitin:** Turnitin stores your unpublished thesis permanently in their vendor database and provides no constructive guidance. OTIF gives you an improvement plan, keeps your text local, and never submits to any external repository.
+
+**vs. Grammarly:** Grammarly polishes grammar and copywriting. It has no awareness of doctoral formatting norms, cannot verify DOIs against CrossRef, cannot detect AI patterns in academic prose, and cannot generate research diagrams.
+
+**vs. StealthWriter / AI Humanizer tools:** These tools rewrite to evade AI detectors and routinely corrupt academic citations. OTIF explicitly refuses to bypass detectors. It improves authentic scholarly voice with all citations locked in place.
+
+---
+
+## Ethical Boundaries
+
+1. **No Data Fabrication** — OTIF never generates empirical findings, statistics, or synthetic citations
+2. **No Evasion Tooling** — OTIF will not generate text designed to defeat specific detectors
+3. **Deterministic Citation Locking** — Every DOI and reference is byte-locked before any AI revision
+4. **Approval-Gated Revision** — No changes applied without explicit per-item user selection
+5. **Immutable Audit Log** — All events timestamped and stored locally
+6. **CRediT Compliance** — Every revision logged for transparent journal AI disclosure
+
+---
+
+## Known Gaps
+
+| Gap | Notes |
+|:---|:---|
+| No external corpus comparison | Plagiarism risk is local; no full-internet similarity database like Turnitin |
+| AI detection is risk-signal only | Structural risk indicator, not a certified detection output |
+| macOS / Linux installers | CI configured, pending end-to-end testing |
+| PDF generation | Requires LibreOffice or LaTeX; falls back to DOCX only if absent |
+| No web/SaaS mode | Desktop-only today |
+
+---
+
+## Skill Engine
+
+8 skill packs synchronized from Neon PostgreSQL on startup:
+
+| Pack | Focus |
+|:---|:---|
+| 01_plagiarism_check | Banned phrases, near-duplicate signals |
+| 02_humanization | Researcher voice markers, authenticity patterns |
+| 03_reduce_ai_writing | AI writing signatures, template opener detection |
+| 04_writing_improvement | Clarity, transition, vocabulary |
+| 05_design_formatting | TOC, headings, figure/table captions |
+| 06_research_quality | RQ alignment, hedging, contribution clarity |
+| 07_citation | Citation schema, DOI format, completeness |
+| 08_design_rewrite | Chapter diagram and structure revision |
+
+---
+
+## Academic Format Compliance
+
+APA 7, UGC (India), IEEE, Harvard, Springer, Elsevier, European Thesis
+
+---
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE).
+
+---
+
+*OTIF is a local-first research integrity assistant. It is not a plagiarism detection service, and it is not an AI writing evasion tool. It is designed to help researchers improve the quality, clarity, and integrity of their scholarly work.*
