@@ -82,12 +82,12 @@ fn read_log_tail(path: &Path) -> String {
     }
 }
 
-#[tauri::command]
-fn read_startup_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
-    let data_dir = app_data_dir(&app_handle);
+/// BUG 7 FIX: Extract the log-reading logic into a private helper so both
+/// read_startup_logs (tauri::command) and check_backend_services can call it
+/// without a fragile self-referential Tauri command invocation.
+fn collect_log_output(data_dir: &Path) -> String {
     let files = ["startup.log", "backend.stderr.log", "backend.stdout.log"];
     let mut output = format!("OTIF diagnostic logs\nFolder: {}\n", data_dir.display());
-
     for file_name in files {
         let path = data_dir.join(file_name);
         output.push_str(&format!("\n\n===== {file_name} =====\n"));
@@ -97,8 +97,13 @@ fn read_startup_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
             output.push_str("Log file has not been created yet.");
         }
     }
+    output
+}
 
-    Ok(output)
+#[tauri::command]
+fn read_startup_logs(app_handle: tauri::AppHandle) -> Result<String, String> {
+    let data_dir = app_data_dir(&app_handle);
+    Ok(collect_log_output(&data_dir))
 }
 
 #[tauri::command]
@@ -107,8 +112,8 @@ fn check_backend_services(app_handle: tauri::AppHandle) -> Result<String, String
     let port = backend_port();
     let port_open = is_backend_port_open();
     let current_api = backend_has_current_api();
-    let support_url = support_browser_url();
-    let localhost_url = format!("http://localhost:{port}/app");
+    // BUG 4 mirror fix: use /docs (FastAPI Swagger UI) not /app which doesn't exist
+    let support_url = format!("http://127.0.0.1:{port}/docs");
     let status = if !port_open {
         "Backend port is not listening."
     } else if current_api {
@@ -118,10 +123,10 @@ fn check_backend_services(app_handle: tauri::AppHandle) -> Result<String, String
     };
 
     Ok(format!(
-        "OTIF backend service check\n\nStatus: {status}\nPort: 127.0.0.1:{port}\nCurrent API: {}\nBrowser fallback: {support_url}\nLocalhost URL: {localhost_url}\nLog folder: {}\n\n{}",
+        "OTIF backend service check\n\nStatus: {status}\nPort: 127.0.0.1:{port}\nCurrent API: {}\nBrowser fallback: {support_url}\nLog folder: {}\n\n{}",
         if current_api { "available" } else { "not available" },
         data_dir.display(),
-        read_startup_logs(app_handle)?
+        collect_log_output(&data_dir)
     ))
 }
 

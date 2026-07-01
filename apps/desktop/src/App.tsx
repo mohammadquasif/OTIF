@@ -657,7 +657,8 @@ function App() {
   }, [loadProjects, refreshData]);
 
   const openBrowserFallback = useCallback(async () => {
-    const fallbackUrl = `${apiRoot}/app`;
+    // BUG 4 FIX: /app doesn't exist on FastAPI; /docs is the built-in Swagger UI always available
+    const fallbackUrl = `${apiRoot}/docs`;
     try {
       const invoke = window.__TAURI__?.core?.invoke;
       if (invoke) {
@@ -731,13 +732,15 @@ function App() {
     if (currentProject) {
       void loadThread(currentProject.id);
       void loadDiscoveries(currentProject.id);
-      // Auto-sync skills if last sync > 1h or never
+      // BUG 6 FIX: Only auto-sync when Neon is actually connected.
+      // When offline (common for local-only users), this caused noisy
+      // error state that required manual dismissal.
       const lastSync = currentProject.skill_sync_at;
-      if (!lastSync || Date.now() - new Date(lastSync).getTime() > 3_600_000) {
+      if (neonConnected && (!lastSync || Date.now() - new Date(lastSync).getTime() > 3_600_000)) {
         void triggerSkillSync(currentProject.id, 'project_open');
       }
     }
-  }, [currentProject, loadThread, loadDiscoveries]);
+  }, [currentProject, loadThread, loadDiscoveries, neonConnected]);
 
   // ─────────────────────────────────────────────────────────────
   // Project actions
@@ -962,6 +965,7 @@ function App() {
 
   const downloadReport = () => {
     if (!scores && improvementPlan.length === 0) return;
+    const filename = `OTIF_Detailed_Report_${uploadResult?.filename ?? 'thesis'}_${new Date().toISOString().slice(0, 10)}.md`;
     const content = `# OTIF Comprehensive Academic Verification & Improvement Report
 Generated: ${new Date().toLocaleString()}
 Document: ${uploadResult?.filename ?? 'Thesis Document'} | Type: ${docType} | Target Norm: ${targetFormat.toUpperCase()}
@@ -1005,13 +1009,19 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 ---
 *Report exported from OTIF Native Desktop Engine (Local-First Research Integrity & Verification Platform)*
 `;
+    // BUG 5 FIX: Tauri WebView2 blocks programmatic anchor.click() on Blob URLs.
+    // Use window.open() on a blob: URL — works in both WebView2 and browsers.
+    // In the installed desktop app, this opens in the OS default browser which
+    // correctly triggers the download dialog.
     const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `OTIF_Detailed_Report_${uploadResult?.filename ?? 'thesis'}_${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = filename;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    // Allow a tick for the download to start before revoking
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
   };
 
   const downloadCreditStatement = async () => {
@@ -1243,10 +1253,12 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     artifact.download_url.startsWith('http') ? artifact.download_url : `${apiRoot}${artifact.download_url}`;
 
   const downloadArtifact = (artifact: FinalizedArtifact) => {
-    const a = document.createElement('a');
-    a.href = artifactHref(artifact);
-    a.download = artifact.filename;
-    a.click();
+    // BUG 3 FIX: Tauri WebView2 blocks programmatic anchor.click() on localhost URLs.
+    // window.open() with '_blank' works correctly in both WebView2 and regular browsers:
+    // - In Tauri desktop: opens the OS default browser which handles the download
+    // - In browser: opens a new tab which triggers the file download from the backend
+    const href = artifactHref(artifact);
+    window.open(href, '_blank', 'noopener,noreferrer');
   };
 
   const approveDiscovery = async (discoveryId: string) => {
@@ -2426,7 +2438,8 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                       <button
                                         className="btn btn-primary btn-sm"
                                         onClick={() => void draftChapterRewrite()}
-                                        disabled={isRewritingChapter || !approvalResult}
+                                        disabled={isRewritingChapter || approvedScopeIds.length === 0}
+                                        title={approvedScopeIds.length === 0 ? 'Approve at least one improvement item first' : 'Draft AI-assisted revision for this chapter'}
                                       >
                                         <Bot size={14} />
                                         {isRewritingChapter ? 'Drafting...' : 'Draft AI revision'}
@@ -2629,6 +2642,13 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         {/* ── COMMUNITY TAB ── */}
         {activeTab === 'community' && (
           <div className="grid-2 animate-up delay-1">
+            {/* BUG 2 FIX: Approve/Reject discovery silently fails without active project */}
+            {!currentProject && discoveries.length > 0 && (
+              <div className="alert alert-error" style={{ gridColumn: '1 / -1', marginBottom: '16px' }}>
+                <AlertCircle size={16} />
+                <span>Open a project from the Projects tab to approve or reject skill discoveries.</span>
+              </div>
+            )}
             <div className="settings-group">
               <div className="settings-group-title">
                 <Database size={16} /> Neon Skill Sync
@@ -2989,6 +3009,21 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
           </div>
         )}
       </main>
+
+      {/* UX-3: Persistent browser fallback URL in footer — always visible so researchers
+          can copy it if the desktop WebView freezes or if any functionality fails */}
+      <footer className="app-footer">
+        <span className="footer-fallback-label">🌐 Browser access:</span>
+        <a
+          href={`${apiRoot}/docs`}
+          onClick={(e) => { e.preventDefault(); void openBrowserFallback(); }}
+          className="footer-fallback-url"
+          title="Open OTIF API interface in your default browser"
+        >
+          {apiRoot}/docs
+        </a>
+        <span className="footer-version">OTIF v1.0.21 · Free &amp; Open Source · Apache-2.0</span>
+      </footer>
     </div>
   );
 }

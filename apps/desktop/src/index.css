@@ -2137,3 +2137,49 @@ select.settings-input {
     margin-left: 0;
   }
 }
+
+/* ── Persistent Browser Fallback Footer (UX-3) ─────────────────── */
+.app-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 20px;
+  background: hsla(225, 25%, 6%, 0.9);
+  border-top: 1px solid var(--border-default);
+  font-size: 11px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.footer-fallback-label {
+  color: var(--text-secondary);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.footer-fallback-url {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 11px;
+  color: var(--accent-cyan);
+  text-decoration: none;
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid hsla(191, 90%, 55%, 0.25);
+  background: hsla(191, 90%, 55%, 0.06);
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.footer-fallback-url:hover {
+  background: hsla(191, 90%, 55%, 0.15);
+  border-color: hsla(191, 90%, 55%, 0.5);
+  color: hsl(191, 90%, 70%);
+}
+
+.footer-version {
+  margin-left: auto;
+  color: var(--text-disabled);
+  white-space: nowrap;
+}

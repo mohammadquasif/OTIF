@@ -14,9 +14,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # ── Application ──────────────────────────────────────────
+    # ── Application ────────────────────────────────────────────────────────
     APP_NAME: str = "OTIF"
-    APP_VERSION: str = "1.0.20"
+    APP_VERSION: str = "1.0.21"
     DEBUG: bool = False
     HOST: str = "0.0.0.0"
     PORT: int = 8000
