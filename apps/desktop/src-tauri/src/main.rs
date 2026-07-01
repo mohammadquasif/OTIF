@@ -1,5 +1,7 @@
-﻿use std::{
+use std::{
     env,
+    fs::{self, File, OpenOptions},
+    io::Write,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
@@ -21,67 +23,187 @@ fn app_data_dir(app_handle: &tauri::AppHandle) -> PathBuf {
         .unwrap_or_else(|_| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")))
 }
 
-fn packaged_backend_path(app_handle: &tauri::AppHandle) -> Option<PathBuf> {
-    let exe = env::current_exe().ok()?;
-    let exe_dir = exe.parent()?;
-    let suffix = if cfg!(target_os = "windows") { ".exe" } else { "" };
-    let candidates = [
-        exe_dir.join(format!("otif-backend{}", suffix)),
-        exe_dir.join("binaries").join(format!("otif-backend{}", suffix)),
-        app_handle.path().resource_dir().ok()?.join(format!("otif-backend{}", suffix)),
-        app_handle.path().resource_dir().ok()?.join("binaries").join(format!("otif-backend{}", suffix)),
-    ];
+fn write_startup_log(data_dir: &Path, message: &str) {
+    let _ = fs::create_dir_all(data_dir);
+    let log_path = data_dir.join("startup.log");
+    if let Ok(mut file) = OpenOptions::new().create(true).append(true).open(log_path) {
+        let _ = writeln!(file, "{message}");
+    }
+}
+
+fn packaged_backend_candidates(app_handle: &tauri::AppHandle) -> Vec<PathBuf> {
+    let suffix = if cfg!(target_os = "windows") {
+        ".exe"
+    } else {
+        ""
+    };
+    let mut candidates = Vec::new();
+
+    if let Ok(exe) = env::current_exe() {
+        if let Some(exe_dir) = exe.parent() {
+            candidates.push(exe_dir.join(format!("otif-backend{suffix}")));
+            candidates.push(
+                exe_dir
+                    .join("binaries")
+                    .join(format!("otif-backend{suffix}")),
+            );
+            candidates.push(
+                exe_dir
+                    .join("resources")
+                    .join(format!("otif-backend{suffix}")),
+            );
+            candidates.push(
+                exe_dir
+                    .join("resources")
+                    .join("binaries")
+                    .join(format!("otif-backend{suffix}")),
+            );
+        }
+    }
+
+    if let Ok(resource_dir) = app_handle.path().resource_dir() {
+        candidates.push(resource_dir.join(format!("otif-backend{suffix}")));
+        candidates.push(
+            resource_dir
+                .join("binaries")
+                .join(format!("otif-backend{suffix}")),
+        );
+    }
+
+    candidates
+}
+
+fn packaged_backend_path(app_handle: &tauri::AppHandle, data_dir: &Path) -> Option<PathBuf> {
+    let candidates = packaged_backend_candidates(app_handle);
+    for path in &candidates {
+        write_startup_log(
+            data_dir,
+            &format!(
+                "[OTIF] backend candidate: {} exists={}",
+                path.display(),
+                path.exists()
+            ),
+        );
+    }
     candidates.into_iter().find(|p| p.exists())
 }
 
+fn stage_packaged_backend(source: &Path, data_dir: &Path) -> Result<PathBuf, String> {
+    let suffix = if cfg!(target_os = "windows") {
+        ".exe"
+    } else {
+        ""
+    };
+    let bin_dir = data_dir.join("bin");
+    fs::create_dir_all(&bin_dir).map_err(|e| format!("Failed to create backend bin dir: {e}"))?;
+    let target = bin_dir.join(format!("otif-backend{suffix}"));
+    if let Err(error) = fs::copy(source, &target) {
+        if !target.exists() {
+            return Err(format!(
+                "Failed to stage backend from {} to {}: {error}",
+                source.display(),
+                target.display()
+            ));
+        }
+    }
+
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        let mut permissions = fs::metadata(&target)
+            .map_err(|e| format!("Failed to read staged backend metadata: {e}"))?
+            .permissions();
+        permissions.set_mode(0o755);
+        fs::set_permissions(&target, permissions)
+            .map_err(|e| format!("Failed to make staged backend executable: {e}"))?;
+    }
+
+    Ok(target)
+}
+
 fn python_backend_command(repo_root: &Path) -> Option<(String, Vec<String>, PathBuf)> {
-    // Windows venv
-    let python_win = repo_root.join("backend").join(".venv").join("Scripts").join("python.exe");
+    let python_win = repo_root
+        .join("backend")
+        .join(".venv")
+        .join("Scripts")
+        .join("python.exe");
     if python_win.exists() {
         return Some((
             python_win.to_string_lossy().to_string(),
-            vec!["-m".into(), "uvicorn".into(), "app.main:app".into(),
-                 "--host".into(), "127.0.0.1".into(), "--port".into(), backend_port()],
+            vec![
+                "-m".into(),
+                "uvicorn".into(),
+                "app.main:app".into(),
+                "--host".into(),
+                "127.0.0.1".into(),
+                "--port".into(),
+                backend_port(),
+            ],
             repo_root.join("backend"),
         ));
     }
-    // Unix venv
-    let python_unix = repo_root.join("backend").join(".venv").join("bin").join("python");
+
+    let python_unix = repo_root
+        .join("backend")
+        .join(".venv")
+        .join("bin")
+        .join("python");
     if python_unix.exists() {
         return Some((
             python_unix.to_string_lossy().to_string(),
-            vec!["-m".into(), "uvicorn".into(), "app.main:app".into(),
-                 "--host".into(), "127.0.0.1".into(), "--port".into(), backend_port()],
+            vec![
+                "-m".into(),
+                "uvicorn".into(),
+                "app.main:app".into(),
+                "--host".into(),
+                "127.0.0.1".into(),
+                "--port".into(),
+                backend_port(),
+            ],
             repo_root.join("backend"),
         ));
     }
     None
 }
 
-fn backend_command(app_handle: &tauri::AppHandle) -> Result<(String, Vec<String>, PathBuf), String> {
-    if let Some(path) = packaged_backend_path(app_handle) {
-        let cwd = path.parent().map(Path::to_path_buf)
+fn backend_command(
+    app_handle: &tauri::AppHandle,
+    data_dir: &Path,
+) -> Result<(String, Vec<String>, PathBuf), String> {
+    if let Some(path) = packaged_backend_path(app_handle, data_dir) {
+        let staged_path = stage_packaged_backend(&path, data_dir)?;
+        write_startup_log(
+            data_dir,
+            &format!("[OTIF] staged backend: {}", staged_path.display()),
+        );
+        let cwd = staged_path
+            .parent()
+            .map(Path::to_path_buf)
             .unwrap_or_else(|| env::current_dir().unwrap_or_else(|_| PathBuf::from(".")));
-        return Ok((path.to_string_lossy().to_string(), vec![], cwd));
+        return Ok((staged_path.to_string_lossy().to_string(), vec![], cwd));
     }
+
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .parent().and_then(Path::parent).map(Path::to_path_buf)
+        .parent()
+        .and_then(Path::parent)
+        .map(Path::to_path_buf)
         .ok_or_else(|| "Could not resolve repository root".to_string())?;
     python_backend_command(&repo_root).ok_or_else(|| {
         "Backend not found. Run the installer or scripts/build_backend_sidecar.ps1.".to_string()
     })
 }
 
-fn wait_for_backend() -> Result<(), String> {
+fn wait_for_backend(data_dir: PathBuf) -> Result<(), String> {
     let port: u16 = backend_port().parse().unwrap_or(18765);
     let start = Instant::now();
-    while start.elapsed() < Duration::from_secs(60) {
+    while start.elapsed() < Duration::from_secs(90) {
         if std::net::TcpStream::connect(("127.0.0.1", port)).is_ok() {
+            write_startup_log(&data_dir, "[OTIF] backend ready");
             return Ok(());
         }
         thread::sleep(Duration::from_millis(500));
     }
-    Err(format!("Backend did not start within 60 s on port {}", port))
+    Err(format!("Backend did not start within 90 s on port {port}"))
 }
 
 fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Result<(), String> {
@@ -89,19 +211,35 @@ fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Resul
     if guard.is_some() {
         return Ok(());
     }
-    let (program, args, cwd) = backend_command(app_handle)?;
+
     let data_dir = app_data_dir(app_handle);
-    std::fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
+    write_startup_log(&data_dir, "[OTIF] starting backend");
+
+    let (program, args, cwd) = backend_command(app_handle, &data_dir)?;
+    write_startup_log(
+        &data_dir,
+        &format!(
+            "[OTIF] spawning backend program={program} cwd={}",
+            cwd.display()
+        ),
+    );
+
+    let stdout = File::create(data_dir.join("backend.stdout.log"))
+        .map_err(|e| format!("Failed to open backend stdout log: {e}"))?;
+    let stderr = File::create(data_dir.join("backend.stderr.log"))
+        .map_err(|e| format!("Failed to open backend stderr log: {e}"))?;
     let child = Command::new(program)
         .args(args)
         .current_dir(cwd)
         .env("OTIF_BACKEND_PORT", backend_port())
         .env("OTIF_DATA_DIR", &data_dir)
         .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stdout(Stdio::from(stdout))
+        .stderr(Stdio::from(stderr))
         .spawn()
         .map_err(|e| format!("Failed to spawn backend: {e}"))?;
+
     *guard = Some(child);
     Ok(())
 }
@@ -121,19 +259,20 @@ fn main() {
         .setup(|app| {
             let handle = app.handle().clone();
             let state = app.state::<BackendProcess>();
-            // Spawn backend immediately — do NOT block the UI thread.
-            // The React splash screen polls /health independently.
             match spawn_backend(&handle, &*state) {
                 Ok(()) => {
+                    let data_dir = app_data_dir(&handle);
                     thread::spawn(move || {
-                        if let Err(e) = wait_for_backend() {
+                        if let Err(e) = wait_for_backend(data_dir.clone()) {
+                            write_startup_log(&data_dir, &format!("[OTIF] backend timeout: {e}"));
                             eprintln!("[OTIF] Backend readiness timeout: {e}");
                         }
                     });
                 }
                 Err(e) => {
+                    let data_dir = app_data_dir(&handle);
+                    write_startup_log(&data_dir, &format!("[OTIF] backend spawn failed: {e}"));
                     eprintln!("[OTIF] Backend spawn failed: {e}");
-                    // Non-fatal: splash screen error state shown after 60 s poll
                 }
             }
             Ok(())
