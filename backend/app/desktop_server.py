@@ -29,6 +29,20 @@ def configure_desktop_environment() -> None:
     os.environ.setdefault("UPLOADS_PATH", str(data_dir / "uploads"))
     os.environ.setdefault("EMBEDDINGS_PATH", str(data_dir / "embeddings"))
     os.environ.setdefault("PROJECTS_PATH", str(data_dir / "projects"))
+    os.environ.setdefault(
+        "CORS_ORIGINS",
+        ",".join(
+            [
+                "http://localhost:5173",
+                "http://127.0.0.1:5173",
+                "http://localhost:3000",
+                "http://127.0.0.1:3000",
+                "http://tauri.localhost",
+                "https://tauri.localhost",
+            ]
+        ),
+    )
+    os.environ.setdefault("CORS_ORIGIN_REGEX", r"https?://(localhost|127\.0\.0\.1|tauri\.localhost)(:\d+)?")
 
     for key in ["UPLOADS_PATH", "EMBEDDINGS_PATH", "PROJECTS_PATH"]:
         Path(os.environ[key]).mkdir(parents=True, exist_ok=True)

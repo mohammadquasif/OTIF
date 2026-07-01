@@ -52,7 +52,7 @@ async def lifespan(app: FastAPI):
     providers = settings.available_providers
     logger.info(f"🤖 Available AI providers: {', '.join(providers)}")
 
-    logger.info("✅ OTIF ready — http://localhost:8000")
+    logger.info(f"✅ OTIF ready — http://{settings.HOST}:{settings.PORT}")
     logger.info("=" * 60)
 
     yield  # Application runs here
@@ -78,6 +78,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins_list,
+    allow_origin_regex=settings.CORS_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
