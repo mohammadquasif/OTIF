@@ -17,6 +17,22 @@ logger = logging.getLogger(__name__)
 _read_pool: asyncpg.Pool | None = None
 _write_pool: asyncpg.Pool | None = None
 
+REQUIRED_TABLES = [
+    "skills",
+    "skill_versions",
+    "skill_rules",
+    "skill_word_lists",
+    "skill_prompts",
+    "skill_thresholds",
+    "skill_packs",
+    "skill_learning_events",
+    "skill_performance",
+    "skill_proposed_rules",
+    "formatting_templates",
+    "research_sources",
+    "release_history",
+]
+
 
 async def create_pools() -> None:
     """Create Neon connection pools on app startup."""
@@ -100,6 +116,44 @@ async def is_connected() -> bool:
         return True
     except Exception:
         return False
+
+
+async def verify_schema() -> dict:
+    """Return Neon schema readiness without mutating the database."""
+    if _read_pool is None:
+        return {
+            "connected": False,
+            "ready": False,
+            "missing_tables": REQUIRED_TABLES,
+            "message": "Neon read pool is not initialized.",
+        }
+    try:
+        async with _read_pool.acquire() as conn:
+            rows = await conn.fetch(
+                """
+                SELECT table_name
+                FROM information_schema.tables
+                WHERE table_schema = 'public'
+                  AND table_name = ANY($1::text[])
+                """,
+                REQUIRED_TABLES,
+            )
+        found = {row["table_name"] for row in rows}
+        missing = [table for table in REQUIRED_TABLES if table not in found]
+        return {
+            "connected": True,
+            "ready": not missing,
+            "missing_tables": missing,
+            "required_tables": REQUIRED_TABLES,
+            "message": "Neon schema ready." if not missing else "Neon schema is missing required tables.",
+        }
+    except Exception as exc:
+        return {
+            "connected": False,
+            "ready": False,
+            "missing_tables": REQUIRED_TABLES,
+            "message": str(exc),
+        }
 
 
 async def execute_read(query: str, *args) -> list[dict]:

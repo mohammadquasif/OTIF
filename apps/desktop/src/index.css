@@ -640,6 +640,64 @@ button.upload-zone:disabled {
   border-bottom: none;
 }
 
+.integrity-grade-panel {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+  padding: var(--sp-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: hsla(225, 20%, 10%, 0.55);
+}
+
+.integrity-grade {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 800;
+  text-transform: capitalize;
+  background: hsla(145, 75%, 55%, 0.12);
+  color: var(--accent-green);
+}
+
+.integrity-grade.needs_integrity_review {
+  background: hsla(352, 85%, 62%, 0.12);
+  color: var(--accent-rose);
+}
+
+.integrity-grade.needs_author_revision {
+  background: hsla(38, 95%, 58%, 0.12);
+  color: var(--accent-amber);
+}
+
+.source-evidence {
+  margin-top: var(--sp-2);
+  padding: var(--sp-2);
+  border: 1px solid var(--border-subtle);
+  border-left: 3px solid var(--accent-cyan);
+  border-radius: var(--r-sm);
+  background: hsla(225, 20%, 8%, 0.45);
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.source-evidence.possible_similarity_risk {
+  border-left-color: var(--accent-rose);
+}
+
+.source-evidence.citation_candidate {
+  border-left-color: var(--accent-amber);
+}
+
+.source-passage {
+  margin-top: var(--sp-1);
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
 .icon-title {
   display: inline-flex;
   align-items: center;
@@ -1193,6 +1251,34 @@ select.settings-input {
   box-shadow: 0 0 0 3px hsla(258, 75%, 55%, 0.15);
 }
 
+.settings-input.input-error {
+  border-color: var(--accent-rose);
+}
+
+.color-input-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: var(--sp-2);
+  align-items: center;
+}
+
+.color-input-row input[type="color"] {
+  width: 48px;
+  height: 42px;
+  padding: 3px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
+  cursor: pointer;
+}
+
+.field-error {
+  display: block;
+  margin-top: 6px;
+  color: var(--accent-rose);
+  font-size: 12px;
+}
+
 /* ── Toggle ─────────────────────────────────────────────────── */
 .toggle {
   width: 44px; height: 24px;
@@ -1442,3 +1528,279 @@ select.settings-input {
 .discovery-confidence { font-size: 11px; color: var(--text-muted); }
 .discovery-actions { display: flex; gap: var(--sp-2); flex-shrink: 0; }
 
+/* Chapter editor and final export */
+.chapter-editor-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.revision-guidance {
+  padding: var(--sp-4);
+  border: 1px solid hsla(191, 90%, 55%, 0.22);
+  border-radius: var(--r-md);
+  background: hsla(191, 90%, 55%, 0.07);
+}
+
+.revision-guidance p {
+  margin: var(--sp-2) 0 0;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.chapter-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
+  gap: var(--sp-4);
+  min-height: 520px;
+}
+
+.chapter-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  overflow-y: auto;
+  max-height: 620px;
+  padding-right: var(--sp-1);
+}
+
+.chapter-tab {
+  width: 100%;
+  text-align: left;
+  padding: var(--sp-3);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color var(--t-fast), background var(--t-fast), color var(--t-fast);
+}
+
+.chapter-tab:hover,
+.chapter-tab.active {
+  color: var(--text-primary);
+  border-color: var(--brand-500);
+  background: hsla(258, 75%, 55%, 0.12);
+}
+
+.chapter-tab span {
+  display: block;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.chapter-tab small {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.chapter-edit-surface {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.chapter-edit-toolbar,
+.compiled-preview-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+.chapter-toolbar-actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.chapter-editor-textarea {
+  width: 100%;
+  min-height: 460px;
+  resize: vertical;
+  padding: var(--sp-4);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-default);
+  background: hsla(225, 20%, 10%, 0.5);
+  color: var(--text-primary);
+  font: 14px/1.7 var(--font-sans);
+}
+
+.chapter-editor-textarea:focus {
+  outline: none;
+  border-color: var(--brand-500);
+  box-shadow: 0 0 0 3px hsla(258, 75%, 55%, 0.15);
+}
+
+.chapter-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid hsla(258, 75%, 55%, 0.24);
+  border-radius: var(--r-md);
+  background: hsla(258, 75%, 55%, 0.08);
+}
+
+.chapter-proposal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  align-items: flex-start;
+  flex-wrap: wrap;
+}
+
+.chapter-proposal pre {
+  max-height: 320px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  font: 13px/1.6 var(--font-mono);
+}
+
+.compiled-preview {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.compiled-preview pre {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: var(--sp-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  font: 13px/1.65 var(--font-mono);
+}
+
+.finalize-output {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.compact-header {
+  padding: 0;
+  border: 0;
+}
+
+.artifact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--sp-3);
+}
+
+.artifact-card {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-4);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.artifact-card:hover {
+  border-color: var(--brand-500);
+  background: hsla(258, 75%, 55%, 0.1);
+}
+
+.artifact-card span {
+  font-weight: 800;
+  color: var(--brand-300);
+}
+
+.artifact-card strong,
+.artifact-card small {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+}
+
+.artifact-card small {
+  color: var(--text-muted);
+}
+
+.preservation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4);
+  border: 1px solid hsla(16, 84%, 55%, 0.2);
+  border-radius: var(--r-md);
+  background: hsla(16, 84%, 55%, 0.07);
+}
+
+.score-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+}
+
+.score-compare {
+  padding: var(--sp-3);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  background: hsla(225, 20%, 10%, 0.42);
+}
+
+.score-compare span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 4px;
+}
+
+.score-compare strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.export-limitations {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-3);
+  border-radius: var(--r-md);
+  background: hsla(38, 92%, 50%, 0.08);
+  border: 1px solid hsla(38, 92%, 50%, 0.2);
+}
+
+.export-limitations span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1024px) {
+  .chapter-editor-layout,
+  .artifact-grid,
+  .score-compare-grid {
+    grid-template-columns: 1fr;
+  }
+}

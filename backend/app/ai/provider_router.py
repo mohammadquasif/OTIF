@@ -1,4 +1,5 @@
 """AI provider configuration, model options, and connectivity checks."""
+import json
 from pathlib import Path
 from typing import Literal
 
@@ -6,6 +7,7 @@ import httpx
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.core.secret_store import protect_secret, restrict_secret_file, unprotect_secret
 
 ProviderId = Literal["ollama", "deepseek", "gemini", "openai"]
 PrivacyMode = Literal["local_only", "selected_paragraph", "selected_chapter", "cloud_allowed"]
@@ -109,7 +111,14 @@ def load_ai_settings(mask_keys: bool = False) -> AISettings:
     config = _env_defaults()
     path = _config_path()
     if path.exists():
-        saved = AISettings.model_validate_json(path.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw_keys = raw.get("api_keys", {})
+        if isinstance(raw_keys, dict):
+            raw["api_keys"] = {
+                provider: unprotect_secret(str(value))
+                for provider, value in raw_keys.items()
+            }
+        saved = AISettings.model_validate(raw)
         config = config.model_copy(update=saved.model_dump(exclude_unset=True))
     if mask_keys:
         config.api_keys = {provider: _masked(key) for provider, key in config.api_keys.items()}
@@ -118,8 +127,25 @@ def load_ai_settings(mask_keys: bool = False) -> AISettings:
 
 def save_ai_settings(new_settings: AISettings) -> AISettings:
     current = load_ai_settings(mask_keys=False)
-    merged = current.model_copy(update=new_settings.model_dump(exclude_unset=True))
-    _config_path().write_text(merged.model_dump_json(indent=2), encoding="utf-8")
+    incoming = new_settings.model_dump(exclude_unset=True)
+    if "api_keys" in incoming and isinstance(incoming["api_keys"], dict):
+        sanitized_keys = dict(current.api_keys)
+        for provider, key in incoming["api_keys"].items():
+            if key and "****" not in key:
+                sanitized_keys[provider] = key
+            elif key == "":
+                sanitized_keys[provider] = ""
+        incoming["api_keys"] = sanitized_keys
+    merged = current.model_copy(update=incoming)
+    path = _config_path()
+    payload = merged.model_dump()
+    payload["api_keys"] = {
+        provider: protect_secret(key)
+        for provider, key in merged.api_keys.items()
+        if key
+    }
+    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    restrict_secret_file(path)
     return load_ai_settings(mask_keys=True)
 
 

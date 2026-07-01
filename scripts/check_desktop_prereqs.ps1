@@ -29,6 +29,21 @@ if (-not (Test-Path -LiteralPath "backend\.venv\Scripts\python.exe")) {
     } else {
         Write-Host "OK: PyInstaller"
     }
+
+    $exportDeps = @(
+        @{ Module = "docx"; Package = "python-docx" },
+        @{ Module = "reportlab"; Package = "reportlab" },
+        @{ Module = "fitz"; Package = "pymupdf" }
+    )
+    foreach ($dep in $exportDeps) {
+        & "backend\.venv\Scripts\python.exe" -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('$($dep.Module)') else 1)" *> $null
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "MISSING: $($dep.Package) in backend virtual environment"
+            $ok = $false
+        } else {
+            Write-Host "OK: $($dep.Package)"
+        }
+    }
 }
 
 if (-not $ok) {

@@ -13,7 +13,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [windows-latest, macos-latest, ubuntu-22.04]
+        include:
+          - platform: windows-latest
+            tauriArgs: --bundles nsis,msi
     runs-on: ${{ matrix.platform }}
     env:
       ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION: true
@@ -21,12 +23,6 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Install Linux system dependencies
-        if: matrix.platform == 'ubuntu-22.04'
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -41,46 +37,39 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build Python Backend Sidecar (Windows)
-        if: matrix.platform == 'windows-latest'
+      - name: Build Python Backend Sidecar
         run: |
           python -m venv backend\.venv
           backend\.venv\Scripts\python.exe -m pip install --upgrade pip
           backend\.venv\Scripts\python.exe -m pip install backend\. pyinstaller
           powershell -ExecutionPolicy Bypass -File scripts\build_backend_sidecar.ps1
-          Copy-Item "apps\desktop\src-tauri\binaries\otif-backend.exe" -Destination "apps\desktop\src-tauri\binaries\otif-backend-x86_64-pc-windows-msvc.exe" -Force
-          Copy-Item "apps\desktop\src-tauri\binaries\otif-backend" -Destination "apps\desktop\src-tauri\binaries\otif-backend-x86_64-pc-windows-msvc" -Force
-
-      - name: Build Python Backend Sidecar (Unix)
-        if: matrix.platform != 'windows-latest'
-        run: |
-          python -m venv backend/.venv
-          backend/.venv/bin/python -m pip install --upgrade pip
-          backend/.venv/bin/python -m pip install backend/. pyinstaller
-          bash scripts/build_backend_sidecar.sh
-          TRIPLE=$(rustc -vV | sed -n 's|host: ||p')
-          cp -f "apps/desktop/src-tauri/binaries/otif-backend" "apps/desktop/src-tauri/binaries/otif-backend-$TRIPLE"
-          cp -f "apps/desktop/src-tauri/binaries/otif-backend" "apps/desktop/src-tauri/binaries/otif-backend-$TRIPLE.exe"
+          $binaryDir = "apps\desktop\src-tauri\binaries"
+          $source = Join-Path $binaryDir "otif-backend.exe"
+          if (-not (Test-Path -LiteralPath $source)) { throw "Expected Windows sidecar missing: $source" }
+          Get-ChildItem -LiteralPath $binaryDir | Format-Table Name,Length
 
       - name: Install frontend UI dependencies
         run: |
           cd apps/desktop
-          npm install
+          npm ci
 
-      - name: Update Cargo lockfile with pinned dependencies
+      - name: Fetch locked Rust dependencies
         run: |
           cd apps/desktop/src-tauri
-          cargo update
+          cargo fetch --locked
 
       - name: Build and Publish Tauri Desktop App
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: apps/desktop
           tauriScript: npm run tauri
+          args: ${{ matrix.tauriArgs }}
           tagName: ${{ github.ref_name }}
-          releaseName: 'OTIF ${{ github.ref_name }} Standalone Desktop Release'
-          releaseBody: 'Automated cross-platform standalone installers (.exe for Windows, .dmg for macOS, .AppImage/.deb for Linux).'
+          releaseName: 'OTIF ${{ github.ref_name }} Windows Desktop Release'
+          releaseBody: 'Automated Windows standalone desktop installers (.exe/.msi). macOS and Linux packaging will be enabled later.'
           releaseDraft: false
           prerelease: false
+          uploadUpdaterJson: false
+          uploadUpdaterSignatures: false

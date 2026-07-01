@@ -164,13 +164,37 @@ interface ResearchSourceResult {
   name: string;
   status: 'checked' | 'unavailable' | 'skipped';
   message: string;
-  matches: Array<{ title: string; url: string | null; year: string | number | null }>;
+  matches: Array<{
+    title: string;
+    url: string | null;
+    year: string | number | null;
+    evidence?: {
+      document_passage: string;
+      overlap_percent: number;
+      shared_terms: string[];
+      classification: 'possible_similarity_risk' | 'citation_candidate' | 'context_match' | 'weak_context';
+      note: string;
+    };
+  }>;
 }
 
 interface ResearchSourcesReport {
   internet_checked: boolean;
   queries: string[];
   sources: ResearchSourceResult[];
+}
+
+interface IntegrityReport {
+  title: string;
+  doc_type: string;
+  target_format: string;
+  grade: 'defensible' | 'needs_integrity_review' | 'needs_author_revision' | string;
+  scope: Record<string, unknown>;
+  headline: Record<string, number | string | null>;
+  evidence_summary: Record<string, number | string | null>;
+  top_source_evidence: ResearchSourceResult['matches'];
+  recommended_next_actions: string[];
+  limitations: string[];
 }
 
 interface StreamEvent {
@@ -183,6 +207,7 @@ interface StreamEvent {
   improvement_plan?: ImprovementItem[];
   chapters?: ChapterResult[];
   research_sources?: ResearchSourcesReport;
+  integrity_report?: IntegrityReport;
   formatting_plan?: Record<string, unknown>;
   count?: number;
   skill?: string;
@@ -202,6 +227,61 @@ interface RewriteApprovalResult {
   rewrite_note: string;
   document_actions: Record<string, unknown>;
   next_step: string;
+}
+
+interface EditableChapter {
+  id: string;
+  title: string;
+  original_text: string;
+  edited_text: string;
+  word_count?: number;
+}
+
+interface ChapterEditorResult {
+  doc_id: string;
+  filename: string;
+  chapters: EditableChapter[];
+  scores: PreflightScores;
+  approval: RewriteApprovalResult | null;
+  requires_approval: boolean;
+  revision_guidance: string | null;
+  message: string;
+}
+
+interface FinalizedArtifact {
+  format: 'docx' | 'pdf' | 'md' | string;
+  filename: string;
+  size_bytes: number;
+  download_url: string;
+}
+
+interface FinalizeResult {
+  doc_id: string;
+  status: string;
+  chapter_count: number;
+  before_scores: PreflightScores;
+  after_scores: PreflightScores;
+  certificate: Record<string, unknown>;
+  preservation_report?: Record<string, unknown>;
+  artifacts: FinalizedArtifact[];
+  limitations: string[];
+}
+
+interface ChapterRewriteProposal {
+  doc_id: string;
+  chapter_id: string;
+  title: string;
+  provider: ProviderOption['id'];
+  model: string | null;
+  privacy_mode: string;
+  proposed_text: string;
+  citation_lock: {
+    locked_count: number;
+    all_restored: boolean;
+    missing_tokens: string[];
+  };
+  requires_user_apply: boolean;
+  message: string;
 }
 
 interface DiagramResult {
@@ -338,14 +418,24 @@ function App() {
   const [approvalResult, setApprovalResult] = useState<RewriteApprovalResult | null>(null);
   const [chapterResults, setChapterResults] = useState<ChapterResult[]>([]);
   const [researchSources, setResearchSources] = useState<ResearchSourcesReport | null>(null);
+  const [integrityReport, setIntegrityReport] = useState<IntegrityReport | null>(null);
   const [drawDiagrams, setDrawDiagrams] = useState(false);
   const [diagramStyle, setDiagramStyle] = useState('academic');
   const [designTheme, setDesignTheme] = useState('classic_blue');
+  const [designAccentHex, setDesignAccentHex] = useState('#1f4e79');
   const [outputFormats, setOutputFormats] = useState<string[]>(['docx', 'pdf']);
   const [diagramResult, setDiagramResult] = useState<DiagramResult | null>(null);
   const [editedMermaid, setEditedMermaid] = useState('');
   const [editingDiagram, setEditingDiagram] = useState(false);
   const [expandConnectors, setExpandConnectors] = useState(true);
+  const [chapterDrafts, setChapterDrafts] = useState<EditableChapter[]>([]);
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+  const [chapterGuidance, setChapterGuidance] = useState<string | null>(null);
+  const [finalizeResult, setFinalizeResult] = useState<FinalizeResult | null>(null);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [isRewritingChapter, setIsRewritingChapter] = useState(false);
+  const [chapterProposal, setChapterProposal] = useState<ChapterRewriteProposal | null>(null);
+  const [showCompiledPreview, setShowCompiledPreview] = useState(true);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -366,6 +456,17 @@ function App() {
   const activeProvider = aiStatus?.providers.find((p) => p.id === aiDraft?.provider) ?? null;
   const inactiveProviders = aiStatus?.providers.filter((p) => p.id !== aiDraft?.provider) ?? [];
   const neonConnected = status?.neon_connected ?? false;
+  const activeChapter = chapterDrafts.find((chapter) => chapter.id === activeChapterId) ?? chapterDrafts[0] ?? null;
+  const compiledPreview = useMemo(
+    () =>
+      chapterDrafts
+        .map((chapter, index) => `${index + 1}. ${chapter.title}\n\n${chapter.edited_text}`)
+        .join('\n\n'),
+    [chapterDrafts],
+  );
+  const apiRoot = API_BASE.replace(/\/api\/v1$/, '');
+  const normalizedDesignAccent = designAccentHex.trim();
+  const designAccentValid = /^#?[0-9A-Fa-f]{6}$/.test(normalizedDesignAccent);
 
   // ─────────────────────────────────────────────────────────────
   // Data loading
@@ -468,7 +569,13 @@ function App() {
     setImprovementPlan([]);
     setApprovedImprovementIds([]);
     setApprovalResult(null);
+    setIntegrityReport(null);
     setDiagramResult(null);
+    setChapterDrafts([]);
+    setActiveChapterId(null);
+    setChapterGuidance(null);
+    setChapterProposal(null);
+    setFinalizeResult(null);
     setActiveTab('analyze');
   };
 
@@ -533,7 +640,13 @@ function App() {
     setApprovalResult(null);
     setChapterResults([]);
     setResearchSources(null);
+    setIntegrityReport(null);
     setDiagramResult(null);
+    setChapterDrafts([]);
+    setActiveChapterId(null);
+    setChapterGuidance(null);
+    setChapterProposal(null);
+    setFinalizeResult(null);
 
     try {
       const form = new FormData();
@@ -597,6 +710,7 @@ function App() {
         if (event.improvement_plan) setImprovementPlan(event.improvement_plan);
         if (event.chapters) setChapterResults(event.chapters);
         if (event.research_sources) setResearchSources(event.research_sources);
+        if (event.integrity_report) setIntegrityReport(event.integrity_report);
         if (event.stage === 'error') throw new Error(event.message ?? 'Analysis failed.');
       }
     }
@@ -630,13 +744,22 @@ Document: ${uploadResult?.filename ?? 'Thesis Document'} | Type: ${docType} | Ta
 ## 1. Preflight Evaluation Scores
 ${scores ? Object.entries(scores).map(([k, v]) => `- **${k.replace(/_/g, ' ').toUpperCase()}**: ${typeof v === 'number' ? v.toFixed(1) : v}`).join('\n') : 'No scores generated yet.'}
 
+${integrityReport ? `## 1A. Integrity Grade
+- **Grade**: ${integrityReport.grade.replace(/_/g, ' ').toUpperCase()}
+- **Target Format**: ${integrityReport.target_format}
+- **AI Score Notice**: AI-writing risk is a writing-pattern signal, not proof of authorship.
+
+### Evidence Summary
+${Object.entries(integrityReport.evidence_summary).map(([k, v]) => `- **${k.replace(/_/g, ' ')}**: ${v ?? 'N/A'}`).join('\n')}
+` : ''}
+
 ---
 
 ## 2. Open Scholarly Research & Citation Check
 ${researchSources ? researchSources.sources.map(s => `### 🌐 ${s.name} (${s.status})
 - **Status**: ${s.message ?? 'Checked'}
 - **Matches Retrieved**:
-${s.matches && s.matches.length > 0 ? s.matches.map(m => `  * [${m.year ?? 'N/A'}] ${m.title} (${m.url ?? 'No link'})`).join('\n') : '  * None found.'}
+${s.matches && s.matches.length > 0 ? s.matches.map(m => `  * [${m.year ?? 'N/A'}] ${m.title} (${m.url ?? 'No link'})${m.evidence ? `\n    - Evidence class: ${m.evidence.classification}; overlap: ${m.evidence.overlap_percent}%\n    - Shared terms: ${m.evidence.shared_terms.join(', ') || 'none'}\n    - Trigger passage: ${m.evidence.document_passage || 'not available'}` : ''}`).join('\n') : '  * None found.'}
 `).join('\n') : 'No open sources queried.'}
 
 ---
@@ -696,6 +819,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         draw_diagrams: drawDiagrams,
         diagram_style: diagramStyle,
         design_theme: designTheme,
+        design_accent_hex: designAccentValid ? normalizedDesignAccent : null,
         output_formats: outputFormats,
         maintain_front_matter: true,
       });
@@ -710,6 +834,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       if (drawDiagrams && improvementPlan.length > 0) {
         await generateDiagram();
       }
+      await loadChapterEditor(false);
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.detail ?? err.message
@@ -761,6 +886,120 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     } catch { /* non-fatal */ } finally {
       setIsBusy(false);
     }
+  };
+
+  const loadChapterEditor = async (showBusy = true) => {
+    if (!uploadResult) return;
+    if (showBusy) setIsBusy(true);
+    setError(null);
+    try {
+      const res = await axios.get<ChapterEditorResult>(`${API_BASE}/analysis/chapter-editor/${uploadResult.doc_id}`, {
+        params: { doc_type: docType, norm: targetFormat },
+      });
+      setChapterDrafts(res.data.chapters);
+      setActiveChapterId(res.data.chapters[0]?.id ?? null);
+      setChapterGuidance(res.data.revision_guidance);
+      setChapterProposal(null);
+      setFinalizeResult(null);
+      if (res.data.requires_approval) {
+        setError(res.data.message);
+      }
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.detail ?? err.message
+        : 'Could not open chapter editor.';
+      setError(String(message));
+    } finally {
+      if (showBusy) setIsBusy(false);
+    }
+  };
+
+  const updateChapterDraft = (chapterId: string, value: string) => {
+    setChapterDrafts((prev) =>
+      prev.map((chapter) => (chapter.id === chapterId ? { ...chapter, edited_text: value } : chapter)),
+    );
+    setFinalizeResult(null);
+  };
+
+  const selectChapter = (chapterId: string) => {
+    setActiveChapterId(chapterId);
+    setChapterProposal((prev) => (prev?.chapter_id === chapterId ? prev : null));
+  };
+
+  const resetActiveChapter = () => {
+    if (!activeChapter) return;
+    updateChapterDraft(activeChapter.id, activeChapter.original_text);
+  };
+
+  const draftChapterRewrite = async () => {
+    if (!uploadResult || !activeChapter) return;
+    setIsRewritingChapter(true);
+    setError(null);
+    try {
+      const res = await axios.post<ChapterRewriteProposal>(`${API_BASE}/analysis/chapter-rewrite-proposal`, {
+        doc_id: uploadResult.doc_id,
+        chapter_id: activeChapter.id,
+        title: activeChapter.title,
+        text: activeChapter.edited_text,
+        approved_item_ids: approvedImprovementIds,
+        doc_type: docType,
+        norm: targetFormat,
+      });
+      setChapterProposal(res.data);
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.detail ?? err.message
+        : 'Chapter rewrite proposal failed.';
+      setError(String(message));
+    } finally {
+      setIsRewritingChapter(false);
+    }
+  };
+
+  const applyChapterProposal = () => {
+    if (!chapterProposal) return;
+    updateChapterDraft(chapterProposal.chapter_id, chapterProposal.proposed_text);
+    setActiveChapterId(chapterProposal.chapter_id);
+    setChapterProposal(null);
+  };
+
+  const finalizeThesis = async () => {
+    if (!uploadResult || chapterDrafts.length === 0) return;
+    setIsFinalizing(true);
+    setError(null);
+    try {
+      const res = await axios.post<FinalizeResult>(`${API_BASE}/analysis/finalize-thesis`, {
+        doc_id: uploadResult.doc_id,
+        chapters: chapterDrafts,
+        doc_type: docType,
+        norm: targetFormat,
+        design_theme: designTheme,
+        design_accent_hex: designAccentValid ? normalizedDesignAccent : null,
+        output_formats: outputFormats,
+        diagram_source: drawDiagrams ? (editedMermaid || (diagramResult?.mermaid_source ?? null)) : null,
+        diagram_caption: drawDiagrams ? (diagramResult?.caption ?? null) : null,
+        project_id: currentProject?.id ?? null,
+      });
+      setFinalizeResult(res.data);
+      if (currentProject) await loadThread(currentProject.id);
+    } catch (err) {
+      const message = axios.isAxiosError(err)
+        ? err.response?.data?.detail ?? err.message
+        : 'Final thesis export failed.';
+      setError(String(message));
+    } finally {
+      setIsFinalizing(false);
+    }
+  };
+
+  const artifactHref = (artifact: FinalizedArtifact) =>
+    artifact.download_url.startsWith('http') ? artifact.download_url : `${apiRoot}${artifact.download_url}`;
+
+  const downloadArtifact = (artifact: FinalizedArtifact) => {
+    const a = document.createElement('a');
+    a.href = artifactHref(artifact);
+    a.download = artifact.filename;
+    a.click();
   };
 
   const approveDiscovery = async (discoveryId: string) => {
@@ -1273,6 +1512,24 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                           </div>
                         )}
 
+                        {integrityReport && (
+                          <>
+                            <div className="divider" />
+                            <div className="integrity-grade-panel">
+                              <div>
+                                <div className="settings-group-title">Integrity Grade</div>
+                                <div className={`integrity-grade ${integrityReport.grade}`}>
+                                  {integrityReport.grade.replaceAll('_', ' ')}
+                                </div>
+                              </div>
+                              <p className="text-secondary text-sm">
+                                AI-writing risk is a writing-pattern signal, not proof of authorship. The grade is based
+                                on local document checks, reachable open scholarly sources, and configured skills.
+                              </p>
+                            </div>
+                          </>
+                        )}
+
                         {chapterResults.length > 0 && (
                           <>
                             <div className="divider" />
@@ -1369,6 +1626,20 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                             )}
                                           </div>
                                           {m.year && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Published / Indexed: {m.year}</div>}
+                                          {m.evidence && (
+                                            <div className={`source-evidence ${m.evidence.classification}`}>
+                                              <div>
+                                                <strong>{m.evidence.classification.replaceAll('_', ' ')}</strong>
+                                                <span> Â· {m.evidence.overlap_percent}% title/query overlap</span>
+                                              </div>
+                                              {m.evidence.shared_terms.length > 0 && (
+                                                <div>Shared terms: {m.evidence.shared_terms.join(', ')}</div>
+                                              )}
+                                              {m.evidence.document_passage && (
+                                                <div className="source-passage">"{m.evidence.document_passage}"</div>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
                                       ))}
                                     </div>
@@ -1474,6 +1745,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                     {diagramStyleOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                                   </select>
                                 </label>
+                              </div>
+                            )}
+
+                            <div className="rewrite-option-grid">
                                 <label className="context-field">
                                   <span className="settings-label">Design theme</span>
                                   <select
@@ -1484,8 +1759,28 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                     {designThemeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                                   </select>
                                 </label>
-                              </div>
-                            )}
+                              <label className="context-field">
+                                <span className="settings-label">Document accent color</span>
+                                <div className="color-input-row">
+                                  <input
+                                    type="color"
+                                    value={designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79'}
+                                    onChange={(e) => setDesignAccentHex(e.target.value)}
+                                    aria-label="Document accent color"
+                                  />
+                                  <input
+                                    className={`settings-input full-width ${designAccentValid ? '' : 'input-error'}`}
+                                    value={designAccentHex}
+                                    onChange={(e) => setDesignAccentHex(e.target.value)}
+                                    placeholder="#1f4e79"
+                                    spellCheck={false}
+                                  />
+                                </div>
+                                {!designAccentValid && (
+                                  <span className="field-error">Use a 6-digit hex color, for example #1F4E79.</span>
+                                )}
+                              </label>
+                            </div>
 
                             <div className="format-toggle-row">
                               {['docx', 'pdf'].map((format) => (
@@ -1506,12 +1801,22 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                               id="approve-rewrite-btn"
                               className="btn btn-primary"
                               onClick={() => void approveRewrite()}
-                              disabled={isBusy || approvedImprovementIds.length === 0 || outputFormats.length === 0}
+                              disabled={isBusy || approvedImprovementIds.length === 0 || outputFormats.length === 0 || !designAccentValid}
                             >
                               <Bot size={16} />
                               Approve selected for Integrity-Preserving Revision
                               {drawDiagrams && ' + Diagram'}
                             </button>
+                            {approvalResult && (
+                              <button
+                                className="btn btn-secondary"
+                                onClick={() => void loadChapterEditor()}
+                                disabled={isBusy}
+                              >
+                                <FileText size={16} />
+                                Open chapter editor
+                              </button>
+                            )}
                             {approvalResult && (
                               <div className="approval-result">
                                 ✅ Approved {approvalResult.approved_items.length} item(s) ·{' '}
@@ -1581,6 +1886,199 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                               ℹ️ Edit the Mermaid source above if needed, then Save & Approve to lock it for export.
                             </span>
                           </div>
+                        </div>
+                      )}
+
+                      {chapterDrafts.length > 0 && (
+                        <div className="card animate-scale chapter-editor-panel">
+                          <div className="card-header">
+                            <div>
+                              <div className="card-title">Chapter Live Editor</div>
+                              <div className="card-subtitle">
+                                Edit approved chapter text locally, preview the compiled document, then export DOCX/PDF.
+                              </div>
+                            </div>
+                            <div className="badge badge-green">{chapterDrafts.length} chapters loaded</div>
+                          </div>
+
+                          {chapterGuidance && (
+                            <div className="revision-guidance">
+                              <div className="settings-group-title">AI revision guidance</div>
+                              <p>{chapterGuidance}</p>
+                            </div>
+                          )}
+
+                          <div className="chapter-editor-layout">
+                            <div className="chapter-rail">
+                              {chapterDrafts.map((chapter, index) => {
+                                const changed = chapter.edited_text !== chapter.original_text;
+                                return (
+                                  <button
+                                    key={chapter.id}
+                                    className={`chapter-tab ${activeChapter?.id === chapter.id ? 'active' : ''}`}
+                                    onClick={() => selectChapter(chapter.id)}
+                                  >
+                                    <span>{index + 1}. {chapter.title}</span>
+                                    <small>{changed ? 'edited' : `${chapter.word_count ?? 0} words`}</small>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            <div className="chapter-edit-surface">
+                              {activeChapter && (
+                                <>
+                                  <div className="chapter-edit-toolbar">
+                                    <div>
+                                      <div className="settings-label">Editing</div>
+                                      <strong>{activeChapter.title}</strong>
+                                    </div>
+                                    <div className="chapter-toolbar-actions">
+                                      <button className="btn btn-secondary btn-sm" onClick={resetActiveChapter}>
+                                        Reset chapter
+                                      </button>
+                                      <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={() => void draftChapterRewrite()}
+                                        disabled={isRewritingChapter || !approvalResult}
+                                      >
+                                        <Bot size={14} />
+                                        {isRewritingChapter ? 'Drafting...' : 'Draft AI revision'}
+                                      </button>
+                                      <button
+                                        className="btn btn-secondary btn-sm"
+                                        onClick={() => setShowCompiledPreview((value) => !value)}
+                                      >
+                                        {showCompiledPreview ? 'Hide preview' : 'Show preview'}
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  <textarea
+                                    className="chapter-editor-textarea"
+                                    value={activeChapter.edited_text}
+                                    onChange={(e) => updateChapterDraft(activeChapter.id, e.target.value)}
+                                    spellCheck
+                                  />
+
+                                  {chapterProposal && chapterProposal.chapter_id === activeChapter.id && (
+                                    <div className="chapter-proposal">
+                                      <div className="chapter-proposal-header">
+                                        <div>
+                                          <div className="settings-group-title">AI chapter proposal</div>
+                                          <span className="settings-desc">
+                                            {chapterProposal.provider} / {chapterProposal.model ?? 'selected model'} · citations locked: {chapterProposal.citation_lock.locked_count}
+                                          </span>
+                                        </div>
+                                        <div className="chapter-toolbar-actions">
+                                          <button className="btn btn-secondary btn-sm" onClick={() => setChapterProposal(null)}>
+                                            Reject
+                                          </button>
+                                          <button className="btn btn-primary btn-sm" onClick={applyChapterProposal}>
+                                            <CheckCircle2 size={14} />
+                                            Apply to chapter
+                                          </button>
+                                        </div>
+                                      </div>
+                                      <pre>{chapterProposal.proposed_text.slice(0, 8000)}</pre>
+                                      {!chapterProposal.citation_lock.all_restored && (
+                                        <div className="field-error">
+                                          Some citation placeholders were not restored. Review carefully before applying.
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          {showCompiledPreview && (
+                            <div className="compiled-preview">
+                              <div className="compiled-preview-header">
+                                <div>
+                                  <div className="settings-group-title">Compiled document preview</div>
+                                  <span className="settings-desc">
+                                    {compiledPreview.split(/\s+/).filter(Boolean).length.toLocaleString()} words assembled
+                                  </span>
+                                </div>
+                                <button
+                                  className="btn btn-primary"
+                                  onClick={() => void finalizeThesis()}
+                                  disabled={isFinalizing || outputFormats.length === 0 || !designAccentValid}
+                                >
+                                  <FileText size={16} />
+                                  {isFinalizing ? 'Finalizing...' : 'Finalize approved thesis'}
+                                </button>
+                              </div>
+                              <pre>{compiledPreview.slice(0, 12000)}</pre>
+                              {compiledPreview.length > 12000 && (
+                                <div className="settings-desc">Preview truncated for speed. Full edited text is exported.</div>
+                              )}
+                            </div>
+                          )}
+
+                          {finalizeResult && (
+                            <div className="finalize-output">
+                              <div className="card-header compact-header">
+                                <div>
+                                  <div className="card-title">Final Thesis Package Ready</div>
+                                  <div className="card-subtitle">
+                                    Generated after approval from {finalizeResult.chapter_count} edited chapter(s).
+                                  </div>
+                                </div>
+                                <div className="badge badge-green">Ready to download</div>
+                              </div>
+
+                              <div className="artifact-grid">
+                                {finalizeResult.artifacts.map((artifact) => (
+                                  <button
+                                    key={artifact.filename}
+                                    className="artifact-card"
+                                    onClick={() => downloadArtifact(artifact)}
+                                  >
+                                    <FileText size={20} />
+                                    <span>{artifact.format.toUpperCase()}</span>
+                                    <strong>{artifact.filename}</strong>
+                                    <small>{(artifact.size_bytes / 1024).toFixed(1)} KB</small>
+                                  </button>
+                                ))}
+                              </div>
+
+                              {finalizeResult.preservation_report && (
+                                <div className="preservation-summary">
+                                  <div className="settings-group-title">DOCX preservation summary</div>
+                                  <div className="score-compare-grid">
+                                    {Object.entries(finalizeResult.preservation_report).slice(0, 8).map(([key, value]) => (
+                                      <div className="score-compare" key={key}>
+                                        <span>{key.replaceAll('_', ' ')}</span>
+                                        <strong>{Array.isArray(value) ? value.join(', ') || 'none' : String(value ?? 'n/a')}</strong>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="score-compare-grid">
+                                {Object.entries(finalizeResult.after_scores).slice(0, 8).map(([key, after]) => (
+                                  <div className="score-compare" key={key}>
+                                    <span>{key.replaceAll('_', ' ')}</span>
+                                    <strong>
+                                      {String(finalizeResult.before_scores[key] ?? 'n/a')}{' -> '}{String(after ?? 'n/a')}
+                                    </strong>
+                                  </div>
+                                ))}
+                              </div>
+
+                              {finalizeResult.limitations.length > 0 && (
+                                <div className="export-limitations">
+                                  {finalizeResult.limitations.map((item) => (
+                                    <span key={item}>{item}</span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

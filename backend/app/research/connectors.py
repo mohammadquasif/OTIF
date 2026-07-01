@@ -1,8 +1,12 @@
 """Free/open research source checks used by the analysis stream."""
 import asyncio
+import hashlib
+import json
 import re
+import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -26,6 +30,48 @@ SOURCES = [
     ResearchSource("semantic_scholar", "Semantic Scholar", "https://api.semanticscholar.org/graph/v1/paper/search"),
     ResearchSource("openalex", "OpenAlex", "https://api.openalex.org/works"),
 ]
+
+RESEARCH_CACHE_TTL_SECONDS = 24 * 60 * 60
+SOURCE_RATE_DELAY_SECONDS = 0.35
+
+
+def _cache_dir() -> Path:
+    path = Path(settings.PROJECTS_PATH).parent / "research_cache"
+    path.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def _cache_key(source_id: str, query: str) -> Path:
+    digest = hashlib.sha256(f"{source_id}:{query}".encode("utf-8")).hexdigest()
+    return _cache_dir() / f"{digest}.json"
+
+
+def _read_cached_result(source_id: str, query: str) -> list[dict] | None:
+    path = _cache_key(source_id, query)
+    if not path.exists():
+        return None
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if time.time() - float(payload.get("created_at", 0)) > RESEARCH_CACHE_TTL_SECONDS:
+            return None
+        matches = payload.get("matches", [])
+        return matches if isinstance(matches, list) else None
+    except (OSError, json.JSONDecodeError, ValueError):
+        return None
+
+
+def _write_cached_result(source_id: str, query: str, matches: list[dict]) -> None:
+    path = _cache_key(source_id, query)
+    payload = {
+        "source_id": source_id,
+        "query": query,
+        "created_at": time.time(),
+        "matches": matches,
+    }
+    try:
+        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    except OSError:
+        pass
 
 
 def build_research_queries(text: str, max_queries: int = 3) -> list[str]:
@@ -84,6 +130,102 @@ def _result_item(title: str | None, url: str | None, year: Any = None) -> dict:
         "url": url,
         "year": year,
     }
+
+
+def _tokens(value: str) -> set[str]:
+    stop_words = {
+        "about",
+        "after",
+        "also",
+        "among",
+        "based",
+        "before",
+        "between",
+        "could",
+        "from",
+        "have",
+        "into",
+        "more",
+        "paper",
+        "research",
+        "study",
+        "that",
+        "their",
+        "there",
+        "these",
+        "this",
+        "those",
+        "through",
+        "using",
+        "which",
+        "with",
+        "within",
+        "would",
+    }
+    return {
+        token
+        for token in re.findall(r"\b[a-z][a-z\-]{3,}\b", value.lower())
+        if token not in stop_words
+    }
+
+
+def _document_evidence_passages(text: str, max_passages: int = 6) -> list[str]:
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    candidates = [
+        " ".join(sentence.split())
+        for sentence in sentences
+        if 12 <= len(sentence.split()) <= 45
+    ]
+    candidates.sort(key=lambda sentence: len(_tokens(sentence)), reverse=True)
+    return candidates[:max_passages]
+
+
+def _classify_overlap(overlap_percent: float) -> str:
+    if overlap_percent >= 58:
+        return "possible_similarity_risk"
+    if overlap_percent >= 35:
+        return "citation_candidate"
+    if overlap_percent >= 18:
+        return "context_match"
+    return "weak_context"
+
+
+def attach_source_evidence(text: str, report: dict) -> dict:
+    passages = _document_evidence_passages(text)
+    for source in report.get("sources", []):
+        enriched_matches = []
+        for match in source.get("matches", []):
+            title = match.get("title") or ""
+            title_tokens = _tokens(title)
+            best_passage = ""
+            best_overlap = 0.0
+            best_terms: list[str] = []
+            for passage in passages:
+                passage_tokens = _tokens(passage)
+                if not title_tokens or not passage_tokens:
+                    continue
+                shared = sorted(title_tokens & passage_tokens)
+                overlap = len(shared) / max(1, min(len(title_tokens), len(passage_tokens))) * 100
+                if overlap > best_overlap:
+                    best_overlap = overlap
+                    best_passage = passage
+                    best_terms = shared[:8]
+            enriched_matches.append(
+                {
+                    **match,
+                    "evidence": {
+                        "document_passage": best_passage[:360],
+                        "overlap_percent": round(best_overlap, 1),
+                        "shared_terms": best_terms,
+                        "classification": _classify_overlap(best_overlap),
+                        "note": (
+                            "Overlap is based on title/query token comparison only; inspect the source before treating it as plagiarism evidence."
+                        ),
+                    },
+                }
+            )
+        source["matches"] = enriched_matches
+    return report
 
 
 async def _get_json(client: httpx.AsyncClient, url: str, params: dict, headers: dict | None = None) -> dict:
@@ -201,35 +343,54 @@ async def check_research_sources(text: str, enabled: bool = True) -> dict:
 
     query = queries[0]
     timeout = httpx.Timeout(12.0, connect=5.0)
-    async with httpx.AsyncClient(timeout=timeout, headers={"User-Agent": "OTIF/0.1 academic-integrity"}) as client:
-        tasks = [CHECKERS[source.id](client, query) for source in SOURCES]
-        results = await asyncio.gather(*tasks, return_exceptions=True)
-
     source_results = []
-    for source, result in zip(SOURCES, results):
-        if isinstance(result, Exception):
+    async with httpx.AsyncClient(timeout=timeout, headers={"User-Agent": "OTIF/0.1 academic-integrity"}) as client:
+        for index, source in enumerate(SOURCES):
+            cached = _read_cached_result(source.id, query)
+            if cached is not None:
+                source_results.append(
+                    {
+                        "id": source.id,
+                        "name": source.name,
+                        "status": "checked",
+                        "message": f"{len(cached)} cached public result(s) found for the document query.",
+                        "matches": cached,
+                        "cached": True,
+                    }
+                )
+                continue
+            if index > 0:
+                await asyncio.sleep(SOURCE_RATE_DELAY_SECONDS)
+            try:
+                result = await CHECKERS[source.id](client, query)
+                _write_cached_result(source.id, query, result)
+            except Exception as exc:
+                source_results.append(
+                    {
+                        "id": source.id,
+                        "name": source.name,
+                        "status": "unavailable",
+                        "message": str(exc)[:220],
+                        "matches": [],
+                        "cached": False,
+                    }
+                )
+                continue
             source_results.append(
                 {
                     "id": source.id,
                     "name": source.name,
-                    "status": "unavailable",
-                    "message": str(result)[:220],
-                    "matches": [],
+                    "status": "checked",
+                    "message": f"{len(result)} public result(s) found for the document query.",
+                    "matches": result,
+                    "cached": False,
                 }
             )
-            continue
-        source_results.append(
-            {
-                "id": source.id,
-                "name": source.name,
-                "status": "checked",
-                "message": f"{len(result)} public result(s) found for the document query.",
-                "matches": result,
-            }
-        )
 
-    return {
+    return attach_source_evidence(text, {
         "internet_checked": True,
         "queries": queries,
         "sources": source_results,
-    }
+        "cache_ttl_seconds": RESEARCH_CACHE_TTL_SECONDS,
+        "rate_limit_delay_seconds": SOURCE_RATE_DELAY_SECONDS,
+    })

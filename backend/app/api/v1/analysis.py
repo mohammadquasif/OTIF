@@ -6,14 +6,29 @@ from pathlib import Path
 
 import httpx
 from fastapi import APIRouter, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from app.ai.provider_router import AISettings, load_ai_settings
+from app.config import settings
 from app.api.v1.documents import document_metadata_path, find_document_path
 from app.api.v1.diagram_studio import build_design_rewrite_payload
 from app.db import local_db
 from app.core.citation_lock import lock_citations, unlock_citations
+from app.export.thesis_exporter import (
+    compile_chapter_text,
+    create_certificate_markdown,
+    create_docx,
+    create_preserved_docx,
+    create_pdf,
+    convert_docx_to_pdf,
+    export_dir,
+    render_diagram_image,
+    resolve_theme,
+    safe_filename,
+    build_integrity_certificate,
+    normalize_hex_color,
+)
 from app.research.connectors import check_research_sources
 from app.skills.skill_manager import skill_manager
 
@@ -44,8 +59,39 @@ class RewriteApprovalRequest(BaseModel):
     draw_diagrams: bool = False
     diagram_style: str = "academic"
     design_theme: str = "classic_blue"
+    design_accent_hex: str | None = None
     output_formats: list[str] = Field(default_factory=lambda: ["docx", "pdf"])
     maintain_front_matter: bool = True
+
+
+class ChapterEdit(BaseModel):
+    id: str
+    title: str
+    original_text: str = ""
+    edited_text: str
+
+
+class FinalizeThesisRequest(BaseModel):
+    doc_id: str
+    chapters: list[ChapterEdit]
+    doc_type: str = "thesis"
+    norm: str = "apa7"
+    design_theme: str = "classic_blue"
+    design_accent_hex: str | None = None
+    output_formats: list[str] = Field(default_factory=lambda: ["docx", "pdf"])
+    diagram_source: str | None = None
+    diagram_caption: str | None = None
+    project_id: str | None = None
+
+
+class ChapterRewriteRequest(BaseModel):
+    doc_id: str
+    chapter_id: str
+    title: str
+    text: str
+    approved_item_ids: list[str] = Field(default_factory=list)
+    doc_type: str = "thesis"
+    norm: str = "apa7"
 
 
 def _approval_path(doc_id: str) -> Path:
@@ -510,6 +556,97 @@ async def _try_generate_rewrite_preview(
         }
 
 
+def _chapter_rewrite_prompt(
+    *,
+    title: str,
+    text: str,
+    approved_items: list[dict],
+    doc_type: str,
+    norm: str,
+) -> str:
+    item_text = "\n".join(f"- {item['title']}: {item['action']}" for item in approved_items) or "- General scholarly polishing"
+    return (
+        "You are revising one approved academic chapter only. Return the complete revised chapter text.\n"
+        "Rules:\n"
+        "- Preserve the author's claims, results, data, citations, references, and meaning.\n"
+        "- Do not invent sources, statistics, findings, limitations, tables, figures, or page numbers.\n"
+        "- Keep citation lock tokens exactly as written, including tokens like [[CIT_LOCK_0]].\n"
+        "- Improve clarity, academic voice, originality, citation integration, and structure only where supported.\n"
+        "- Do not add markdown fences or commentary; return only the revised chapter body.\n\n"
+        f"Document type: {doc_type}\n"
+        f"Target format: {_format_label(norm)}\n"
+        f"Chapter: {title}\n"
+        f"Approved improvement scope:\n{item_text}\n\n"
+        f"Chapter text:\n{text[:18000]}"
+    )
+
+
+async def _generate_text_with_active_provider(prompt: str, config: AISettings) -> tuple[str, str]:
+    provider = config.provider
+    model = config.model_by_provider.get(provider) or ""
+
+    if provider == "ollama":
+        base_url = (config.ollama_base_url or "http://localhost:11434").rstrip("/")
+        async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=5.0)) as client:
+            response = await client.post(
+                f"{base_url}/api/generate",
+                json={"model": model or "llama3.3:latest", "prompt": prompt, "stream": False},
+            )
+            response.raise_for_status()
+            return response.json().get("response", "").strip(), model
+
+    if config.privacy_mode not in {"selected_chapter", "cloud_allowed"}:
+        raise HTTPException(
+            status_code=403,
+            detail=(
+                "Cloud chapter rewrite is blocked by privacy mode. Select selected-chapter or cloud-allowed mode, "
+                "or switch to Ollama."
+            ),
+        )
+
+    key = config.api_keys.get(provider, "")
+    if not key:
+        raise HTTPException(status_code=400, detail=f"No API key configured for {provider}.")
+
+    async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=8.0)) as client:
+        if provider == "deepseek":
+            response = await client.post(
+                "https://api.deepseek.com/chat/completions",
+                headers={"Authorization": f"Bearer {key}"},
+                json={
+                    "model": model or "deepseek-chat",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                },
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"].strip(), model
+
+        if provider == "openai":
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {key}"},
+                json={
+                    "model": model or "gpt-5.5",
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                },
+            )
+            response.raise_for_status()
+            return response.json()["choices"][0]["message"]["content"].strip(), model
+
+        response = await client.post(
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model or 'gemini-3-pro'}:generateContent",
+            params={"key": key},
+            json={"contents": [{"parts": [{"text": prompt}]}]},
+        )
+        response.raise_for_status()
+        data = response.json()
+        candidates = data.get("candidates", [])
+        parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
+        return "\n".join(part.get("text", "") for part in parts).strip(), model
+
+
 def _originality_matrix(text: str, citation: dict, similarity: dict, banned_hits: list[dict]) -> dict:
     """
     QUA-007: Originality Evidence Matrix (5-Dimension)
@@ -802,7 +939,71 @@ def _score_document(
     analysis["improvement_plan"] = (
         _build_improvement_plan(analysis, doc_type, norm, chapter_results) if include_plan else []
     )
+    analysis["integrity_report"] = _build_integrity_report(analysis, doc_type, norm)
     return analysis
+
+
+def _build_integrity_report(analysis: dict, doc_type: str, norm: str) -> dict:
+    scores = analysis["scores"]
+    metrics = analysis["metrics"]
+    sources = analysis.get("research_sources", {}).get("sources", [])
+    source_matches = [
+        match
+        for source in sources
+        for match in source.get("matches", [])
+    ]
+    risk_matches = [
+        match for match in source_matches
+        if match.get("evidence", {}).get("classification") == "possible_similarity_risk"
+    ]
+    checked_sources = [source["name"] for source in sources if source.get("status") == "checked"]
+    report_grade = "defensible"
+    if scores["plagiarism_risk"] >= 40 or scores["citation_quality"] < 50:
+        report_grade = "needs_integrity_review"
+    elif scores["ai_writing_risk"] >= 65 or scores["originality_score"] < 55:
+        report_grade = "needs_author_revision"
+
+    return {
+        "title": "OTIF Academic Integrity Evidence Report",
+        "doc_type": doc_type,
+        "target_format": _format_label(norm),
+        "grade": report_grade,
+        "scope": {
+            "local_document_analysis": True,
+            "open_research_sources_checked": checked_sources,
+            "full_web_or_private_corpus_checked": False,
+            "ai_writing_score_is_risk_signal": True,
+        },
+        "headline": {
+            "plagiarism_risk": scores["plagiarism_risk"],
+            "originality_score": scores["originality_score"],
+            "citation_quality": scores["citation_quality"],
+            "humanization_score": scores["humanization_score"],
+            "ai_writing_risk": scores["ai_writing_risk"],
+        },
+        "evidence_summary": {
+            "citation_coverage": metrics["citation_coverage"],
+            "near_duplicate_pairs": metrics["near_duplicate_pairs"],
+            "open_source_matches": len(source_matches),
+            "possible_similarity_risk_matches": len(risk_matches),
+            "researcher_voice_markers": metrics["researcher_voice_markers"],
+            "template_opener_count": metrics["template_opener_count"],
+            "rq_traceback_score": scores.get("rq_traceback_score"),
+        },
+        "top_source_evidence": sorted(
+            source_matches,
+            key=lambda match: match.get("evidence", {}).get("overlap_percent", 0),
+            reverse=True,
+        )[:8],
+        "recommended_next_actions": [
+            item["title"] for item in analysis.get("improvement_plan", [])[:6]
+        ],
+        "limitations": analysis["limitations"]
+        + [
+            "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+            "AI-writing risk is a writing-pattern signal, not proof of authorship.",
+        ],
+    }
 
 
 async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id: str | None = None):
@@ -991,6 +1192,7 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
             "chapters": analysis["chapters"],
             "research_sources": analysis["research_sources"],
             "formatting_plan": analysis["formatting_plan"],
+            "integrity_report": analysis["integrity_report"],
             "analysis_mode": analysis["analysis_mode"],
             "message": "Local preflight complete",
         },
@@ -1030,6 +1232,7 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
                     "improvement_plan_count": len(analysis["improvement_plan"]),
                     "chapters_count": len(analysis["chapters"]),
                     "internet_checked": research_sources.get("internet_checked", False),
+                    "integrity_grade": analysis["integrity_report"]["grade"],
                     "message": "Analysis complete — review scores and approve improvement items",
                 },
             )
@@ -1058,6 +1261,10 @@ async def approve_rewrite(req: RewriteApprovalRequest):
         raise HTTPException(status_code=404, detail=f"Document '{req.doc_id}' was not found")
     if not req.approved_item_ids:
         raise HTTPException(status_code=400, detail="Select at least one improvement before approving rewrite.")
+    try:
+        design_accent_hex = normalize_hex_color(req.design_accent_hex)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     try:
         text = _extract_text(path)
@@ -1087,6 +1294,7 @@ async def approve_rewrite(req: RewriteApprovalRequest):
             "draw_diagrams": req.draw_diagrams,
             "diagram_style": req.diagram_style,
             "design_theme": req.design_theme,
+            "design_accent_hex": design_accent_hex,
             "output_formats": req.output_formats,
             "maintain_table_of_contents": req.maintain_front_matter,
             "maintain_list_of_tables": req.maintain_front_matter,
@@ -1101,6 +1309,345 @@ async def approve_rewrite(req: RewriteApprovalRequest):
     }
     _approval_path(req.doc_id).write_text(json.dumps(approval, indent=2), encoding="utf-8")
     return approval
+
+
+@router.get("/chapter-editor/{doc_id}")
+async def get_chapter_editor(doc_id: str, doc_type: str = "thesis", norm: str = "apa7"):
+    """Return extracted chapters for local live editing before final export."""
+    path = find_document_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+
+    try:
+        text = _extract_text(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No readable text found in the uploaded document")
+
+    metadata = {}
+    metadata_file = document_metadata_path(doc_id)
+    if metadata_file.exists():
+        try:
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            metadata = {}
+
+    approval = None
+    approval_file = _approval_path(doc_id)
+    if approval_file.exists():
+        try:
+            approval = json.loads(approval_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            approval = None
+
+    chapters = _split_chapters(text)
+    scored = _score_document(text, doc_type, norm)
+    return {
+        "doc_id": doc_id,
+        "filename": metadata.get("filename") or path.name,
+        "doc_type": doc_type,
+        "norm": norm,
+        "chapters": [
+            {
+                "id": chapter["id"],
+                "title": chapter["title"],
+                "original_text": chapter["text"],
+                "edited_text": chapter["text"],
+                "word_count": len(re.findall(r"\b[\w'-]+\b", chapter["text"])),
+            }
+            for chapter in chapters
+        ],
+        "scores": scored["scores"],
+        "approval": approval,
+        "requires_approval": approval is None,
+        "revision_guidance": approval.get("rewrite_preview") if approval else None,
+        "message": (
+            "Edit chapters locally, review the live preview, then finalize DOCX/PDF exports."
+            if approval
+            else "Run analysis and approve improvement items before final thesis export."
+        ),
+    }
+
+
+@router.post("/chapter-rewrite-proposal")
+async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
+    """Generate a user-reviewable AI rewrite proposal for one selected chapter."""
+    path = find_document_path(req.doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{req.doc_id}' was not found")
+    if len(req.text.split()) < 25:
+        raise HTTPException(status_code=400, detail="Selected chapter text is too short to rewrite.")
+
+    approval_file = _approval_path(req.doc_id)
+    if not approval_file.exists():
+        raise HTTPException(status_code=403, detail="Approve an improvement plan before requesting chapter rewrite.")
+    try:
+        approval = json.loads(approval_file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read approval record: {exc}") from exc
+
+    items_by_id = {item["id"]: item for item in approval.get("approved_items", [])}
+    approved_ids = req.approved_item_ids or approval.get("approved_item_ids", [])
+    approved_items = [items_by_id[item_id] for item_id in approved_ids if item_id in items_by_id]
+
+    config = load_ai_settings(mask_keys=False)
+    public_config = load_ai_settings(mask_keys=True)
+    locked_text, lock_map = lock_citations(req.text)
+    prompt = _chapter_rewrite_prompt(
+        title=req.title,
+        text=locked_text,
+        approved_items=approved_items,
+        doc_type=req.doc_type,
+        norm=req.norm,
+    )
+
+    try:
+        raw_text, model = await _generate_text_with_active_provider(prompt, config)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Chapter rewrite provider failed: {exc}") from exc
+
+    restored_text, all_restored, missing_tokens = unlock_citations(raw_text, lock_map)
+    if not restored_text.strip():
+        raise HTTPException(status_code=502, detail="AI provider returned an empty chapter rewrite.")
+
+    return {
+        "doc_id": req.doc_id,
+        "chapter_id": req.chapter_id,
+        "title": req.title,
+        "provider": public_config.provider,
+        "model": model,
+        "privacy_mode": public_config.privacy_mode,
+        "proposed_text": restored_text,
+        "citation_lock": {
+            "locked_count": len(lock_map),
+            "all_restored": all_restored,
+            "missing_tokens": missing_tokens,
+        },
+        "requires_user_apply": True,
+        "message": "Review this chapter proposal and apply it only if it preserves your meaning and evidence.",
+    }
+
+
+@router.post("/finalize-thesis")
+async def finalize_thesis(req: FinalizeThesisRequest):
+    """Create final DOCX/PDF artifacts from approved chapter edits."""
+    path = find_document_path(req.doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{req.doc_id}' was not found")
+    if not req.chapters:
+        raise HTTPException(status_code=400, detail="At least one edited chapter is required.")
+
+    approval_file = _approval_path(req.doc_id)
+    if not approval_file.exists():
+        raise HTTPException(
+            status_code=403,
+            detail="Approve an improvement plan before finalizing the thesis package.",
+        )
+    try:
+        approval = json.loads(approval_file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read approval record: {exc}") from exc
+
+    requested_formats = {fmt.lower() for fmt in req.output_formats}
+    unsupported = requested_formats - {"docx", "pdf"}
+    if unsupported:
+        raise HTTPException(status_code=400, detail=f"Unsupported output formats: {sorted(unsupported)}")
+    if not requested_formats:
+        raise HTTPException(status_code=400, detail="Select at least one output format.")
+    try:
+        design_accent_hex = normalize_hex_color(req.design_accent_hex)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        original_text = _extract_text(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
+
+    chapters = [chapter.model_dump() for chapter in req.chapters]
+    final_text = compile_chapter_text(chapters)
+    if len(final_text.split()) < 25:
+        raise HTTPException(status_code=400, detail="Final edited text is too short to export.")
+
+    before_analysis = _score_document(original_text, req.doc_type, req.norm)
+    after_analysis = _score_document(final_text, req.doc_type, req.norm)
+    certificate = build_integrity_certificate(
+        doc_type=req.doc_type,
+        norm=req.norm,
+        approval=approval,
+        before_scores=before_analysis["scores"],
+        after_scores=after_analysis["scores"],
+        chapter_count=len(chapters),
+    )
+
+    metadata = {}
+    metadata_file = document_metadata_path(req.doc_id)
+    if metadata_file.exists():
+        try:
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            metadata = {}
+    original_name = Path(metadata.get("filename") or path.name).stem
+    safe_stem = safe_filename(original_name)
+    timestamp = re.sub(r"[^0-9]", "", certificate["generated_at"])[:14]
+    out_dir = export_dir(Path(settings.UPLOADS_PATH), req.doc_id)
+    document_title = f"{original_name} - OTIF Finalized"
+    export_theme = resolve_theme(req.design_theme, design_accent_hex)
+    diagram_image_path = render_diagram_image(
+        diagram_source=req.diagram_source,
+        diagram_caption=req.diagram_caption,
+        output_dir=out_dir,
+        accent=export_theme["accent"],
+        stem=f"{safe_stem}_{timestamp}",
+    )
+
+    artifacts = []
+    generated_docx = None
+    preservation_report = None
+    try:
+        if requested_formats & {"docx", "pdf"}:
+            output_docx_path = out_dir / f"{safe_stem}_OTIF_final_{timestamp}.docx"
+            if path.suffix.lower() == ".docx":
+                generated_docx, preservation_report = create_preserved_docx(
+                    source_path=path,
+                    output_path=output_docx_path,
+                    chapters=chapters,
+                    certificate=certificate,
+                    approval=approval,
+                    diagram_source=req.diagram_source,
+                    diagram_caption=req.diagram_caption,
+                    diagram_image_path=diagram_image_path,
+                )
+            else:
+                generated_docx = create_docx(
+                    output_path=output_docx_path,
+                    document_title=document_title,
+                    chapters=chapters,
+                    doc_type=req.doc_type,
+                    norm=req.norm,
+                    design_theme=req.design_theme,
+                    design_accent_hex=design_accent_hex,
+                    approval=approval,
+                    certificate=certificate,
+                    diagram_source=req.diagram_source,
+                    diagram_caption=req.diagram_caption,
+                    diagram_image_path=diagram_image_path,
+                )
+        if "docx" in requested_formats and generated_docx:
+            artifacts.append(generated_docx)
+        if "pdf" in requested_formats:
+            exact_pdf = (
+                convert_docx_to_pdf(
+                    generated_docx.path,
+                    out_dir / f"{safe_stem}_OTIF_final_{timestamp}.pdf",
+                )
+                if generated_docx
+                else None
+            )
+            artifacts.append(
+                exact_pdf
+                or create_pdf(
+                    output_path=out_dir / f"{safe_stem}_OTIF_final_{timestamp}.pdf",
+                    document_title=document_title,
+                    chapters=chapters,
+                    doc_type=req.doc_type,
+                    norm=req.norm,
+                    design_theme=req.design_theme,
+                    design_accent_hex=design_accent_hex,
+                    approval=approval,
+                    certificate=certificate,
+                    diagram_source=req.diagram_source,
+                    diagram_caption=req.diagram_caption,
+                    diagram_image_path=diagram_image_path,
+                )
+            )
+        artifacts.append(
+            create_certificate_markdown(
+                output_path=out_dir / f"{safe_stem}_OTIF_integrity_certificate_{timestamp}.md",
+                document_title=document_title,
+                certificate=certificate,
+                approval=approval,
+            )
+        )
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Could not create export artifacts: {exc}") from exc
+
+    if req.project_id:
+        try:
+            await local_db.add_thread_message(
+                project_id=req.project_id,
+                role="rewrite",
+                message_type="final_export",
+                content={
+                    "doc_id": req.doc_id,
+                    "formats": [artifact.format for artifact in artifacts],
+                    "chapter_count": len(chapters),
+                    "target_format": req.norm,
+                    "design_theme": req.design_theme,
+                    "message": "Final thesis package generated after user-approved chapter edits.",
+                },
+            )
+        except Exception:
+            pass
+
+    return {
+        "doc_id": req.doc_id,
+        "status": "finalized",
+        "chapter_count": len(chapters),
+        "before_scores": before_analysis["scores"],
+        "after_scores": after_analysis["scores"],
+        "certificate": certificate,
+        "preservation_report": preservation_report
+        or {
+            "mode": "generated_docx_from_extracted_text",
+            "reason": "Round-trip preservation is available for DOCX uploads only.",
+        },
+        "artifacts": [
+            {
+                "format": artifact.format,
+                "filename": artifact.filename,
+                "size_bytes": artifact.size_bytes,
+                "download_url": f"/api/v1/analysis/download/{req.doc_id}/{artifact.filename}",
+            }
+            for artifact in artifacts
+        ],
+        "limitations": [
+            (
+                "DOCX uploads use round-trip preservation for headings, tables, figures, captions, fields, and front matter."
+                if path.suffix.lower() == ".docx"
+                else "Non-DOCX uploads are exported from parsed text because source layout cannot be round-tripped."
+            ),
+            "Review the generated document before submission; automated chapter matching depends on recognizable chapter headings.",
+            "Exact PDF parity requires LibreOffice or Microsoft Word on the machine.",
+        ],
+    }
+
+
+@router.get("/download/{doc_id}/{filename}")
+async def download_final_artifact(doc_id: str, filename: str):
+    """Download a generated finalization artifact."""
+    safe_name = safe_filename(filename)
+    if safe_name != filename:
+        raise HTTPException(status_code=400, detail="Invalid artifact filename.")
+
+    out_dir = export_dir(Path(settings.UPLOADS_PATH), doc_id).resolve()
+    target = (out_dir / filename).resolve()
+    if not str(target).startswith(str(out_dir)) or not target.exists() or not target.is_file():
+        raise HTTPException(status_code=404, detail="Artifact not found.")
+
+    media_types = {
+        ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        ".pdf": "application/pdf",
+        ".md": "text/markdown; charset=utf-8",
+    }
+    return FileResponse(
+        target,
+        media_type=media_types.get(target.suffix.lower(), "application/octet-stream"),
+        filename=target.name,
+    )
 
 
 @router.post("/rewrite-from-plan")
@@ -1189,6 +1736,32 @@ async def rewrite_from_plan(req: PlanRewriteRequest):
     }
 
 
+@router.get("/integrity-report/{doc_id}")
+async def get_integrity_report(doc_id: str, doc_type: str = "thesis", norm: str = "apa7"):
+    """Generate the current evidence-backed OTIF integrity report for a document."""
+    path = find_document_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+    try:
+        text = _extract_text(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No readable text found in the uploaded document")
+
+    research_sources = await check_research_sources(text, enabled=True)
+    analysis = _score_document(text, doc_type, norm, research_sources=research_sources)
+    return {
+        "doc_id": doc_id,
+        "scores": analysis["scores"],
+        "metrics": analysis["metrics"],
+        "chapters": analysis["chapters"],
+        "improvement_plan": analysis["improvement_plan"],
+        "research_sources": analysis["research_sources"],
+        "integrity_report": analysis["integrity_report"],
+    }
+
+
 @router.get("/credit-statement/{doc_id}")
 async def get_credit_statement(doc_id: str, project_id: str | None = None):
     """Generate a CRediT-compliant AI Contribution & Integrity Statement from the immutable audit thread."""
@@ -1216,4 +1789,3 @@ async def get_credit_statement(doc_id: str, project_id: str | None = None):
         "for the content of the publication."
     )
     return {"doc_id": doc_id, "project_id": project_id, "credit_statement": statement, "verified_events": len(ai_actions)}
-

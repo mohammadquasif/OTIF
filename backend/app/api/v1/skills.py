@@ -19,11 +19,13 @@ async def skill_status():
     Get current skill engine status.
     Shows: loaded skills, versions, confidence scores, pending updates.
     """
-    neon_connected = await neon_db.is_connected()
-    updates = await skill_manager.check_for_updates() if neon_connected else []
+    neon_schema = await neon_db.verify_schema()
+    neon_connected = bool(neon_schema["connected"])
+    updates = await skill_manager.check_for_updates() if neon_schema["ready"] else []
 
     return {
         "neon_connected": neon_connected,
+        "neon_schema": neon_schema,
         "skill_engine": skill_manager.status,
         "pending_updates": updates,
         "update_count": len(updates),
