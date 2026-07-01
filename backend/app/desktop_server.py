@@ -36,8 +36,9 @@ def configure_desktop_environment() -> None:
 
 def main() -> None:
     configure_desktop_environment()
+    from app.main import app
     uvicorn.run(
-        "app.main:app",
+        app,
         host=os.environ["HOST"],
         port=int(os.environ["PORT"]),
         log_level="info",

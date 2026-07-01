@@ -401,8 +401,12 @@ class SkillManager:
     def _read_seed_skill_files(self) -> list[Skill]:
         """Read bundled seed skills from JSON files."""
         import os
+        import sys
 
-        seed_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "skill-seeds")
+        if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+            seed_dir = os.path.join(sys._MEIPASS, "skill-seeds")
+        else:
+            seed_dir = os.path.join(os.path.dirname(__file__), "..", "..", "..", "skill-seeds")
         seed_dir = os.path.abspath(seed_dir)
 
         skills = []

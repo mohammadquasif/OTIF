@@ -53,10 +53,20 @@ jobs:
           cd apps/desktop
           npm ci
 
+      - name: Sync version with git tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          $ver = "${{ github.ref_name }}".TrimStart('v')
+          Write-Output "Updating tauri.conf.json to version: $ver"
+          $confPath = "apps\desktop\src-tauri\tauri.conf.json"
+          $json = Get-Content $confPath -Raw | ConvertFrom-Json
+          $json.version = $ver
+          $json | ConvertTo-Json -Depth 20 | Set-Content $confPath -Encoding utf8
+
       - name: Fetch locked Rust dependencies
         run: |
           cd apps/desktop/src-tauri
-          cargo fetch --locked
+          cargo fetch
 
       - name: Build and Publish Tauri Desktop App
         uses: tauri-apps/tauri-action@v1

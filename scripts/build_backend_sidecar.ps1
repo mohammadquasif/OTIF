@@ -28,6 +28,7 @@ if ($LASTEXITCODE -ne 0) {
 
 $workDir = Join-Path $backendPath "build\pyinstaller"
 $distDir = Join-Path $backendPath "dist\pyinstaller"
+$seedsDir = Join-Path $root "skill-seeds"
 
 & $python -m PyInstaller `
     --clean `
@@ -36,7 +37,12 @@ $distDir = Join-Path $backendPath "dist\pyinstaller"
     --workpath $workDir `
     --distpath $distDir `
     --paths $backendPath `
-    (Join-Path $backendPath "app\desktop_server.py")
+    --add-data "$seedsDir;skill-seeds" `
+    --collect-all app `
+    --collect-submodules uvicorn `
+    --collect-submodules fastapi `
+    --collect-submodules pydantic `
+    (Join-Path $backendPath "run_desktop.py")
 
 $exe = Join-Path $distDir "otif-backend.exe"
 if (-not (Test-Path -LiteralPath $exe)) {
