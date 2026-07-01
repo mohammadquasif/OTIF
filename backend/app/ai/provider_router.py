@@ -85,7 +85,11 @@ def _masked(value: str) -> str:
         return ""
     if len(value) <= 8:
         return "********"
-    return f"{value[:4]}...{value[-4:]}"
+    return f"{value[:4]}********{value[-4:]}"
+
+
+def _is_masked(value: str) -> bool:
+    return "****" in value or "..." in value
 
 
 def _env_defaults() -> AISettings:
@@ -131,7 +135,7 @@ def save_ai_settings(new_settings: AISettings) -> AISettings:
     if "api_keys" in incoming and isinstance(incoming["api_keys"], dict):
         sanitized_keys = dict(current.api_keys)
         for provider, key in incoming["api_keys"].items():
-            if key and "****" not in key:
+            if key and not _is_masked(key):
                 sanitized_keys[provider] = key
             elif key == "":
                 sanitized_keys[provider] = ""

@@ -8,8 +8,45 @@ from pydantic import BaseModel
 
 from app.skills.skill_manager import skill_manager, LearningEvent, NewPatternDiscovery
 from app.core import neon_db
+from app.core.runtime_config import NeonRuntimeSettings, neon_status, save_neon_settings
 
 router = APIRouter()
+
+
+@router.get("/neon/settings")
+async def get_neon_settings():
+    """Return masked desktop Neon runtime configuration."""
+    schema = await neon_db.verify_schema()
+    return {
+        "settings": neon_status(mask=True).model_dump(),
+        "schema": schema,
+    }
+
+
+@router.put("/neon/settings")
+async def update_neon_settings(req: NeonRuntimeSettings):
+    """Persist protected Neon URLs and reconnect the runtime pools."""
+    saved = save_neon_settings(req)
+    await neon_db.reconnect()
+    schema = await neon_db.verify_schema()
+    if schema["ready"]:
+        await skill_manager.startup_pull()
+    return {
+        "settings": saved.model_dump(),
+        "schema": schema,
+    }
+
+
+@router.post("/neon/test")
+async def test_neon_connection():
+    """Reconnect and verify the Neon schema."""
+    await neon_db.reconnect()
+    schema = await neon_db.verify_schema()
+    return {
+        "ok": bool(schema["connected"] and schema["ready"]),
+        "schema": schema,
+        "settings": neon_status(mask=True).model_dump(),
+    }
 
 
 # ── GET /skills/status ────────────────────────────────────────────
@@ -109,10 +146,18 @@ async def get_skill(skill_id: str):
 @router.post("/pull")
 async def force_skill_pull():
     """Force re-pull all skills from Neon DB (like 'Update virus definitions')."""
+    schema = await neon_db.verify_schema()
+    if not schema["ready"]:
+        return {
+            "message": "Neon is offline or schema is not ready. Bundled seed skills remain active.",
+            "status": skill_manager.status,
+            "neon_schema": schema,
+        }
     status = await skill_manager.startup_pull()
     return {
         "message": "Skills re-pulled from Neon DB",
         "status": status,
+        "neon_schema": await neon_db.verify_schema(),
     }
 
 

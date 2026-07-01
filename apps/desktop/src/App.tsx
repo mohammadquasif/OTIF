@@ -81,6 +81,11 @@ interface SkillEngineStatus {
 
 interface SkillStatus {
   neon_connected: boolean;
+  neon_schema?: {
+    ready: boolean;
+    message: string;
+    missing_tables?: string[];
+  };
   skill_engine: SkillEngineStatus;
   pending_updates: unknown[];
   update_count: number;
@@ -132,6 +137,30 @@ interface ConnectionResult {
   ok: boolean;
   message: string;
   models_seen: string[];
+}
+
+interface NeonRuntimeSettings {
+  configured: boolean;
+  read_configured: boolean;
+  write_configured: boolean;
+  owner_configured: boolean;
+  read_url: string;
+  write_url: string;
+  owner_url: string;
+}
+
+interface NeonSettingsResponse {
+  settings: NeonRuntimeSettings;
+  schema: {
+    connected: boolean;
+    ready: boolean;
+    message: string;
+    missing_tables?: string[];
+  };
+}
+
+interface NeonTestResponse extends NeonSettingsResponse {
+  ok: boolean;
 }
 
 interface UploadResult {
@@ -411,8 +440,11 @@ function App() {
   const [aiStatus, setAiStatus] = useState<AIStatus | null>(null);
   const [aiDraft, setAiDraft] = useState<AISettings | null>(null);
   const [connectionResults, setConnectionResults] = useState<Record<string, ConnectionResult>>({});
+  const [neonDraft, setNeonDraft] = useState<NeonRuntimeSettings | null>(null);
+  const [neonResult, setNeonResult] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isTestingNeon, setIsTestingNeon] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [contributeEnabled, setContributeEnabled] = useState(true);
 
@@ -504,8 +536,11 @@ function App() {
       const aiRes = await axios.get<AIStatus>(`${API_BASE}/ai/status`);
       setAiStatus(aiRes.data);
       setAiDraft(aiRes.data.settings);
+      const neonRes = await axios.get<NeonSettingsResponse>(`${API_BASE}/skills/neon/settings`);
+      setNeonDraft(neonRes.data.settings);
+      setNeonResult(neonRes.data.schema.message);
     } catch {
-      setError('Backend is not reachable. Start FastAPI on port 8000 and refresh.');
+      setError('Backend is not reachable. Start OTIF desktop backend and refresh.');
     }
   }, []);
 
@@ -692,6 +727,7 @@ function App() {
 
   const triggerSkillSync = async (projectId: string, _source = 'manual') => {
     setIsSyncing(true);
+    setError(null);
     try {
       await axios.post(`${API_BASE}/projects/${projectId}/sync-skills`);
       await refreshData();
@@ -699,18 +735,26 @@ function App() {
       setProjects((prev) =>
         prev.map((p) => (p.id === projectId ? { ...p, skill_sync_at: new Date().toISOString() } : p)),
       );
-    } catch { /* non-fatal */ } finally {
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Skill sync failed.';
+      setError(String(message));
+    } finally {
       setIsSyncing(false);
     }
   };
 
   const globalSync = async () => {
     setIsSyncing(true);
+    setError(null);
     try {
-      await axios.post(`${API_BASE}/skills/pull`);
+      const res = await axios.post<{ message?: string; neon_schema?: { message?: string } }>(`${API_BASE}/skills/pull`);
+      setNeonResult(res.data.neon_schema?.message ?? res.data.message ?? null);
       await refreshData();
       if (currentProject) await loadThread(currentProject.id);
-    } catch { /* non-fatal */ } finally {
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Skill sync failed.';
+      setError(String(message));
+    } finally {
       setIsSyncing(false);
     }
   };
@@ -1137,6 +1181,13 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     setIsBusy(true);
     setError(null);
     try {
+      if (aiDraft) {
+        const saved = await axios.put<Pick<AIStatus, 'settings' | 'providers'>>(`${API_BASE}/ai/settings`, aiDraft);
+        setAiStatus((prev) =>
+          prev ? { ...prev, settings: saved.data.settings, providers: saved.data.providers } : prev,
+        );
+        setAiDraft(saved.data.settings);
+      }
       const res = await axios.post<ConnectionResult>(`${API_BASE}/ai/test/${provider}`);
       setConnectionResults((prev) => ({ ...prev, [provider]: res.data }));
     } catch (err) {
@@ -1144,6 +1195,51 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       setError(String(message));
     } finally {
       setIsBusy(false);
+    }
+  };
+
+  const saveNeonSettings = async () => {
+    if (!neonDraft) return;
+    setIsTestingNeon(true);
+    setError(null);
+    try {
+      const res = await axios.put<NeonSettingsResponse>(`${API_BASE}/skills/neon/settings`, {
+        read_url: neonDraft.read_url,
+        write_url: neonDraft.write_url,
+        owner_url: neonDraft.owner_url,
+      });
+      setNeonDraft(res.data.settings);
+      setNeonResult(res.data.schema.message);
+      await refreshData();
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Could not save Neon settings.';
+      setError(String(message));
+    } finally {
+      setIsTestingNeon(false);
+    }
+  };
+
+  const testNeonConnection = async () => {
+    setIsTestingNeon(true);
+    setError(null);
+    try {
+      if (neonDraft) {
+        const saved = await axios.put<NeonSettingsResponse>(`${API_BASE}/skills/neon/settings`, {
+          read_url: neonDraft.read_url,
+          write_url: neonDraft.write_url,
+          owner_url: neonDraft.owner_url,
+        });
+        setNeonDraft(saved.data.settings);
+      }
+      const res = await axios.post<NeonTestResponse>(`${API_BASE}/skills/neon/test`);
+      setNeonDraft(res.data.settings);
+      setNeonResult(res.data.ok ? 'Neon connected and schema is ready.' : res.data.schema.message);
+      await refreshData();
+    } catch (err) {
+      const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Neon connection test failed.';
+      setError(String(message));
+    } finally {
+      setIsTestingNeon(false);
     }
   };
 
@@ -2541,6 +2637,68 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                   <button id="save-ai-settings-btn" className="btn btn-primary" onClick={() => void saveAiSettings()} disabled={isBusy}>
                     Save AI Settings
                   </button>
+                </>
+              )}
+            </div>
+
+            <div className="settings-group">
+              <div className="settings-group-title">
+                <Database size={16} /> Neon Cloud Skill Sync
+              </div>
+              <div className="settings-row">
+                <div>
+                  <div className="settings-label">Desktop connection</div>
+                  <div className="settings-desc">
+                    Installed desktop uses protected app-data credentials, not the source .env file.
+                  </div>
+                </div>
+                <span className={`badge ${neonConnected ? 'badge-green' : 'badge-amber'}`}>
+                  {neonConnected ? 'Connected' : neonDraft?.configured ? 'Configured' : 'Needs URL'}
+                </span>
+              </div>
+              {neonDraft && (
+                <>
+                  <label className="settings-label" htmlFor="neon-read-url">Read URL</label>
+                  <input
+                    id="neon-read-url"
+                    className="settings-input full-width"
+                    type="password"
+                    placeholder="Neon read-only pooled connection URL"
+                    value={neonDraft.read_url}
+                    onChange={(e) => setNeonDraft({ ...neonDraft, read_url: e.target.value })}
+                  />
+                  <label className="settings-label" htmlFor="neon-write-url">Write URL</label>
+                  <input
+                    id="neon-write-url"
+                    className="settings-input full-width"
+                    type="password"
+                    placeholder="Neon write pooled connection URL"
+                    value={neonDraft.write_url}
+                    onChange={(e) => setNeonDraft({ ...neonDraft, write_url: e.target.value })}
+                  />
+                  <label className="settings-label" htmlFor="neon-owner-url">Owner URL</label>
+                  <input
+                    id="neon-owner-url"
+                    className="settings-input full-width"
+                    type="password"
+                    placeholder="Optional owner/admin URL"
+                    value={neonDraft.owner_url}
+                    onChange={(e) => setNeonDraft({ ...neonDraft, owner_url: e.target.value })}
+                  />
+                  <div className="provider-actions">
+                    <button className="btn btn-primary btn-sm" onClick={() => void saveNeonSettings()} disabled={isTestingNeon}>
+                      Save Neon Settings
+                    </button>
+                    <button className="btn btn-secondary btn-sm" onClick={() => void testNeonConnection()} disabled={isTestingNeon}>
+                      <RefreshCw size={14} className={isTestingNeon ? 'spin' : ''} />
+                      {isTestingNeon ? 'Testing...' : 'Test & Sync'}
+                    </button>
+                    {neonResult && (
+                      <span className={`connection-result ${neonConnected ? 'ok' : 'fail'}`}>
+                        {neonResult}
+                      </span>
+                    )}
+                  </div>
                 </>
               )}
             </div>

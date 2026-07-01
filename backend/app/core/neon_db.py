@@ -1,19 +1,20 @@
+"""Neon PostgreSQL connection helpers.
+
+The desktop app can run without a source-tree .env file, so Neon URLs are read
+from environment defaults plus the protected runtime config in app data.
 """
-OTIF — Neon PostgreSQL Connection
-Handles both read-only (skill pull) and write (skill update) roles.
-Uses asyncpg for async operations.
-"""
+from __future__ import annotations
+
 import logging
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Any
+from typing import Any, AsyncGenerator
 
 import asyncpg
 
-from app.config import settings
+from app.core.runtime_config import load_neon_settings
 
 logger = logging.getLogger(__name__)
 
-# Connection pools — created at startup
 _read_pool: asyncpg.Pool | None = None
 _write_pool: asyncpg.Pool | None = None
 
@@ -38,17 +39,17 @@ async def create_pools() -> None:
     """Create Neon connection pools on app startup."""
     global _read_pool, _write_pool
 
-    if not settings.has_neon:
-        logger.warning("⚠️  Neon DB URL not configured — skill sync disabled (offline mode)")
+    config = load_neon_settings(mask=False)
+    if not (config.read_url or config.write_url or config.owner_url):
+        logger.warning("Neon DB URL not configured - skill sync disabled (offline mode)")
+        return
+
+    read_url = config.read_url or config.owner_url or config.write_url
+    if not read_url:
+        logger.warning("Neon read URL not configured - skill sync disabled (offline mode)")
         return
 
     try:
-        # Read pool — for pulling skills (uses read-only role)
-        read_url = settings.NEON_READ_URL or settings.NEON_OWNER_URL or settings.NEON_WRITE_URL
-        if not read_url:
-            logger.warning("Neon read URL not configured - skill sync disabled (offline mode)")
-            return
-
         _read_pool = await asyncpg.create_pool(
             read_url,
             min_size=1,
@@ -56,10 +57,17 @@ async def create_pools() -> None:
             command_timeout=30,
             server_settings={"application_name": "otif-reader"},
         )
+    except Exception as exc:
+        logger.error("Failed to connect to Neon read DB: %s", exc)
+        _read_pool = None
+        _write_pool = None
+        return
 
-        # Write pool — for pushing skill updates (uses write role)
-        write_url = settings.NEON_WRITE_URL or settings.NEON_OWNER_URL
-        if write_url:
+    write_url = config.write_url or config.owner_url
+    if write_url:
+        try:
+            if write_url == read_url:
+                logger.info("Neon write pool uses the read/owner connection URL")
             _write_pool = await asyncpg.create_pool(
                 write_url,
                 min_size=1,
@@ -67,13 +75,11 @@ async def create_pools() -> None:
                 command_timeout=60,
                 server_settings={"application_name": "otif-writer"},
             )
+        except Exception as exc:
+            logger.warning("Failed to connect to Neon write DB; read-only sync remains enabled: %s", exc)
+            _write_pool = None
 
-        logger.info("✅ Neon PostgreSQL pools created (read + write)")
-
-    except Exception as e:
-        logger.error(f"❌ Failed to connect to Neon DB: {e}")
-        _read_pool = None
-        _write_pool = None
+    logger.info("Neon PostgreSQL read pool created%s", " with write pool" if _write_pool else "")
 
 
 async def close_pools() -> None:
@@ -86,6 +92,12 @@ async def close_pools() -> None:
     _read_pool = None
     _write_pool = None
     logger.info("Neon DB pools closed")
+
+
+async def reconnect() -> None:
+    """Reload runtime credentials and recreate Neon pools."""
+    await close_pools()
+    await create_pools()
 
 
 @asynccontextmanager
@@ -156,27 +168,27 @@ async def verify_schema() -> dict:
         }
 
 
-async def execute_read(query: str, *args) -> list[dict]:
+async def execute_read(query: str, *args: Any) -> list[dict]:
     """Execute a read query and return list of dicts."""
     async with get_read_conn() as conn:
         rows = await conn.fetch(query, *args)
         return [dict(row) for row in rows]
 
 
-async def execute_read_one(query: str, *args) -> dict | None:
+async def execute_read_one(query: str, *args: Any) -> dict | None:
     """Execute a read query and return single dict or None."""
     async with get_read_conn() as conn:
         row = await conn.fetchrow(query, *args)
         return dict(row) if row else None
 
 
-async def execute_write(query: str, *args) -> str:
+async def execute_write(query: str, *args: Any) -> str:
     """Execute a write query and return status."""
     async with get_write_conn() as conn:
         return await conn.execute(query, *args)
 
 
-async def execute_write_returning(query: str, *args) -> dict | None:
+async def execute_write_returning(query: str, *args: Any) -> dict | None:
     """Execute a write query with RETURNING clause."""
     async with get_write_conn() as conn:
         row = await conn.fetchrow(query, *args)
@@ -184,6 +196,6 @@ async def execute_write_returning(query: str, *args) -> dict | None:
 
 
 async def execute_write_many(query: str, args_list: list[tuple]) -> None:
-    """Execute a write query with multiple argument sets (batch insert)."""
+    """Execute a write query with multiple argument sets."""
     async with get_write_conn() as conn:
         await conn.executemany(query, args_list)

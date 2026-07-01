@@ -1,12 +1,13 @@
 use std::{
     env,
     fs::{self, File, OpenOptions},
-    io::Write,
+    io::{Read, Write},
+    net::TcpStream,
     path::{Path, PathBuf},
     process::{Child, Command, Stdio},
     sync::Mutex,
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, UNIX_EPOCH},
 };
 use tauri::Manager;
 
@@ -124,17 +125,26 @@ fn stage_packaged_backend(source: &Path, data_dir: &Path) -> Result<PathBuf, Str
     } else {
         ""
     };
+    let metadata = fs::metadata(source)
+        .map_err(|e| format!("Failed to read packaged backend metadata: {e}"))?;
+    let modified = metadata
+        .modified()
+        .ok()
+        .and_then(|time| time.duration_since(UNIX_EPOCH).ok())
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0);
+    let staged_name = format!("otif-backend-{}-{modified}{suffix}", metadata.len());
     let bin_dir = data_dir.join("bin");
     fs::create_dir_all(&bin_dir).map_err(|e| format!("Failed to create backend bin dir: {e}"))?;
-    let target = bin_dir.join(format!("otif-backend{suffix}"));
-    if let Err(error) = fs::copy(source, &target) {
-        if !target.exists() {
-            return Err(format!(
+    let target = bin_dir.join(staged_name);
+    if !target.exists() {
+        fs::copy(source, &target).map_err(|error| {
+            format!(
                 "Failed to stage backend from {} to {}: {error}",
                 source.display(),
                 target.display()
-            ));
-        }
+            )
+        })?;
     }
 
     #[cfg(unix)]
@@ -238,7 +248,26 @@ fn wait_for_backend(data_dir: PathBuf) -> Result<(), String> {
 
 fn is_backend_port_open() -> bool {
     let port: u16 = backend_port().parse().unwrap_or(18765);
-    std::net::TcpStream::connect(("127.0.0.1", port)).is_ok()
+    TcpStream::connect(("127.0.0.1", port)).is_ok()
+}
+
+fn backend_has_current_api() -> bool {
+    let port: u16 = backend_port().parse().unwrap_or(18765);
+    let Ok(mut stream) = TcpStream::connect(("127.0.0.1", port)) else {
+        return false;
+    };
+    let _ = stream.set_read_timeout(Some(Duration::from_secs(2)));
+    let _ = stream.set_write_timeout(Some(Duration::from_secs(2)));
+    let request =
+        "GET /api/v1/skills/neon/settings HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\n\r\n";
+    if stream.write_all(request.as_bytes()).is_err() {
+        return false;
+    }
+    let mut response = [0_u8; 128];
+    match stream.read(&mut response) {
+        Ok(size) if size > 0 => String::from_utf8_lossy(&response[..size]).contains(" 200 "),
+        _ => false,
+    }
 }
 
 fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Result<(), String> {
@@ -251,8 +280,13 @@ fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Resul
     fs::create_dir_all(&data_dir).map_err(|e| e.to_string())?;
     write_startup_log(&data_dir, "[OTIF] starting backend");
     if is_backend_port_open() {
-        write_startup_log(&data_dir, "[OTIF] backend already listening; reusing it");
-        return Ok(());
+        if backend_has_current_api() {
+            write_startup_log(&data_dir, "[OTIF] backend already listening; reusing it");
+            return Ok(());
+        }
+        let message = "An older OTIF backend is already listening on the desktop port. Close all OTIF windows/processes and relaunch the updated app.";
+        write_startup_log(&data_dir, &format!("[OTIF] {message}"));
+        return Err(message.to_string());
     }
 
     let (program, args, cwd) = backend_command(app_handle, &data_dir)?;
