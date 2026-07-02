@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { ChangeEvent, CSSProperties, MouseEvent } from 'react';
 import axios from 'axios';
 import mermaid from 'mermaid';
+import { invoke as tauriInvoke } from '@tauri-apps/api/core';
 import {
   Activity,
   AlertCircle,
@@ -54,6 +55,28 @@ declare global {
     __TAURI__?: {
       core?: TauriCoreBridge;
     };
+    __TAURI_INTERNALS__?: TauriCoreBridge;
+  }
+}
+
+function getTauriInvoke(): TauriCoreBridge['invoke'] | null {
+  return window.__TAURI__?.core?.invoke ?? window.__TAURI_INTERNALS__?.invoke ?? null;
+}
+
+function isTauriDesktop(): boolean {
+  return getTauriInvoke() !== null;
+}
+
+async function invokeDesktop<T>(command: string, args?: Record<string, unknown>): Promise<T> {
+  const legacyInvoke = getTauriInvoke();
+  if (legacyInvoke) {
+    return legacyInvoke<T>(command, args);
+  }
+  // If @tauri-apps/api invoke is available (injected by Tauri), use it
+  try {
+    return await tauriInvoke<T>(command, args);
+  } catch {
+    throw new Error('This feature is only available in the installed OTIF Desktop app.');
   }
 }
 
@@ -94,6 +117,8 @@ interface SkillEngineStatus {
 interface SkillStatus {
   neon_connected: boolean;
   neon_schema?: {
+    connected?: boolean;
+    configured?: boolean;
     ready: boolean;
     message: string;
     missing_tables?: string[];
@@ -166,6 +191,7 @@ interface NeonSettingsResponse {
   settings: NeonRuntimeSettings;
   schema: {
     connected: boolean;
+    configured?: boolean;
     ready: boolean;
     message: string;
     missing_tables?: string[];
@@ -561,6 +587,7 @@ function App() {
   const [neonResult, setNeonResult] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const globalSyncInFlightRef = useRef(false);
   const [isTestingNeon, setIsTestingNeon] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
@@ -847,21 +874,39 @@ function App() {
 
   const viewStartupLog = useCallback(async () => {
     setIsReadingStartupLog(true);
-    try {
-      const invoke = window.__TAURI__?.core?.invoke;
-      if (!invoke) {
-        setStartupLog(
-          'Diagnostic logs are available inside the installed desktop app only.\n\n' +
-          'On Windows, check:\n%APPDATA%\\in.otif.desktop\\startup.log\n' +
-          '%APPDATA%\\in.otif.desktop\\backend.stderr.log\n' +
-          '%APPDATA%\\in.otif.desktop\\backend.stdout.log',
+    // In browser mode (not Tauri), read logs directly from the backend API
+    if (!isTauriDesktop()) {
+      try {
+        const res = await axios.get<{ startup?: string; stderr?: string; stdout?: string }>(
+          `${API_BASE}/diagnostics/logs`, { timeout: 3000 }
         );
-        return;
+        const parts: string[] = [];
+        if (res.data.startup) parts.push('=== startup.log ===\n' + res.data.startup);
+        if (res.data.stderr)  parts.push('=== backend.stderr.log ===\n' + res.data.stderr);
+        if (res.data.stdout)  parts.push('=== backend.stdout.log ===\n' + res.data.stdout);
+        setStartupLog(parts.join('\n\n') || 'No log content available.');
+      } catch {
+        setStartupLog(
+          'Backend is running — diagnostic logs are only available through the installed OTIF Desktop App.\n\n' +
+          'Default Windows location:\n%LOCALAPPDATA%\\OTIF\\startup.log\n' +
+          '%LOCALAPPDATA%\\OTIF\\backend.stderr.log\n' +
+          '%LOCALAPPDATA%\\OTIF\\backend.stdout.log',
+        );
+      } finally {
+        setIsReadingStartupLog(false);
       }
-      const logs = await invoke<string>('read_startup_logs');
+      return;
+    }
+    try {
+      const logs = await invokeDesktop<string>('read_startup_logs');
       setStartupLog(logs);
     } catch (err) {
-      setStartupLog(`Unable to read OTIF startup logs.\n\n${err instanceof Error ? err.message : String(err)}`);
+      setStartupLog(
+        `Unable to read OTIF startup logs through the desktop bridge.\n\n${err instanceof Error ? err.message : String(err)}\n\n` +
+        'Default Windows location:\n%LOCALAPPDATA%\\OTIF\\startup.log\n' +
+        '%LOCALAPPDATA%\\OTIF\\backend.stderr.log\n' +
+        '%LOCALAPPDATA%\\OTIF\\backend.stdout.log',
+      );
     } finally {
       setIsReadingStartupLog(false);
     }
@@ -871,15 +916,7 @@ function App() {
     setIsCheckingServices(true);
     addActivityLog('info', 'backend.services.check', 'Checking backend service diagnostics.');
     try {
-      const invoke = window.__TAURI__?.core?.invoke;
-      if (!invoke) {
-        setServiceDiagnostics(
-          `Browser mode service check\n\nAPI base: ${API_BASE}\nBrowser fallback: ${apiRoot}/app\nDesktop restart is available only in the installed app.`,
-        );
-        addActivityLog('warning', 'backend.services.check', 'Service diagnostics requested outside installed desktop runtime.', { apiBase: API_BASE });
-        return;
-      }
-      const diagnostics = await invoke<string>('check_backend_services');
+      const diagnostics = await invokeDesktop<string>('check_backend_services');
       setServiceDiagnostics(diagnostics);
       addActivityLog('success', 'backend.services.check', 'Backend service diagnostics completed.', diagnostics);
     } catch (err) {
@@ -896,13 +933,7 @@ function App() {
     setError(null);
     addActivityLog('info', 'backend.restart', 'Restart backend requested.');
     try {
-      const invoke = window.__TAURI__?.core?.invoke;
-      if (!invoke) {
-        setServiceDiagnostics('Backend restart is available only in the installed desktop app.');
-        addActivityLog('warning', 'backend.restart', 'Restart requested outside installed desktop runtime.');
-        return;
-      }
-      const result = await invoke<string>('restart_backend');
+      const result = await invokeDesktop<string>('restart_backend');
       setServiceDiagnostics(result);
       setBackendPhase('ready');
       await refreshData();
@@ -923,16 +954,9 @@ function App() {
     setStatusNotice(null);
     addActivityLog('info', 'browser.docs.open', 'Opening Browser UI in browser.', apiDocsUrl);
     try {
-      const invoke = window.__TAURI__?.core?.invoke;
-      if (invoke) {
-        const openedUrl = await invoke<string>('open_browser_fallback');
-        setStatusNotice(`Opened Browser UI in your browser: ${openedUrl}`);
-        addActivityLog('success', 'browser.docs.open', 'Browser UI opened through Tauri command.', openedUrl);
-        return;
-      }
-      window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
-      setStatusNotice(`Opened Browser UI in your browser: ${apiDocsUrl}`);
-      addActivityLog('success', 'browser.docs.open', 'Browser UI opened through browser fallback.', apiDocsUrl);
+      const openedUrl = await invokeDesktop<string>('open_browser_fallback');
+      setStatusNotice(`Opened Browser UI in your browser: ${openedUrl}`);
+      addActivityLog('success', 'browser.docs.open', 'Browser UI opened through Tauri command.', openedUrl);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
@@ -1104,24 +1128,61 @@ function App() {
   };
 
   const globalSync = async () => {
+    if (globalSyncInFlightRef.current) return;
+    globalSyncInFlightRef.current = true;
     setIsSyncing(true);
     setError(null);
     setStatusNotice(null);
     addActivityLog('info', 'skills.sync.global', 'Global skill sync started.');
     try {
-      const res = await axios.post<{ message?: string; neon_schema?: { message?: string } }>(`${API_BASE}/skills/pull`);
-      const message = res.data.neon_schema?.message ?? res.data.message ?? 'Skill sync completed.';
+      const res = await axios.post<{
+        message?: string;
+        status?: {
+          cache?: {
+            skill_count?: number;
+          };
+        };
+        neon_schema?: {
+          connected?: boolean;
+          configured?: boolean;
+          ready?: boolean;
+          message?: string;
+          missing_tables?: string[];
+        };
+      }>(`${API_BASE}/skills/pull`);
+      const schema = res.data.neon_schema;
+      const offlineMode = !schema?.ready;
+      const message = res.data.message ?? schema?.message ?? 'Skill sync completed.';
       setNeonResult(message);
       setStatusNotice(message);
       await refreshData();
       if (currentProject) await loadThread(currentProject.id);
-      addActivityLog('success', 'skills.sync.global', message, res.data);
+      if (offlineMode) {
+        addActivityLog('warning', 'skills.sync.global', message, {
+          neon: {
+            configured: Boolean(schema?.configured),
+            connected: Boolean(schema?.connected),
+            ready: Boolean(schema?.ready),
+            missing_tables: schema?.missing_tables?.length ?? 0,
+          },
+          local_skill_count: res.data.status?.cache?.skill_count,
+        });
+      } else {
+        addActivityLog('success', 'skills.sync.global', message, {
+          neon: {
+            connected: true,
+            ready: true,
+          },
+          local_skill_count: res.data.status?.cache?.skill_count,
+        });
+      }
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Skill sync failed.';
       setError(String(message));
       addActivityLog('error', 'skills.sync.global', 'Global skill sync failed.', message);
     } finally {
       setIsSyncing(false);
+      globalSyncInFlightRef.current = false;
     }
   };
 
