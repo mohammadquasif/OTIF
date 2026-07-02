@@ -11,7 +11,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
@@ -131,6 +131,16 @@ app.include_router(documents.router, prefix="/api/v1/documents", tags=["Document
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["Analysis"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects"])
 app.include_router(diagrams_router.router, prefix="/api/v1/diagrams", tags=["Diagrams"])
+
+
+@app.get("/docs", include_in_schema=False)
+async def legacy_docs_redirect():
+    return RedirectResponse(url="/api/docs")
+
+
+@app.get("/redoc", include_in_schema=False)
+async def legacy_redoc_redirect():
+    return RedirectResponse(url="/api/redoc")
 
 
 def _frontend_dist_dir() -> Path | None:

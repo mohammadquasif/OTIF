@@ -26,6 +26,7 @@ from app.export.thesis_exporter import (
     render_diagram_image,
     resolve_theme,
     safe_filename,
+    update_docx_fields_with_word,
     build_integrity_certificate,
     normalize_hex_color,
 )
@@ -1180,6 +1181,11 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
         await asyncio.sleep(0.12)
 
     analysis = _score_document(text, doc_type, norm, research_sources=research_sources)
+
+    # Extract AI detection and Turnitin-style similarity from research_sources
+    ai_detection = research_sources.get("ai_detection") or {}
+    turnitin_similarity = research_sources.get("turnitin_style_similarity") or {}
+
     yield await event(
         "scores_ready",
         {
@@ -1193,6 +1199,8 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
             "research_sources": analysis["research_sources"],
             "formatting_plan": analysis["formatting_plan"],
             "integrity_report": analysis["integrity_report"],
+            "ai_detection": ai_detection,
+            "turnitin_similarity": turnitin_similarity,
             "analysis_mode": analysis["analysis_mode"],
             "message": "Local preflight complete",
         },
@@ -1233,6 +1241,8 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
                     "chapters_count": len(analysis["chapters"]),
                     "internet_checked": research_sources.get("internet_checked", False),
                     "integrity_grade": analysis["integrity_report"]["grade"],
+                    "ai_detection_score": ai_detection.get("ai_detection_score"),
+                    "turnitin_similarity_index": turnitin_similarity.get("similarity_index"),
                     "message": "Analysis complete — review scores and approve improvement items",
                 },
             )
@@ -1507,6 +1517,13 @@ async def finalize_thesis(req: FinalizeThesisRequest):
     artifacts = []
     generated_docx = None
     preservation_report = None
+    field_update_status = {
+        "requested": False,
+        "updated_by_word": False,
+        "toc": "requested",
+        "list_of_tables": "requested",
+        "list_of_figures": "requested",
+    }
     try:
         if requested_formats & {"docx", "pdf"}:
             output_docx_path = out_dir / f"{safe_stem}_OTIF_final_{timestamp}.docx"
@@ -1536,6 +1553,9 @@ async def finalize_thesis(req: FinalizeThesisRequest):
                     diagram_caption=req.diagram_caption,
                     diagram_image_path=diagram_image_path,
                 )
+        if generated_docx:
+            field_update_status["requested"] = True
+            field_update_status["updated_by_word"] = update_docx_fields_with_word(generated_docx.path)
         if "docx" in requested_formats and generated_docx:
             artifacts.append(generated_docx)
         if "pdf" in requested_formats:
@@ -1600,6 +1620,7 @@ async def finalize_thesis(req: FinalizeThesisRequest):
         "before_scores": before_analysis["scores"],
         "after_scores": after_analysis["scores"],
         "certificate": certificate,
+        "field_update_status": field_update_status,
         "preservation_report": preservation_report
         or {
             "mode": "generated_docx_from_extracted_text",
@@ -1619,6 +1640,11 @@ async def finalize_thesis(req: FinalizeThesisRequest):
                 "DOCX uploads use round-trip preservation for headings, tables, figures, captions, fields, and front matter."
                 if path.suffix.lower() == ".docx"
                 else "Non-DOCX uploads are exported from parsed text because source layout cannot be round-tripped."
+            ),
+            (
+                "TOC, list of tables, and list of figures fields were updated by Microsoft Word automation."
+                if field_update_status["updated_by_word"]
+                else "TOC, list of tables, and list of figures fields are embedded and set to update when opened in Word; install Word automation or LibreOffice for exact automated page-number validation."
             ),
             "Review the generated document before submission; automated chapter matching depends on recognizable chapter headings.",
             "Exact PDF parity requires LibreOffice or Microsoft Word on the machine.",
@@ -1759,6 +1785,8 @@ async def get_integrity_report(doc_id: str, doc_type: str = "thesis", norm: str 
         "improvement_plan": analysis["improvement_plan"],
         "research_sources": analysis["research_sources"],
         "integrity_report": analysis["integrity_report"],
+        "ai_detection": research_sources.get("ai_detection") or {},
+        "turnitin_similarity": research_sources.get("turnitin_style_similarity") or {},
     }
 
 

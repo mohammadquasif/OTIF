@@ -86,6 +86,100 @@ def resolve_theme(design_theme: str, design_accent_hex: str | None = None) -> di
     return theme
 
 
+def _mark_update_fields_on_open(doc: Any) -> None:
+    try:
+        from docx.oxml import OxmlElement
+        from docx.oxml.ns import qn
+
+        settings = doc.settings.element
+        update_fields = settings.find(qn("w:updateFields"))
+        if update_fields is None:
+            update_fields = OxmlElement("w:updateFields")
+            settings.append(update_fields)
+        update_fields.set(qn("w:val"), "true")
+    except Exception:
+        pass
+
+
+def _add_field_paragraph(doc: Any, instr: str, fallback: str) -> Any:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    paragraph = doc.add_paragraph()
+    field = OxmlElement("w:fldSimple")
+    field.set(qn("w:instr"), instr)
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = fallback
+    run.append(text)
+    field.append(run)
+    paragraph._p.append(field)
+    return paragraph
+
+
+def _add_caption(doc: Any, label: str, caption: str) -> None:
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    paragraph = doc.add_paragraph()
+    try:
+        paragraph.style = doc.styles["Caption"]
+    except KeyError:
+        pass
+    paragraph.add_run(f"{label} ")
+    field = OxmlElement("w:fldSimple")
+    field.set(qn("w:instr"), f"SEQ {label} \\* ARABIC")
+    run = OxmlElement("w:r")
+    text = OxmlElement("w:t")
+    text.text = "1"
+    run.append(text)
+    field.append(run)
+    paragraph._p.append(field)
+    paragraph.add_run(f": {caption.strip()}")
+
+
+def update_docx_fields_with_word(docx_path: Path) -> bool:
+    """Update TOC/TOF/LOT/page fields in-place when Microsoft Word is available."""
+    try:
+        import win32com.client  # type: ignore
+    except Exception:
+        return False
+
+    word = None
+    doc = None
+    try:
+        word = win32com.client.DispatchEx("Word.Application")
+        word.Visible = False
+        doc = word.Documents.Open(str(docx_path.resolve()))
+        try:
+            doc.Repaginate()
+        except Exception:
+            pass
+        for toc in doc.TablesOfContents:
+            toc.Update()
+        for table in doc.TablesOfFigures:
+            table.Update()
+        try:
+            doc.Fields.Update()
+        except Exception:
+            pass
+        doc.Save()
+        return True
+    except Exception:
+        return False
+    finally:
+        try:
+            if doc is not None:
+                doc.Close(False)
+        except Exception:
+            pass
+        try:
+            if word is not None:
+                word.Quit()
+        except Exception:
+            pass
+
+
 def compile_chapter_text(chapters: list[dict[str, Any]]) -> str:
     chunks: list[str] = []
     for chapter in chapters:
@@ -327,6 +421,7 @@ def create_preserved_docx(
         preservation_report=report,
     )
     doc.core_properties.comments = "Generated locally by OTIF with DOCX round-trip preservation."
+    _mark_update_fields_on_open(doc)
     doc.save(output_path)
     return ExportArtifact("docx", output_path.name, output_path, output_path.stat().st_size), report
 
@@ -416,8 +511,11 @@ def create_docx(
 
     doc.add_paragraph()
     doc.add_heading("Table of Contents", level=1)
-    for idx, chapter in enumerate(chapters, start=1):
-        doc.add_paragraph(f"{idx}. {chapter.get('title') or 'Untitled chapter'}")
+    _add_field_paragraph(doc, 'TOC \\o "1-3" \\h \\z \\u', "Update fields to generate the table of contents.")
+    doc.add_heading("List of Tables", level=1)
+    _add_field_paragraph(doc, 'TOC \\h \\z \\c "Table"', "Update fields to generate the list of tables.")
+    doc.add_heading("List of Figures", level=1)
+    _add_field_paragraph(doc, 'TOC \\h \\z \\c "Figure"', "Update fields to generate the list of figures.")
     doc.add_page_break()
 
     for chapter in chapters:
@@ -427,12 +525,9 @@ def create_docx(
             block = block.strip()
             if not block:
                 continue
-            if re.match(r"^(table|figure)\s+\d+[:.\-\s]", block, flags=re.I):
-                caption = doc.add_paragraph(block)
-                try:
-                    caption.style = doc.styles["Intense Quote"]
-                except KeyError:
-                    caption.style = doc.styles["Normal"]
+            caption_match = re.match(r"^(table|figure)\s+\d*[:.\-\s]*(.*)", block, flags=re.I)
+            if caption_match:
+                _add_caption(doc, caption_match.group(1).title(), caption_match.group(2) or block)
                 continue
             doc.add_paragraph(block)
 
@@ -440,7 +535,7 @@ def create_docx(
         doc.add_page_break()
         doc.add_heading("Approved Diagram", level=1)
         if diagram_caption:
-            doc.add_paragraph(diagram_caption)
+            _add_caption(doc, "Figure", diagram_caption)
         if diagram_image_path and diagram_image_path.exists():
             doc.add_picture(str(diagram_image_path), width=Inches(6.4))
         else:
@@ -485,6 +580,7 @@ def create_docx(
     doc.core_properties.title = document_title
     doc.core_properties.subject = "OTIF finalized academic document"
     doc.core_properties.comments = "Generated locally by OTIF after user approval."
+    _mark_update_fields_on_open(doc)
     doc.save(output_path)
     return ExportArtifact("docx", output_path.name, output_path, output_path.stat().st_size)
 
@@ -504,6 +600,7 @@ def _find_soffice() -> str | None:
 
 def convert_docx_to_pdf(docx_path: Path, pdf_path: Path) -> ExportArtifact | None:
     """Try to render a DOCX to PDF with an office engine for visual parity."""
+    update_docx_fields_with_word(docx_path)
     soffice = _find_soffice()
     if soffice:
         tmp_dir = pdf_path.parent / "_pdf_convert"

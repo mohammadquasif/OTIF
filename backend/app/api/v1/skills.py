@@ -25,7 +25,7 @@ async def get_neon_settings():
 
 @router.put("/neon/settings")
 async def update_neon_settings(req: NeonRuntimeSettings):
-    """Persist protected Neon URLs and reconnect the runtime pools."""
+    """Compatibility no-op: Neon credentials are environment-managed."""
     saved = save_neon_settings(req)
     await neon_db.reconnect()
     schema = await neon_db.verify_schema()
@@ -34,6 +34,7 @@ async def update_neon_settings(req: NeonRuntimeSettings):
     return {
         "settings": saved.model_dump(),
         "schema": schema,
+        "message": "Neon credentials are environment-managed. Runtime credential edits were ignored.",
     }
 
 

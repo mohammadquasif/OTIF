@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ChangeEvent, CSSProperties } from 'react';
+import type { ChangeEvent, CSSProperties, MouseEvent } from 'react';
 import axios from 'axios';
+import mermaid from 'mermaid';
 import {
   Activity,
   AlertCircle,
@@ -11,7 +12,9 @@ import {
   ChevronRight,
   Cloud,
   CloudOff,
+  Copy,
   Database,
+  Download,
   FileText,
   FolderOpen,
   GitBranch,
@@ -28,6 +31,15 @@ import {
   Wifi,
   WifiOff,
   Zap,
+  BadgeCheck,
+  BarChart2,
+  ExternalLink,
+  Layers,
+  Palette,
+  Percent,
+  ScanSearch,
+  ThumbsUp,
+  ThumbsDown,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -149,6 +161,7 @@ interface NeonRuntimeSettings {
   owner_url: string;
 }
 
+
 interface NeonSettingsResponse {
   settings: NeonRuntimeSettings;
   schema: {
@@ -203,8 +216,15 @@ interface ChapterResult {
 interface ResearchSourceResult {
   id: string;
   name: string;
-  status: 'checked' | 'unavailable' | 'skipped';
+  status: 'checked' | 'unavailable' | 'skipped' | 'needs_key';
   message: string;
+  base_url?: string;
+  coverage?: string;
+  access_note?: string;
+  docs_url?: string;
+  requires_key?: boolean;
+  configured?: boolean;
+  cached?: boolean;
   matches: Array<{
     title: string;
     url: string | null;
@@ -223,6 +243,8 @@ interface ResearchSourcesReport {
   internet_checked: boolean;
   queries: string[];
   sources: ResearchSourceResult[];
+  source_count?: number;
+  checked_source_count?: number;
 }
 
 interface IntegrityReport {
@@ -255,6 +277,8 @@ interface StreamEvent {
   category?: string;
   requires_approval?: boolean;
   gate?: string;
+  ai_detection?: AIDetectionResult;
+  turnitin_similarity?: TurnitinSimilarity;
 }
 
 interface RewriteApprovalResult {
@@ -305,6 +329,13 @@ interface FinalizeResult {
   after_scores: PreflightScores;
   certificate: Record<string, unknown>;
   preservation_report?: Record<string, unknown>;
+  field_update_status?: {
+    requested: boolean;
+    updated_by_word: boolean;
+    toc: string;
+    list_of_tables: string;
+    list_of_figures: string;
+  };
   artifacts: FinalizedArtifact[];
   limitations: string[];
 }
@@ -334,6 +365,62 @@ interface DiagramResult {
   figure_number: string;
   design_elements: Record<string, unknown>;
   requires_approval: boolean;
+}
+
+interface AIDetectionSignals {
+  perplexity_risk: number;
+  burstiness_risk: number;
+  template_opener_risk: number;
+  passive_voice_risk: number;
+  researcher_voice_reduction: number;
+  repetition_risk: number;
+  uniform_length_risk: number;
+}
+
+interface AIDetectionResult {
+  ai_detection_score: number;        // 0-100
+  confidence: 'high' | 'medium' | 'low';
+  signals: AIDetectionSignals;
+  verdict: string;
+  turnitin_ai_equivalent: string;
+}
+
+interface PerSourceSimilarity {
+  source_title: string;
+  source_url: string | null;
+  source_year: string | number | null;
+  shingle_jaccard: number;
+  char_ngram_jaccard: number;
+  cosine_similarity: number;
+  combined_similarity: number;
+  risk_level: 'high' | 'medium' | 'low' | 'negligible';
+  flagged_shingles: string[];
+}
+
+interface TurnitinSimilarity {
+  similarity_index: number;           // 0-100 (like Turnitin %)
+  match_count: number;
+  high_risk_matches: number;
+  medium_risk_matches: number;
+  per_source_similarity: PerSourceSimilarity[];
+  interpretation: string;
+}
+
+interface PerChapterDesign {
+  chapterId: string;
+  theme: string;
+  accentHex: string;
+}
+
+type DiagnosticLevel = 'info' | 'success' | 'warning' | 'error';
+
+interface DiagnosticLogEntry {
+  id: string;
+  timestamp: string;
+  level: DiagnosticLevel;
+  action: string;
+  message: string;
+  details?: string;
 }
 
 // ─── Project / Thread interfaces ─────────────────────────────────
@@ -424,6 +511,35 @@ const THREAD_ICON: Record<string, { icon: LucideIcon; label: string; color: stri
 // App
 // ─────────────────────────────────────────────────────────────────
 
+const MermaidPreview = ({ chart }: { chart: string }) => {
+  const [svg, setSvg] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    mermaid.initialize({ startOnLoad: false, theme: 'default' });
+  }, []);
+
+  useEffect(() => {
+    const renderChart = async () => {
+      try {
+        setError(null);
+        if (chart) {
+          const { svg } = await mermaid.render('mermaid-preview-' + Date.now(), chart);
+          setSvg(svg);
+        }
+      } catch (err) {
+        setError(String(err));
+      }
+    };
+    void renderChart();
+  }, [chart]);
+
+  if (error) {
+    return <div className="mermaid-error" style={{ color: 'var(--accent-rose)', fontSize: '12px', padding: '10px' }}>Syntax Error: {error}</div>;
+  }
+  return <div className="mermaid-preview" style={{ background: 'white', borderRadius: '8px', padding: '16px', overflowX: 'auto', marginBottom: '16px' }} dangerouslySetInnerHTML={{ __html: svg }} />;
+};
+
 function App() {
   const [activeTab, setActiveTab] = useState<TabId>('projects');
 
@@ -447,6 +563,7 @@ function App() {
   const [isSyncing, setIsSyncing] = useState(false);
   const [isTestingNeon, setIsTestingNeon] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [statusNotice, setStatusNotice] = useState<string | null>(null);
   const [contributeEnabled, setContributeEnabled] = useState(true);
 
   // ── Projects ───────────────────────────────────────────────────
@@ -495,6 +612,17 @@ function App() {
   const [serviceDiagnostics, setServiceDiagnostics] = useState<string | null>(null);
   const [isCheckingServices, setIsCheckingServices] = useState(false);
   const [isRestartingBackend, setIsRestartingBackend] = useState(false);
+  const [showActivityLog, setShowActivityLog] = useState(false);
+  const [activityLog, setActivityLog] = useState<DiagnosticLogEntry[]>([]);
+
+  // ── New feature state ──────────────────────────────────────────
+  const [aiDetection, setAiDetection] = useState<AIDetectionResult | null>(null);
+  const [turnitinSimilarity, setTurnitinSimilarity] = useState<TurnitinSimilarity | null>(null);
+  const [perChapterDesigns, setPerChapterDesigns] = useState<PerChapterDesign[]>([]);
+  const [showDesignPanel, setShowDesignPanel] = useState(false);
+  const [showTurnitinDetail, setShowTurnitinDetail] = useState(false);
+  const [approvalMode, setApprovalMode] = useState<'one-by-one' | 'batch'>('one-by-one');
+  const [currentApprovalIndex, setCurrentApprovalIndex] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -541,8 +669,125 @@ function App() {
     [chapterDrafts],
   );
   const apiRoot = API_BASE.replace(/\/api\/v1$/, '');
+  const apiDocsUrl = `${apiRoot}/docs`;
   const normalizedDesignAccent = designAccentHex.trim();
   const designAccentValid = /^#?[0-9A-Fa-f]{6}$/.test(normalizedDesignAccent);
+  const approvedReviewCount = new Set([...approvedImprovementIds, ...completedImprovementIds]).size;
+  const sourceCheckedCount =
+    researchSources?.checked_source_count ?? researchSources?.sources.filter((source) => source.status === 'checked').length ?? 0;
+  const sourceNeedsKeyCount = researchSources?.sources.filter((source) => source.status === 'needs_key').length ?? 0;
+  const sourceMatchCount =
+    researchSources?.sources.reduce((total, source) => total + (source.matches?.length ?? 0), 0) ?? 0;
+  const workflowSteps = [
+    {
+      label: 'Upload',
+      detail: uploadResult?.filename ?? currentProject?.filename ?? 'Waiting for document',
+      state: uploadResult || currentProject?.doc_id ? 'done' : 'todo',
+    },
+    {
+      label: 'Analyze',
+      detail: scores ? `${sourceCheckedCount}/${researchSources?.source_count ?? researchSources?.sources.length ?? 0} sources checked` : 'Run AI + skill audit',
+      state: scores ? 'done' : isBusy ? 'active' : 'todo',
+    },
+    {
+      label: 'Approve',
+      detail: improvementPlan.length ? `${approvedReviewCount}/${improvementPlan.length} plan items` : 'Plan not ready',
+      state: improvementPlan.length && approvedReviewCount >= improvementPlan.length ? 'done' : improvementPlan.length ? 'active' : 'todo',
+    },
+    {
+      label: 'Revise',
+      detail: chapterDrafts.length ? `${completedChapterIds.length}/${chapterDrafts.length} chapters complete` : 'Open chapter workflow',
+      state: chapterDrafts.length && completedChapterIds.length >= chapterDrafts.length ? 'done' : chapterDrafts.length ? 'active' : 'todo',
+    },
+    {
+      label: 'Export',
+      detail: finalizeResult ? `${finalizeResult.artifacts.length} file(s) ready` : 'DOCX/PDF pending',
+      state: finalizeResult ? 'done' : 'todo',
+    },
+  ];
+
+  const addActivityLog = useCallback((
+    level: DiagnosticLevel,
+    action: string,
+    message: string,
+    details?: unknown,
+  ) => {
+    if (level === 'error') setShowActivityLog(true);
+    setActivityLog((prev) => [
+      {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        timestamp: new Date().toISOString(),
+        level,
+        action,
+        message,
+        details:
+          typeof details === 'string'
+            ? details
+            : details
+              ? JSON.stringify(details, null, 2)
+              : undefined,
+      },
+      ...prev,
+    ].slice(0, 200));
+  }, []);
+
+  const formatActivityLog = useCallback(() =>
+    activityLog
+      .map((entry) => {
+        const lines = [
+          `[${entry.timestamp}] ${entry.level.toUpperCase()} ${entry.action}`,
+          entry.message,
+        ];
+        if (entry.details) lines.push(entry.details);
+        return lines.join('\n');
+      })
+      .join('\n\n---\n\n'),
+  [activityLog]);
+
+  const copyActivityLog = useCallback(async () => {
+    const content = formatActivityLog() || 'No activity log entries yet.';
+    try {
+      await navigator.clipboard.writeText(content);
+      addActivityLog('success', 'activity_log.copy', 'Activity log copied to clipboard.');
+    } catch (err) {
+      addActivityLog('error', 'activity_log.copy', 'Could not copy activity log.', err instanceof Error ? err.message : String(err));
+    }
+  }, [addActivityLog, formatActivityLog]);
+
+  const downloadActivityLog = useCallback(() => {
+    const content = formatActivityLog() || 'No activity log entries yet.';
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `OTIF_activity_log_${new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 200);
+    addActivityLog('success', 'activity_log.download', 'Activity log download started.');
+  }, [addActivityLog, formatActivityLog]);
+
+  useEffect(() => {
+    const onError = (event: ErrorEvent) => {
+      addActivityLog('error', 'window.error', event.message, {
+        filename: event.filename,
+        lineno: event.lineno,
+        colno: event.colno,
+      });
+    };
+    const onUnhandledRejection = (event: PromiseRejectionEvent) => {
+      addActivityLog('error', 'window.unhandled_rejection', 'Unhandled promise rejection.', String(event.reason));
+    };
+    window.addEventListener('error', onError);
+    window.addEventListener('unhandledrejection', onUnhandledRejection);
+    return () => {
+      window.removeEventListener('error', onError);
+      window.removeEventListener('unhandledrejection', onUnhandledRejection);
+    };
+  }, [addActivityLog]);
 
   // ─────────────────────────────────────────────────────────────
   // Data loading
@@ -616,30 +861,37 @@ function App() {
 
   const checkBackendServices = useCallback(async () => {
     setIsCheckingServices(true);
+    addActivityLog('info', 'backend.services.check', 'Checking backend service diagnostics.');
     try {
       const invoke = window.__TAURI__?.core?.invoke;
       if (!invoke) {
         setServiceDiagnostics(
           `Browser mode service check\n\nAPI base: ${API_BASE}\nBrowser fallback: ${apiRoot}/app\nDesktop restart is available only in the installed app.`,
         );
+        addActivityLog('warning', 'backend.services.check', 'Service diagnostics requested outside installed desktop runtime.', { apiBase: API_BASE });
         return;
       }
       const diagnostics = await invoke<string>('check_backend_services');
       setServiceDiagnostics(diagnostics);
+      addActivityLog('success', 'backend.services.check', 'Backend service diagnostics completed.', diagnostics);
     } catch (err) {
-      setServiceDiagnostics(`Service check failed.\n\n${err instanceof Error ? err.message : String(err)}`);
+      const message = err instanceof Error ? err.message : String(err);
+      setServiceDiagnostics(`Service check failed.\n\n${message}`);
+      addActivityLog('error', 'backend.services.check', 'Backend service diagnostics failed.', message);
     } finally {
       setIsCheckingServices(false);
     }
-  }, [apiRoot]);
+  }, [addActivityLog, apiRoot]);
 
   const restartDesktopBackend = useCallback(async () => {
     setIsRestartingBackend(true);
     setError(null);
+    addActivityLog('info', 'backend.restart', 'Restart backend requested.');
     try {
       const invoke = window.__TAURI__?.core?.invoke;
       if (!invoke) {
         setServiceDiagnostics('Backend restart is available only in the installed desktop app.');
+        addActivityLog('warning', 'backend.restart', 'Restart requested outside installed desktop runtime.');
         return;
       }
       const result = await invoke<string>('restart_backend');
@@ -647,32 +899,39 @@ function App() {
       setBackendPhase('ready');
       await refreshData();
       await loadProjects();
+      addActivityLog('success', 'backend.restart', 'Backend restart completed.', result);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       setError(message);
       setServiceDiagnostics(`Restart failed.\n\n${message}`);
+      addActivityLog('error', 'backend.restart', 'Backend restart failed.', message);
     } finally {
       setIsRestartingBackend(false);
     }
-  }, [loadProjects, refreshData]);
+  }, [addActivityLog, loadProjects, refreshData]);
 
-  const openBrowserFallback = useCallback(async () => {
-    // BUG 4 FIX: /app doesn't exist on FastAPI; /docs is the built-in Swagger UI always available
-    const fallbackUrl = `${apiRoot}/docs`;
+  const openApiDocs = useCallback(async (event?: MouseEvent<HTMLAnchorElement>) => {
+    event?.preventDefault();
+    setStatusNotice(null);
+    addActivityLog('info', 'browser.docs.open', 'Opening API docs in browser.', apiDocsUrl);
     try {
       const invoke = window.__TAURI__?.core?.invoke;
       if (invoke) {
-        await invoke<string>('open_browser_fallback');
-      } else {
-        window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+        const openedUrl = await invoke<string>('open_browser_fallback');
+        setStatusNotice(`Opened API docs in your browser: ${openedUrl}`);
+        addActivityLog('success', 'browser.docs.open', 'API docs opened through Tauri command.', openedUrl);
+        return;
       }
-      setServiceDiagnostics(`Opened browser fallback:\n${fallbackUrl}`);
+      window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
+      setStatusNotice(`Opened API docs in your browser: ${apiDocsUrl}`);
+      addActivityLog('success', 'browser.docs.open', 'API docs opened through browser fallback.', apiDocsUrl);
     } catch (err) {
-      setServiceDiagnostics(
-        `Open this URL in your browser:\n${fallbackUrl}\n\n${err instanceof Error ? err.message : String(err)}`,
-      );
+      const message = err instanceof Error ? err.message : String(err);
+      window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
+      setError(`Open this URL in your browser: ${apiDocsUrl}. ${message}`);
+      addActivityLog('error', 'browser.docs.open', 'Tauri browser open failed; used browser fallback.', message);
     }
-  }, [apiRoot]);
+  }, [addActivityLog, apiDocsUrl]);
 
   // ── Backend startup poll ───────────────────────────────────────
   useEffect(() => {
@@ -816,6 +1075,8 @@ function App() {
   const triggerSkillSync = async (projectId: string, _source = 'manual') => {
     setIsSyncing(true);
     setError(null);
+    setStatusNotice(null);
+    addActivityLog('info', 'skills.sync.project', 'Project skill sync started.', { projectId });
     try {
       await axios.post(`${API_BASE}/projects/${projectId}/sync-skills`);
       await refreshData();
@@ -823,9 +1084,12 @@ function App() {
       setProjects((prev) =>
         prev.map((p) => (p.id === projectId ? { ...p, skill_sync_at: new Date().toISOString() } : p)),
       );
+      setStatusNotice('Skill sync completed for this project.');
+      addActivityLog('success', 'skills.sync.project', 'Project skill sync completed.', { projectId });
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Skill sync failed.';
       setError(String(message));
+      addActivityLog('error', 'skills.sync.project', 'Project skill sync failed.', message);
     } finally {
       setIsSyncing(false);
     }
@@ -834,14 +1098,20 @@ function App() {
   const globalSync = async () => {
     setIsSyncing(true);
     setError(null);
+    setStatusNotice(null);
+    addActivityLog('info', 'skills.sync.global', 'Global skill sync started.');
     try {
       const res = await axios.post<{ message?: string; neon_schema?: { message?: string } }>(`${API_BASE}/skills/pull`);
-      setNeonResult(res.data.neon_schema?.message ?? res.data.message ?? null);
+      const message = res.data.neon_schema?.message ?? res.data.message ?? 'Skill sync completed.';
+      setNeonResult(message);
+      setStatusNotice(message);
       await refreshData();
       if (currentProject) await loadThread(currentProject.id);
+      addActivityLog('success', 'skills.sync.global', message, res.data);
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Skill sync failed.';
       setError(String(message));
+      addActivityLog('error', 'skills.sync.global', 'Global skill sync failed.', message);
     } finally {
       setIsSyncing(false);
     }
@@ -872,6 +1142,15 @@ function App() {
     setChapterGuidance(null);
     setChapterProposal(null);
     setFinalizeResult(null);
+    setAiDetection(null);
+    setTurnitinSimilarity(null);
+    setPerChapterDesigns([]);
+    setCurrentApprovalIndex(0);
+    addActivityLog('info', 'document.upload', 'Upload and analysis started.', {
+      filename: file.name,
+      sizeBytes: file.size,
+      projectId: currentProject?.id ?? null,
+    });
 
     try {
       const form = new FormData();
@@ -884,6 +1163,7 @@ function App() {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadResult(upload.data);
+      addActivityLog('success', 'document.upload', 'Document uploaded.', upload.data);
       await runAnalysis(upload.data.doc_id);
       await refreshData();
       if (currentProject) {
@@ -895,12 +1175,19 @@ function App() {
         ? err.response?.data?.detail ?? err.message
         : 'Upload or analysis failed.';
       setError(String(message));
+      addActivityLog('error', 'document.upload', 'Upload or analysis failed.', message);
     } finally {
       setIsBusy(false);
     }
   };
 
   const runAnalysis = async (docId: string) => {
+    addActivityLog('info', 'analysis.run', 'Analysis started.', {
+      docId,
+      docType,
+      targetFormat,
+      projectId: currentProject?.id ?? null,
+    });
     const response = await fetch(`${API_BASE}/analysis/run/${docId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -911,8 +1198,15 @@ function App() {
       }),
     });
 
-    if (!response.ok || !response.body) {
-      throw new Error(`Analysis failed with HTTP ${response.status}`);
+    if (!response.ok) {
+      const detail = await response.text().catch(() => '');
+      addActivityLog('error', 'analysis.run', `Analysis failed with HTTP ${response.status}.`, detail);
+      throw new Error(`Analysis failed with HTTP ${response.status}${detail ? `: ${detail}` : ''}`);
+    }
+
+    if (!response.body) {
+      addActivityLog('error', 'analysis.run', 'Analysis failed because the backend did not return a stream.');
+      throw new Error('Analysis failed because the backend did not return a stream.');
     }
 
     const reader = response.body.getReader();
@@ -932,13 +1226,22 @@ function App() {
         setStreamEvents((prev) => [...prev, event]);
         if (event.scores) setScores(event.scores);
         if (event.findings) setFindings(event.findings);
-        if (event.improvement_plan) setImprovementPlan(event.improvement_plan);
+        if (event.improvement_plan) {
+          setImprovementPlan(event.improvement_plan);
+          setCurrentApprovalIndex(0);
+        }
         if (event.chapters) setChapterResults(event.chapters);
         if (event.research_sources) setResearchSources(event.research_sources);
         if (event.integrity_report) setIntegrityReport(event.integrity_report);
-        if (event.stage === 'error') throw new Error(event.message ?? 'Analysis failed.');
+        if (event.ai_detection) setAiDetection(event.ai_detection);
+        if (event.turnitin_similarity) setTurnitinSimilarity(event.turnitin_similarity);
+        if (event.stage === 'error') {
+          addActivityLog('error', 'analysis.run', event.message ?? 'Analysis failed.', event);
+          throw new Error(event.message ?? 'Analysis failed.');
+        }
       }
     }
+    addActivityLog('success', 'analysis.run', 'Analysis completed.', { docId });
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -961,6 +1264,34 @@ function App() {
     setOutputFormats((prev) =>
       prev.includes(format) ? prev.filter((existing) => existing !== format) : [...prev, format],
     );
+  };
+
+  // ── Per-chapter design helpers ──────────────────────────────
+  const getChapterDesign = (chapterId: string) =>
+    perChapterDesigns.find((d) => d.chapterId === chapterId) ?? null;
+
+  const setChapterDesign = (chapterId: string, theme: string, accentHex: string) => {
+    setPerChapterDesigns((prev) => {
+      const without = prev.filter((d) => d.chapterId !== chapterId);
+      return [...without, { chapterId, theme, accentHex }];
+    });
+  };
+
+  const clearChapterDesign = (chapterId: string) => {
+    setPerChapterDesigns((prev) => prev.filter((d) => d.chapterId !== chapterId));
+  };
+
+  // ── One-by-one approval navigation ───────────────────────────
+  const skipCurrentItem = () => {
+    if (currentApprovalIndex < activeImprovementPlan.length - 1) {
+      setCurrentApprovalIndex((i) => i + 1);
+    }
+  };
+
+  const prevApprovalItem = () => {
+    if (currentApprovalIndex > 0) {
+      setCurrentApprovalIndex((i) => i - 1);
+    }
   };
 
   const downloadReport = () => {
@@ -1051,6 +1382,12 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     if (selectedIds.length === 0) return;
     setIsBusy(true);
     setError(null);
+    addActivityLog('info', 'rewrite.approve', 'Approved improvement rewrite started.', {
+      docId: uploadResult.doc_id,
+      approvedItemCount: selectedIds.length,
+      drawDiagrams,
+      outputFormats,
+    });
     try {
       const res = await axios.post<RewriteApprovalResult>(`${API_BASE}/analysis/approve-rewrite`, {
         doc_id: uploadResult.doc_id,
@@ -1065,6 +1402,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         maintain_front_matter: true,
       });
       setApprovalResult(res.data);
+      addActivityLog('success', 'rewrite.approve', 'Approved improvement rewrite completed.', res.data);
       setCompletedImprovementIds((prev) => Array.from(new Set([...prev, ...selectedIds])));
       setApprovedImprovementIds([]);
 
@@ -1083,6 +1421,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         ? err.response?.data?.detail ?? err.message
         : 'Rewrite approval failed.';
       setError(String(message));
+      addActivityLog('error', 'rewrite.approve', 'Rewrite approval failed.', message);
     } finally {
       setIsBusy(false);
     }
@@ -1091,6 +1430,12 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   const generateDiagram = async () => {
     if (!uploadResult) return;
     setIsBusy(true);
+    setError(null);
+    addActivityLog('info', 'diagram.generate', 'Diagram generation started.', {
+      docId: uploadResult.doc_id,
+      diagramStyle,
+      designTheme,
+    });
     try {
       const planText = improvementPlan.map((item) => `${item.title}: ${item.action}`).join('\n');
       const res = await axios.post<DiagramResult>(`${API_BASE}/diagrams/generate`, {
@@ -1105,11 +1450,16 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       setDiagramResult(res.data);
       setEditedMermaid(res.data.mermaid_source);
       if (currentProject) await loadThread(currentProject.id);
+      addActivityLog('success', 'diagram.generate', 'Diagram generated.', {
+        diagramId: res.data.diagram_id,
+        caption: res.data.caption,
+      });
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.detail ?? err.message
         : 'Diagram generation failed.';
       setError(String(message));
+      addActivityLog('error', 'diagram.generate', 'Diagram generation failed.', message);
     } finally {
       setIsBusy(false);
     }
@@ -1182,6 +1532,11 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     }
     setIsRewritingChapter(true);
     setError(null);
+    addActivityLog('info', 'chapter.rewrite.draft', 'Chapter rewrite proposal started.', {
+      docId: uploadResult.doc_id,
+      chapterId: activeChapter.id,
+      approvedItemCount: approvedScopeIds.length,
+    });
     try {
       const res = await axios.post<ChapterRewriteProposal>(`${API_BASE}/analysis/chapter-rewrite-proposal`, {
         doc_id: uploadResult.doc_id,
@@ -1193,11 +1548,15 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         norm: targetFormat,
       });
       setChapterProposal(res.data);
+      addActivityLog('success', 'chapter.rewrite.draft', 'Chapter rewrite proposal generated.', {
+        chapterId: res.data.chapter_id,
+      });
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.detail ?? err.message
         : 'Chapter rewrite proposal failed.';
       setError(String(message));
+      addActivityLog('error', 'chapter.rewrite.draft', 'Chapter rewrite proposal failed.', message);
     } finally {
       setIsRewritingChapter(false);
     }
@@ -1224,6 +1583,12 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     if (!uploadResult || chapterDrafts.length === 0) return;
     setIsFinalizing(true);
     setError(null);
+    addActivityLog('info', 'thesis.finalize', 'Final thesis export started.', {
+      docId: uploadResult.doc_id,
+      chapterCount: chapterDrafts.length,
+      outputFormats,
+      designTheme,
+    });
     try {
       const res = await axios.post<FinalizeResult>(`${API_BASE}/analysis/finalize-thesis`, {
         doc_id: uploadResult.doc_id,
@@ -1239,11 +1604,15 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       });
       setFinalizeResult(res.data);
       if (currentProject) await loadThread(currentProject.id);
+      addActivityLog('success', 'thesis.finalize', 'Final thesis export completed.', {
+        artifactCount: res.data.artifacts?.length ?? 0,
+      });
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.detail ?? err.message
         : 'Final thesis export failed.';
       setError(String(message));
+      addActivityLog('error', 'thesis.finalize', 'Final thesis export failed.', message);
     } finally {
       setIsFinalizing(false);
     }
@@ -1259,6 +1628,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     // - In browser: opens a new tab which triggers the file download from the backend
     const href = artifactHref(artifact);
     window.open(href, '_blank', 'noopener,noreferrer');
+    addActivityLog('success', 'artifact.download', 'Artifact download opened in browser.', {
+      format: artifact.format,
+      href,
+    });
   };
 
   const approveDiscovery = async (discoveryId: string) => {
@@ -1284,18 +1657,29 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   // ─────────────────────────────────────────────────────────────
 
   const saveAiSettings = async () => {
-    if (!aiDraft) return;
+    if (!aiDraft) {
+      setError('AI settings are still loading. Try again in a moment.');
+      return;
+    }
     setIsBusy(true);
     setError(null);
+    setStatusNotice(null);
+    addActivityLog('info', 'ai.settings.save', 'Saving AI settings.', {
+      provider: aiDraft.provider,
+      model: aiDraft.model_by_provider[aiDraft.provider] ?? null,
+    });
     try {
       const res = await axios.put<Pick<AIStatus, 'settings' | 'providers'>>(`${API_BASE}/ai/settings`, aiDraft);
       setAiStatus((prev) =>
         prev ? { ...prev, settings: res.data.settings, providers: res.data.providers } : prev,
       );
       setAiDraft(res.data.settings);
+      setStatusNotice('AI settings saved.');
+      addActivityLog('success', 'ai.settings.save', 'AI settings saved.', res.data.settings);
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Could not save AI settings.';
       setError(String(message));
+      addActivityLog('error', 'ai.settings.save', 'Could not save AI settings.', message);
     } finally {
       setIsBusy(false);
     }
@@ -1304,6 +1688,8 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   const testProvider = async (provider: ProviderOption['id']) => {
     setIsBusy(true);
     setError(null);
+    setStatusNotice(null);
+    addActivityLog('info', 'ai.provider.test', 'Testing AI provider connection.', { provider });
     try {
       if (aiDraft) {
         const saved = await axios.put<Pick<AIStatus, 'settings' | 'providers'>>(`${API_BASE}/ai/settings`, aiDraft);
@@ -1314,54 +1700,40 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       }
       const res = await axios.post<ConnectionResult>(`${API_BASE}/ai/test/${provider}`);
       setConnectionResults((prev) => ({ ...prev, [provider]: res.data }));
+      setStatusNotice(res.data.message);
+      addActivityLog(res.data.ok ? 'success' : 'warning', 'ai.provider.test', res.data.message, {
+        provider,
+        result: res.data,
+      });
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Connection test failed.';
       setError(String(message));
+      addActivityLog('error', 'ai.provider.test', 'AI provider connection test failed.', {
+        provider,
+        message,
+      });
     } finally {
       setIsBusy(false);
-    }
-  };
-
-  const saveNeonSettings = async () => {
-    if (!neonDraft) return;
-    setIsTestingNeon(true);
-    setError(null);
-    try {
-      const res = await axios.put<NeonSettingsResponse>(`${API_BASE}/skills/neon/settings`, {
-        read_url: neonDraft.read_url,
-        write_url: neonDraft.write_url,
-        owner_url: neonDraft.owner_url,
-      });
-      setNeonDraft(res.data.settings);
-      setNeonResult(res.data.schema.message);
-      await refreshData();
-    } catch (err) {
-      const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Could not save Neon settings.';
-      setError(String(message));
-    } finally {
-      setIsTestingNeon(false);
     }
   };
 
   const testNeonConnection = async () => {
     setIsTestingNeon(true);
     setError(null);
+    setStatusNotice(null);
+    addActivityLog('info', 'neon.test', 'Testing Neon environment connection.');
     try {
-      if (neonDraft) {
-        const saved = await axios.put<NeonSettingsResponse>(`${API_BASE}/skills/neon/settings`, {
-          read_url: neonDraft.read_url,
-          write_url: neonDraft.write_url,
-          owner_url: neonDraft.owner_url,
-        });
-        setNeonDraft(saved.data.settings);
-      }
       const res = await axios.post<NeonTestResponse>(`${API_BASE}/skills/neon/test`);
       setNeonDraft(res.data.settings);
-      setNeonResult(res.data.ok ? 'Neon connected and schema is ready.' : res.data.schema.message);
+      const message = res.data.ok ? 'Neon connected and schema is ready.' : res.data.schema.message;
+      setNeonResult(message);
+      setStatusNotice(message);
       await refreshData();
+      addActivityLog(res.data.ok ? 'success' : 'warning', 'neon.test', message, res.data.schema);
     } catch (err) {
       const message = axios.isAxiosError(err) ? err.response?.data?.detail ?? err.message : 'Neon connection test failed.';
       setError(String(message));
+      addActivityLog('error', 'neon.test', 'Neon connection test failed.', message);
     } finally {
       setIsTestingNeon(false);
     }
@@ -1648,12 +2020,81 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
               <button className="btn btn-secondary btn-sm" onClick={() => void restartDesktopBackend()} disabled={isRestartingBackend}>
                 {isRestartingBackend ? 'Restarting...' : 'Restart backend'}
               </button>
-              <button className="btn btn-secondary btn-sm" onClick={() => void openBrowserFallback()}>
+              <a className="btn btn-secondary btn-sm" href={apiDocsUrl} target="_blank" rel="noopener noreferrer" onClick={openApiDocs}>
                 Open in browser
-              </button>
+              </a>
             </div>
           </div>
         )}
+
+        {statusNotice && !error && (
+          <div className="alert alert-success">
+            <CheckCircle2 size={16} />
+            <span>{statusNotice}</span>
+            <button className="btn btn-secondary btn-sm" onClick={() => setStatusNotice(null)}>
+              Dismiss
+            </button>
+          </div>
+        )}
+
+        <section className={`activity-log-panel ${showActivityLog ? 'expanded' : ''}`}>
+          <div className="activity-log-header">
+            <div className="activity-log-title">
+              <Activity size={16} />
+              <div>
+                <strong>Activity log</strong>
+                <span>
+                  {activityLog.length > 0
+                    ? `${activityLog.length} event${activityLog.length === 1 ? '' : 's'} captured`
+                    : 'No events captured yet'}
+                </span>
+              </div>
+            </div>
+            <div className="activity-log-actions">
+              <button className="btn btn-secondary btn-sm" onClick={() => setShowActivityLog((prev) => !prev)}>
+                {showActivityLog ? 'Hide' : 'Show'}
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => void copyActivityLog()} disabled={activityLog.length === 0}>
+                <Copy size={14} />
+                Copy
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={downloadActivityLog} disabled={activityLog.length === 0}>
+                <Download size={14} />
+                Download
+              </button>
+              <button className="btn btn-secondary btn-sm" onClick={() => setActivityLog([])} disabled={activityLog.length === 0}>
+                <Trash2 size={14} />
+                Clear
+              </button>
+            </div>
+          </div>
+          {!showActivityLog && activityLog[0] && (
+            <div className={`activity-log-latest log-${activityLog[0].level}`}>
+              <span>{new Date(activityLog[0].timestamp).toLocaleTimeString()}</span>
+              <strong>{activityLog[0].action}</strong>
+              <span>{activityLog[0].message}</span>
+            </div>
+          )}
+          {showActivityLog && (
+            <div className="activity-log-list">
+              {activityLog.length === 0 ? (
+                <div className="activity-log-empty">Run a check, sync, upload, AI test, or export to capture logs here.</div>
+              ) : (
+                activityLog.slice(0, 50).map((entry) => (
+                  <article key={entry.id} className={`activity-log-entry log-${entry.level}`}>
+                    <div className="activity-log-entry-head">
+                      <span>{new Date(entry.timestamp).toLocaleString()}</span>
+                      <strong>{entry.level.toUpperCase()}</strong>
+                      <code>{entry.action}</code>
+                    </div>
+                    <p>{entry.message}</p>
+                    {entry.details && <pre>{entry.details}</pre>}
+                  </article>
+                ))
+              )}
+            </div>
+          )}
+        </section>
 
         {serviceDiagnostics && (
           <div className="diagnostics-panel">
@@ -1797,6 +2238,84 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                   accept=".pdf,.docx,.doc,.txt"
                   onChange={handleFileChange}
                 />
+
+                <section className="academic-chat-shell">
+                  <div className="academic-chat-main">
+                    <div className="assistant-bubble">
+                      <div className="assistant-avatar">
+                        <Bot size={18} />
+                      </div>
+                      <div className="assistant-message">
+                        <div className="assistant-message-kicker">Academic Review Assistant</div>
+                        <h2>{scores ? 'Your evidence report and improvement workflow are ready.' : 'Upload a thesis or paper and I will run the academic integrity workflow.'}</h2>
+                        <p>
+                          I will check active skills, AI-writing signals, originality, open academic sources,
+                          chapter/page improvement items, diagram opportunities, and final DOCX/PDF readiness.
+                        </p>
+                        <div className="assistant-action-row">
+                          <button
+                            className="btn btn-primary"
+                            onClick={() => fileInputRef.current?.click()}
+                            disabled={isBusy}
+                          >
+                            <UploadCloud size={16} />
+                            {uploadResult || currentProject.doc_id ? 'Analyze another version' : 'Upload document'}
+                          </button>
+                          {improvementPlan.length > 0 && (
+                            <button className="btn btn-secondary" onClick={() => setApprovalMode('one-by-one')}>
+                              <ThumbsUp size={16} />
+                              Review improvements
+                            </button>
+                          )}
+                          {chapterDrafts.length > 0 && (
+                            <button className="btn btn-secondary" onClick={() => void finalizeThesis()} disabled={isFinalizing || !designAccentValid}>
+                              <Download size={16} />
+                              {finalizeResult ? 'Regenerate package' : 'Finalize package'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="workflow-timeline">
+                      {workflowSteps.map((step) => (
+                        <div key={step.label} className={`workflow-step ${step.state}`}>
+                          <span>{step.state === 'done' ? <CheckCircle2 size={14} /> : <Activity size={14} />}</span>
+                          <div>
+                            <strong>{step.label}</strong>
+                            <small>{step.detail}</small>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  <aside className="academic-chat-side">
+                    <div className="source-summary-card">
+                      <div className="source-summary-title">
+                        <GlobeLock size={16} />
+                        Open Source Coverage
+                      </div>
+                      <strong>{researchSources ? `${sourceCheckedCount}/${researchSources.source_count ?? researchSources.sources.length}` : '13'} sources</strong>
+                      <span>{researchSources ? `${sourceMatchCount} candidate matches` : 'Ready after analysis'}</span>
+                      {sourceNeedsKeyCount > 0 && <small>{sourceNeedsKeyCount} source(s) need API key configuration</small>}
+                    </div>
+                    <div className="source-chip-grid">
+                      {(researchSources?.sources ?? [
+                        { id: 'arxiv', name: 'arXiv', status: 'skipped' as const },
+                        { id: 'crossref', name: 'Crossref', status: 'skipped' as const },
+                        { id: 'openalex', name: 'OpenAlex', status: 'skipped' as const },
+                        { id: 'pubmed', name: 'PubMed', status: 'skipped' as const },
+                        { id: 'datacite', name: 'DataCite', status: 'skipped' as const },
+                        { id: 'eric', name: 'ERIC', status: 'skipped' as const },
+                      ]).slice(0, 8).map((source) => (
+                        <span key={source.id} className={`source-chip ${source.status}`}>
+                          {source.name}
+                        </span>
+                      ))}
+                    </div>
+                  </aside>
+                </section>
 
                 {/* Project thread */}
                 {thread.length > 0 && (
@@ -2036,15 +2555,36 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                                       <span style={{ fontSize: '16px' }}>🌐</span>
-                                      <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{source.name}</strong>
+                                      <div>
+                                        <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{source.name}</strong>
+                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                          {source.coverage ?? 'scholarly metadata'}
+                                          {source.cached ? ' · cached' : ''}
+                                          {source.requires_key ? ` · ${source.configured ? 'key configured' : 'key needed'}` : ''}
+                                        </div>
+                                      </div>
                                     </div>
                                     <div style={{ display: 'flex', gap: '6px' }}>
-                                      <span className={`badge ${source.status === 'checked' ? 'badge-green' : 'badge-amber'}`}>
+                                      <span className={`badge ${source.status === 'checked' ? 'badge-green' : source.status === 'needs_key' ? 'badge-rose' : 'badge-amber'}`}>
                                         {source.matches?.length ?? 0} results found
                                       </span>
                                       <span className="badge badge-purple">{source.status}</span>
                                     </div>
                                   </div>
+
+                                  {source.access_note && (
+                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.45 }}>
+                                      {source.access_note}
+                                      {source.docs_url && (
+                                        <>
+                                          {' '}
+                                          <a href={source.docs_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>
+                                            API docs
+                                          </a>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
 
                                   {source.matches && source.matches.length > 0 ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingLeft: '8px', borderLeft: '2px solid var(--accent)' }}>
@@ -2094,45 +2634,291 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                         <div className="card-header" style={{ paddingBottom: '8px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             <ShieldCheck size={18} style={{ color: '#10b981' }} />
-                            <span className="card-title" style={{ fontSize: '15px' }}>Active Ethical & Scope Boundaries</span>
+                            <span className="card-title" style={{ fontSize: '15px' }}>Active Ethical &amp; Scope Boundaries</span>
                           </div>
                           <span className="badge badge-green">Strict Compliance Gate</span>
                         </div>
                         <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                          <div style={{ marginBottom: '4px' }}>• <strong>No Data Fabrication:</strong> OTIF never generates empirical observations, statistical data, or false findings.</div>
-                          <div style={{ marginBottom: '4px' }}>• <strong>Deterministic Citation Locking:</strong> All DOIs and citations are extracted into immutable AST/Regex placeholders before syntactic revision.</div>
-                          <div>• <strong>CRediT Disclosure Ready:</strong> Every revision action is immutably logged for transparent journal AI disclosure compliance.</div>
+                          <div style={{ marginBottom: '4px' }}>&bull; <strong>No Data Fabrication:</strong> OTIF never generates empirical observations, statistical data, or false findings.</div>
+                          <div style={{ marginBottom: '4px' }}>&bull; <strong>Deterministic Citation Locking:</strong> All DOIs and citations are extracted into immutable AST/Regex placeholders before syntactic revision.</div>
+                          <div>&bull; <strong>CRediT Disclosure Ready:</strong> Every revision action is immutably logged for transparent journal AI disclosure compliance.</div>
                         </div>
                       </div>
 
-                      {/* Improvement plan */}
+                      {/* ── NEW: AI Detection Report Panel ── */}
+                      {aiDetection && (
+                        <div className="card animate-scale" style={{ borderLeft: `4px solid ${aiDetection.ai_detection_score >= 50 ? '#f59e0b' : '#10b981'}`, marginBottom: '16px' }}>
+                          <div className="card-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <ScanSearch size={18} style={{ color: aiDetection.ai_detection_score >= 50 ? '#f59e0b' : '#10b981' }} />
+                              <div>
+                                <div className="card-title">AI Detection Report</div>
+                                <div className="card-subtitle">Multi-signal analysis — GPTZero / Copyleaks methodology</div>
+                              </div>
+                            </div>
+                            <span className={`badge ${aiDetection.ai_detection_score >= 75 ? 'badge-rose' : aiDetection.ai_detection_score >= 50 ? 'badge-amber' : aiDetection.ai_detection_score >= 25 ? 'badge-cyan' : 'badge-green'}`}>
+                              {aiDetection.confidence} confidence
+                            </span>
+                          </div>
+
+                          {/* Big Score Gauge */}
+                          <div style={{ padding: '0 20px 16px', display: 'flex', alignItems: 'center', gap: '24px' }}>
+                            <div style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
+                              <svg width="100" height="100" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="12" />
+                                <circle
+                                  cx="50" cy="50" r="40"
+                                  fill="none"
+                                  stroke={aiDetection.ai_detection_score >= 75 ? '#ef4444' : aiDetection.ai_detection_score >= 50 ? '#f59e0b' : aiDetection.ai_detection_score >= 25 ? '#3b82f6' : '#10b981'}
+                                  strokeWidth="12"
+                                  strokeDasharray={`${aiDetection.ai_detection_score * 2.51} 251`}
+                                  strokeLinecap="round"
+                                  transform="rotate(-90 50 50)"
+                                  style={{ transition: 'stroke-dasharray 0.8s ease' }}
+                                />
+                                <text x="50" y="46" textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--text-main)">{aiDetection.ai_detection_score}%</text>
+                                <text x="50" y="62" textAnchor="middle" fontSize="9" fill="var(--text-muted)">AI DETECTED</text>
+                              </svg>
+                            </div>
+                            <div style={{ flex: 1 }}>
+                              <p style={{ fontSize: '13px', color: 'var(--text-main)', marginBottom: '8px', lineHeight: '1.5' }}>{aiDetection.verdict}</p>
+                              <div style={{ fontSize: '11px', padding: '6px 10px', background: 'var(--bg-overlay)', borderRadius: '6px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+                                {aiDetection.turnitin_ai_equivalent}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Signal Breakdown */}
+                          {aiDetection.signals && (
+                            <div style={{ padding: '0 20px 16px' }}>
+                              <div className="settings-group-title" style={{ marginBottom: '10px' }}><BarChart2 size={14} /> Signal Breakdown</div>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
+                                {Object.entries(aiDetection.signals).map(([key, val]) => (
+                                  <div key={key} style={{ background: 'var(--bg-overlay)', borderRadius: '6px', padding: '8px 10px' }}>
+                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>{key.replace(/_/g, ' ')}</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                      <div style={{ flex: 1, height: '4px', background: 'var(--border)', borderRadius: '2px', overflow: 'hidden' }}>
+                                        <div style={{ height: '100%', width: `${Math.min(100, Math.abs(val as number))}%`, background: key.includes('reduction') ? '#10b981' : (val as number) > 60 ? '#ef4444' : (val as number) > 30 ? '#f59e0b' : '#3b82f6', transition: 'width 0.5s ease' }} />
+                                      </div>
+                                      <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '36px', textAlign: 'right' }}>{(val as number).toFixed(0)}</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── NEW: Turnitin-Style Similarity Panel ── */}
+                      {turnitinSimilarity && (
+                        <div className="card animate-scale" style={{ borderLeft: `4px solid ${turnitinSimilarity.similarity_index >= 40 ? '#ef4444' : turnitinSimilarity.similarity_index >= 20 ? '#f59e0b' : '#10b981'}`, marginBottom: '16px' }}>
+                          <div
+                            className="card-header"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => setShowTurnitinDetail(!showTurnitinDetail)}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Percent size={18} style={{ color: turnitinSimilarity.similarity_index >= 40 ? '#ef4444' : '#10b981' }} />
+                              <div>
+                                <div className="card-title">Turnitin-Style Similarity Index</div>
+                                <div className="card-subtitle">{turnitinSimilarity.match_count} sources • n-gram shingle + cosine fingerprint</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span className={`badge ${turnitinSimilarity.similarity_index >= 40 ? 'badge-rose' : turnitinSimilarity.similarity_index >= 20 ? 'badge-amber' : 'badge-green'}`} style={{ fontSize: '18px', fontWeight: 700, padding: '6px 14px' }}>
+                                {turnitinSimilarity.similarity_index.toFixed(1)}%
+                              </span>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{showTurnitinDetail ? '▲' : '▼'}</span>
+                            </div>
+                          </div>
+                          <div style={{ padding: '0 20px 16px' }}>
+                            <p style={{ fontSize: '13px', lineHeight: '1.5', color: 'var(--text-main)' }}>{turnitinSimilarity.interpretation}</p>
+                            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
+                              <div style={{ flex: 1, height: '10px', background: 'var(--border)', borderRadius: '5px', overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${turnitinSimilarity.similarity_index}%`, background: turnitinSimilarity.similarity_index >= 40 ? 'linear-gradient(90deg,#ef4444,#dc2626)' : turnitinSimilarity.similarity_index >= 20 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#10b981,#059669)', transition: 'width 1s ease', borderRadius: '5px' }} />
+                              </div>
+                              <span style={{ fontSize: '12px', fontWeight: 600 }}>{turnitinSimilarity.high_risk_matches} high risk • {turnitinSimilarity.medium_risk_matches} medium risk</span>
+                            </div>
+                          </div>
+
+                          {showTurnitinDetail && turnitinSimilarity.per_source_similarity.length > 0 && (
+                            <div style={{ padding: '0 20px 16px', borderTop: '1px solid var(--border)' }}>
+                              <div className="settings-group-title" style={{ marginBottom: '10px', marginTop: '12px' }}>Per-Source Similarity Breakdown</div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {turnitinSimilarity.per_source_similarity.slice(0, 8).map((src, idx) => (
+                                  <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '8px 10px', background: 'var(--bg-overlay)', borderRadius: '6px', borderLeft: `3px solid ${src.risk_level === 'high' ? '#ef4444' : src.risk_level === 'medium' ? '#f59e0b' : src.risk_level === 'low' ? '#3b82f6' : 'var(--border)'}` }}>
+                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                      <div style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                        {src.source_url ? (
+                                          <a href={src.source_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+                                            {src.source_title} <ExternalLink size={11} />
+                                          </a>
+                                        ) : src.source_title}
+                                      </div>
+                                      {src.source_year && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{src.source_year}</div>}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+                                      <span className={`badge ${src.risk_level === 'high' ? 'badge-rose' : src.risk_level === 'medium' ? 'badge-amber' : 'badge-cyan'}`}>{src.combined_similarity.toFixed(1)}%</span>
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* ── NEW: Design Skill Panel ── */}
+                      {improvementPlan.length > 0 && (
+                        <div className="card animate-scale" style={{ marginBottom: '16px', border: showDesignPanel ? '1px solid var(--accent)' : '1px solid var(--border)' }}>
+                          <div
+                            className="card-header"
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => setShowDesignPanel(!showDesignPanel)}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Palette size={18} style={{ color: 'var(--accent)' }} />
+                              <div>
+                                <div className="card-title">Design Skill</div>
+                                <div className="card-subtitle">Global theme shared across all chapters. Override per chapter if needed.</div>
+                              </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <span className="badge badge-brand" style={{ background: designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79', color: 'white' }}>
+                                {designThemeOptions.find(o => o.id === designTheme)?.label ?? designTheme}
+                              </span>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{showDesignPanel ? '▲' : '▼'}</span>
+                            </div>
+                          </div>
+
+                          {showDesignPanel && (
+                            <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                              <div className="rewrite-option-grid">
+                                <label className="context-field">
+                                  <span className="settings-label">Global Design theme</span>
+                                  <select
+                                    className="settings-input full-width"
+                                    value={designTheme}
+                                    onChange={(e) => setDesignTheme(e.target.value)}
+                                  >
+                                    {designThemeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                                  </select>
+                                </label>
+                                <label className="context-field">
+                                  <span className="settings-label">Global Accent color</span>
+                                  <div className="color-input-row">
+                                    <input
+                                      type="color"
+                                      value={designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79'}
+                                      onChange={(e) => setDesignAccentHex(e.target.value)}
+                                      aria-label="Global document accent color"
+                                    />
+                                    <input
+                                      className={`settings-input full-width ${designAccentValid ? '' : 'input-error'}`}
+                                      value={designAccentHex}
+                                      onChange={(e) => setDesignAccentHex(e.target.value)}
+                                      placeholder="#1f4e79"
+                                    />
+                                  </div>
+                                </label>
+                                <label className="context-field">
+                                  <span className="settings-label">Diagram style</span>
+                                  <select
+                                    className="settings-input full-width"
+                                    value={diagramStyle}
+                                    onChange={(e) => setDiagramStyle(e.target.value)}
+                                  >
+                                    {diagramStyleOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                                  </select>
+                                </label>
+                              </div>
+
+                              {/* Per-chapter overrides */}
+                              {chapterResults.length > 0 && (
+                                <div>
+                                  <div className="settings-group-title" style={{ marginBottom: '10px' }}><Layers size={14} /> Per-Chapter Design Override (optional)</div>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {chapterResults.slice(0, 10).map((chapter) => {
+                                      const override = getChapterDesign(chapter.id);
+                                      return (
+                                        <div key={chapter.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '8px 10px', background: 'var(--bg-overlay)', borderRadius: '6px' }}>
+                                          <span style={{ flex: 1, fontSize: '13px', fontWeight: 500 }}>{chapter.title}</span>
+                                          {override ? (
+                                            <>
+                                              <input
+                                                type="color"
+                                                value={override.accentHex}
+                                                onChange={(e) => setChapterDesign(chapter.id, override.theme, e.target.value)}
+                                                style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
+                                              />
+                                              <select
+                                                className="settings-input"
+                                                style={{ width: '140px' }}
+                                                value={override.theme}
+                                                onChange={(e) => setChapterDesign(chapter.id, e.target.value, override.accentHex)}
+                                              >
+                                                {designThemeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                                              </select>
+                                              <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => clearChapterDesign(chapter.id)}>Reset</button>
+                                            </>
+                                          ) : (
+                                            <button
+                                              className="btn btn-secondary btn-sm"
+                                              style={{ padding: '4px 10px', fontSize: '12px' }}
+                                              onClick={() => setChapterDesign(chapter.id, designTheme, designAccentHex)}
+                                            >
+                                              + Override
+                                            </button>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       {improvementPlan.length > 0 && (
                         <div className="card animate-scale improvement-plan-panel">
                           <div className="card-header">
                             <div>
                               <div className="card-title">Improvement Work Queue</div>
                               <div className="card-subtitle">
-                                Approve a set, revise chapter by chapter, then compile the full document.
+                                Approve items one-by-one, then revise chapters and compile the full document.
                               </div>
                             </div>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
                               <button
                                 className="btn btn-secondary btn-sm"
                                 onClick={downloadReport}
-                                title="Download detailed markdown report with page & chapter analysis"
+                                title="Download detailed markdown report"
                               >
-                                📥 Download Full Report (.md)
+                                📥 Full Report (.md)
                               </button>
                               <button
                                 className="btn btn-secondary btn-sm"
                                 onClick={downloadCreditStatement}
-                                title="Generate formal CRediT AI Contribution Statement for publication"
+                                title="Generate formal CRediT AI Contribution Statement"
                                 style={{ border: '1px solid #10b981', color: '#10b981' }}
                               >
-                                📜 CRediT Statement (.md)
+                                📜 CRediT (.md)
                               </button>
-                              <div className="badge badge-amber">{approvedImprovementIds.length} selected</div>
-                              <div className="badge badge-green">{completedImprovementPlan.length} approved</div>
+                              <div className="badge badge-green">{approvedImprovementIds.length}/{improvementPlan.length} approved</div>
+                            </div>
+                          </div>
+
+                          {/* Progress bar */}
+                          <div style={{ padding: '0 20px 12px' }}>
+                            <div style={{ height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden', marginBottom: '6px' }}>
+                              <div style={{ height: '100%', width: `${improvementPlan.length > 0 ? (approvedImprovementIds.length / improvementPlan.length * 100) : 0}%`, background: 'linear-gradient(90deg, var(--accent), #10b981)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
+                              <span>{approvedImprovementIds.length} approved</span>
+                              <span>{improvementPlan.length - approvedImprovementIds.length} remaining</span>
                             </div>
                           </div>
 
@@ -2140,7 +2926,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                             <div>
                               <span>1</span>
                               <strong>{activeImprovementPlan.length} active suggestion(s)</strong>
-                              <small>Approve only the changes you want.</small>
+                              <small>Approve the changes you want.</small>
                             </div>
                             <div>
                               <span>2</span>
@@ -2150,37 +2936,115 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                             <div>
                               <span>3</span>
                               <strong>{finalizeResult ? 'Package ready' : 'Finalize pending'}</strong>
-                              <small>Download full DOCX/PDF in one shot.</small>
+                              <small>Download full DOCX/PDF.</small>
                             </div>
                           </div>
 
-                          <div className="plan-list">
-                            {activeImprovementPlan.map((item) => (
-                              <label className="plan-item" key={item.id}>
-                                <input
-                                  type="checkbox"
-                                  id={`plan-item-${item.id}`}
-                                  checked={approvedImprovementIds.includes(item.id)}
-                                  onChange={() => toggleApprovedImprovement(item.id)}
-                                />
-                                <div className="plan-copy">
-                                  <div className="plan-title-row">
-                                    <span>{item.title}</span>
-                                    <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>
-                                      {item.priority}
-                                    </span>
-                                  </div>
-                                  <p>{item.action}</p>
-                                  <div className="plan-evidence">{item.evidence}</div>
-                                </div>
-                              </label>
-                            ))}
-                            {activeImprovementPlan.length === 0 && (
-                              <div className="empty-inline">
-                                All suggestions in this analysis have been approved. Continue chapter edits or finalize the package.
-                              </div>
-                            )}
+                          {/* Approval mode toggle */}
+                          <div style={{ padding: '0 20px 12px', display: 'flex', gap: '8px' }}>
+                            <button
+                              className={`btn btn-sm ${approvalMode === 'one-by-one' ? 'btn-primary' : 'btn-secondary'}`}
+                              onClick={() => setApprovalMode('one-by-one')}
+                            >
+                              <ThumbsUp size={13} /> One-by-One
+                            </button>
+                            <button
+                              className={`btn btn-sm ${approvalMode === 'batch' ? 'btn-primary' : 'btn-secondary'}`}
+                              onClick={() => setApprovalMode('batch')}
+                            >
+                              <Layers size={13} /> Batch Review
+                            </button>
                           </div>
+
+                          {/* One-by-one approval wizard */}
+                          {approvalMode === 'one-by-one' && activeImprovementPlan.length > 0 && (() => {
+                            const item = activeImprovementPlan[currentApprovalIndex] ?? activeImprovementPlan[0];
+                            const isApproved = item ? approvedImprovementIds.includes(item.id) : false;
+                            const progress = `${Math.min(currentApprovalIndex + 1, activeImprovementPlan.length)} / ${activeImprovementPlan.length}`;
+                            return item ? (
+                              <div style={{ margin: '0 20px 16px', border: '1px solid var(--accent)', borderRadius: '10px', overflow: 'hidden' }}>
+                                <div style={{ padding: '14px 16px', background: 'var(--bg-overlay)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                    <span style={{ fontWeight: 600, fontSize: '13px' }}>{progress}</span>
+                                    <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>{item.priority}</span>
+                                    {isApproved && <span className="badge badge-green">✓ Approved</span>}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '6px' }}>
+                                    <button
+                                      className="btn btn-secondary btn-sm"
+                                      onClick={prevApprovalItem}
+                                      disabled={currentApprovalIndex === 0}
+                                      style={{ padding: '4px 10px' }}
+                                    >←</button>
+                                    <button
+                                      className="btn btn-secondary btn-sm"
+                                      onClick={skipCurrentItem}
+                                      disabled={currentApprovalIndex >= activeImprovementPlan.length - 1}
+                                      style={{ padding: '4px 10px' }}
+                                    >→</button>
+                                  </div>
+                                </div>
+                                <div style={{ padding: '16px' }}>
+                                  <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '8px' }}>{item.title}</div>
+                                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: '1.6' }}>{item.action}</p>
+                                  <div className="plan-evidence" style={{ marginBottom: '14px' }}>{item.evidence}</div>
+                                  <div style={{ display: 'flex', gap: '10px' }}>
+                                    <button
+                                      id={`approve-item-${item.id}`}
+                                      className={`btn ${isApproved ? 'btn-secondary' : 'btn-primary'}`}
+                                      onClick={() => {
+                                        toggleApprovedImprovement(item.id);
+                                        if (!isApproved && currentApprovalIndex < activeImprovementPlan.length - 1) {
+                                          setTimeout(() => setCurrentApprovalIndex((i) => i + 1), 300);
+                                        }
+                                      }}
+                                      style={{ flex: 1 }}
+                                    >
+                                      {isApproved ? <><ThumbsDown size={14} /> Unapprove</> : <><ThumbsUp size={14} /> Approve</>}
+                                    </button>
+                                    <button
+                                      className="btn btn-secondary"
+                                      onClick={skipCurrentItem}
+                                      disabled={currentApprovalIndex >= activeImprovementPlan.length - 1}
+                                    >
+                                      Skip →
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : null;
+                          })()}
+
+                          {/* Batch approval list */}
+                          {approvalMode === 'batch' && (
+                            <div className="plan-list">
+                              {activeImprovementPlan.map((item) => (
+                                <label className="plan-item" key={item.id}>
+                                  <input
+                                    type="checkbox"
+                                    id={`plan-item-${item.id}`}
+                                    checked={approvedImprovementIds.includes(item.id)}
+                                    onChange={() => toggleApprovedImprovement(item.id)}
+                                  />
+                                  <div className="plan-copy">
+                                    <div className="plan-title-row">
+                                      <span>{item.title}</span>
+                                      <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>
+                                        {item.priority}
+                                      </span>
+                                    </div>
+                                    <p>{item.action}</p>
+                                    <div className="plan-evidence">{item.evidence}</div>
+                                  </div>
+                                </label>
+                              ))}
+                              {activeImprovementPlan.length === 0 && (
+                                <div className="empty-inline">
+                                  All suggestions have been approved. Continue chapter edits or finalize the package.
+                                </div>
+                              )}
+                            </div>
+                          )}
 
                           {completedImprovementPlan.length > 0 && (
                             <div className="completed-plan-list">
@@ -2191,6 +3055,18 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                   <span>{item.title}</span>
                                 </div>
                               ))}
+                            </div>
+                          )}
+
+                          {/* Approve All shortcut */}
+                          {approvedImprovementIds.length < improvementPlan.length && (
+                            <div style={{ padding: '0 20px 12px' }}>
+                              <button
+                                className="btn btn-secondary btn-sm"
+                                onClick={() => setApprovedImprovementIds(improvementPlan.map(i => i.id))}
+                              >
+                                <BadgeCheck size={14} /> Approve All ({improvementPlan.length})
+                              </button>
                             </div>
                           )}
 
@@ -2333,7 +3209,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                           <div className="diagram-actions">
                             <button
                               className="btn btn-secondary btn-sm"
-                              onClick={() => { setEditingDiagram(!editingDiagram); setEditedMermaid(diagramResult.mermaid_source); }}
+                              onClick={() => { setEditingDiagram(!editingDiagram); setEditedMermaid(editedMermaid || diagramResult.mermaid_source); }}
                             >
                               {editingDiagram ? 'Close editor' : 'Edit Mermaid source'}
                             </button>
@@ -2347,6 +3223,8 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                             </button>
                           </div>
 
+                          <MermaidPreview chart={editedMermaid || diagramResult.mermaid_source} />
+
                           {editingDiagram && (
                             <textarea
                               className="mermaid-editor"
@@ -2354,6 +3232,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                               onChange={(e) => setEditedMermaid(e.target.value)}
                               rows={16}
                               spellCheck={false}
+                              style={{ width: '100%', padding: '10px', background: 'var(--bg-overlay)', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: '6px', fontFamily: 'monospace', marginBottom: '12px' }}
                             />
                           )}
 
@@ -2562,6 +3441,17 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                                   </button>
                                 ))}
                               </div>
+
+                              {finalizeResult.field_update_status && (
+                                <div className={`front-matter-status ${finalizeResult.field_update_status.updated_by_word ? 'ready' : 'needs-open'}`}>
+                                  <div className="settings-group-title">Front matter and page-number fields</div>
+                                  <p>
+                                    {finalizeResult.field_update_status.updated_by_word
+                                      ? 'TOC, list of tables, and list of figures were updated by Word automation before export.'
+                                      : 'TOC, list of tables, and list of figures are embedded and set to update when opened in Word. Automated page-number update needs Microsoft Word automation or LibreOffice on this machine.'}
+                                  </p>
+                                </div>
+                              )}
 
                               {finalizeResult.preservation_report && (
                                 <div className="preservation-summary">
@@ -2891,7 +3781,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                     ))}
                   </div>
 
-                  <button id="save-ai-settings-btn" className="btn btn-primary" onClick={() => void saveAiSettings()} disabled={isBusy}>
+                  <button id="save-ai-settings-btn" className="btn btn-primary" onClick={() => void saveAiSettings()} disabled={isBusy || !aiDraft}>
                     Save AI Settings
                   </button>
                 </>
@@ -2910,45 +3800,33 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                   </div>
                 </div>
                 <span className={`badge ${neonConnected ? 'badge-green' : 'badge-amber'}`}>
-                  {neonConnected ? 'Connected' : neonDraft?.configured ? 'Configured' : 'Needs URL'}
+                  {neonConnected ? 'Connected' : neonDraft?.configured ? 'Configured' : 'Offline'}
                 </span>
               </div>
               {neonDraft && (
                 <>
-                  <label className="settings-label" htmlFor="neon-read-url">Read URL</label>
-                  <input
-                    id="neon-read-url"
-                    className="settings-input full-width"
-                    type="password"
-                    placeholder="Neon read-only pooled connection URL"
-                    value={neonDraft.read_url}
-                    onChange={(e) => setNeonDraft({ ...neonDraft, read_url: e.target.value })}
-                  />
-                  <label className="settings-label" htmlFor="neon-write-url">Write URL</label>
-                  <input
-                    id="neon-write-url"
-                    className="settings-input full-width"
-                    type="password"
-                    placeholder="Neon write pooled connection URL"
-                    value={neonDraft.write_url}
-                    onChange={(e) => setNeonDraft({ ...neonDraft, write_url: e.target.value })}
-                  />
-                  <label className="settings-label" htmlFor="neon-owner-url">Owner URL</label>
-                  <input
-                    id="neon-owner-url"
-                    className="settings-input full-width"
-                    type="password"
-                    placeholder="Optional owner/admin URL"
-                    value={neonDraft.owner_url}
-                    onChange={(e) => setNeonDraft({ ...neonDraft, owner_url: e.target.value })}
-                  />
+                  <div className="settings-row">
+                    <div>
+                      <div className="settings-label">Read connection</div>
+                      <div className="settings-desc">Auto-configured from environment — {neonDraft.read_configured ? '✓ Connected' : 'Not configured'}</div>
+                    </div>
+                    <span className={`badge ${neonDraft.read_configured ? 'badge-green' : 'badge-amber'}`}>
+                      {neonDraft.read_configured ? 'Active' : 'Missing'}
+                    </span>
+                  </div>
+                  <div className="settings-row">
+                    <div>
+                      <div className="settings-label">Write connection</div>
+                      <div className="settings-desc">{neonDraft.write_configured ? '✓ Write pool ready' : 'Not configured'}</div>
+                    </div>
+                    <span className={`badge ${neonDraft.write_configured ? 'badge-green' : 'badge-amber'}`}>
+                      {neonDraft.write_configured ? 'Active' : 'Missing'}
+                    </span>
+                  </div>
                   <div className="provider-actions">
-                    <button className="btn btn-primary btn-sm" onClick={() => void saveNeonSettings()} disabled={isTestingNeon}>
-                      Save Neon Settings
-                    </button>
                     <button className="btn btn-secondary btn-sm" onClick={() => void testNeonConnection()} disabled={isTestingNeon}>
                       <RefreshCw size={14} className={isTestingNeon ? 'spin' : ''} />
-                      {isTestingNeon ? 'Testing...' : 'Test & Sync'}
+                      {isTestingNeon ? 'Testing...' : 'Test environment connection'}
                     </button>
                     {neonResult && (
                       <span className={`connection-result ${neonConnected ? 'ok' : 'fail'}`}>
@@ -2956,6 +3834,9 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                       </span>
                     )}
                   </div>
+                  <p className="settings-desc mt-2" style={{ opacity: 0.6 }}>
+                    Neon PostgreSQL credentials are loaded from environment configuration. Contact your system administrator to update credentials.
+                  </p>
                 </>
               )}
             </div>
@@ -3010,17 +3891,18 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         )}
       </main>
 
-      {/* UX-3: Persistent browser fallback URL in footer — always visible so researchers
-          can copy it if the desktop WebView freezes or if any functionality fails */}
+      {/* Persistent browser API access link in footer */}
       <footer className="app-footer">
-        <span className="footer-fallback-label">🌐 Browser access:</span>
+        <span className="footer-fallback-label">🌐 API Docs:</span>
         <a
-          href={`${apiRoot}/docs`}
-          onClick={(e) => { e.preventDefault(); void openBrowserFallback(); }}
+          href={apiDocsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           className="footer-fallback-url"
-          title="Open OTIF API interface in your default browser"
+          title="Open OTIF API documentation in your browser"
+          onClick={openApiDocs}
         >
-          {apiRoot}/docs
+          {apiDocsUrl} - open
         </a>
         <span className="footer-version">OTIF v1.0.21 · Free &amp; Open Source · Apache-2.0</span>
       </footer>

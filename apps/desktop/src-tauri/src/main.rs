@@ -112,7 +112,6 @@ fn check_backend_services(app_handle: tauri::AppHandle) -> Result<String, String
     let port = backend_port();
     let port_open = is_backend_port_open();
     let current_api = backend_has_current_api();
-    // BUG 4 mirror fix: use /docs (FastAPI Swagger UI) not /app which doesn't exist
     let support_url = format!("http://127.0.0.1:{port}/docs");
     let status = if !port_open {
         "Backend port is not listening."
@@ -382,7 +381,7 @@ fn backend_has_current_api() -> bool {
 }
 
 fn support_browser_url() -> String {
-    format!("http://127.0.0.1:{}/app", backend_port())
+    format!("http://127.0.0.1:{}/docs", backend_port())
 }
 
 fn open_url(url: &str) -> Result<(), String> {

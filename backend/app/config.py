@@ -4,7 +4,7 @@ Loads from .env file using Pydantic Settings
 """
 from functools import lru_cache
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -54,6 +54,8 @@ class Settings(BaseSettings):
     CORE_API_KEY: str = ""
     SEMANTIC_SCHOLAR_API_KEY: str = ""
     UNPAYWALL_EMAIL: str = ""
+    NCBI_API_KEY: str = ""
+    NCBI_EMAIL: str = ""
 
     # ── Skill Engine ──────────────────────────────────────────
     SKILL_PULL_INTERVAL: int = 3600          # seconds
@@ -75,6 +77,17 @@ class Settings(BaseSettings):
         "https://tauri.localhost"
     )
     CORS_ORIGIN_REGEX: str = r"https?://(localhost|127\.0\.0\.1|tauri\.localhost)(:\d+)?"
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def parse_debug_flag(cls, value):
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"release", "prod", "production", "false", "0", "no", "off", ""}:
+                return False
+            if normalized in {"debug", "dev", "development", "true", "1", "yes", "on"}:
+                return True
+        return value
 
     @property
     def cors_origins_list(self) -> list[str]:

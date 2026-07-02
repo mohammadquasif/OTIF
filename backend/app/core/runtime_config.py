@@ -1,13 +1,9 @@
-"""Runtime desktop configuration stored outside the install directory."""
+"""Runtime desktop configuration loaded from environment-managed settings."""
 from __future__ import annotations
 
-import json
-from pathlib import Path
-
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from app.config import settings
-from app.core.secret_store import protect_secret, restrict_secret_file, unprotect_secret
 
 
 class NeonRuntimeSettings(BaseModel):
@@ -26,26 +22,12 @@ class NeonRuntimeStatus(BaseModel):
     owner_url: str = ""
 
 
-def _config_dir() -> Path:
-    path = Path(settings.PROJECTS_PATH).parent / "config"
-    path.mkdir(parents=True, exist_ok=True)
-    return path
-
-
-def neon_config_path() -> Path:
-    return _config_dir() / "neon_settings.json"
-
-
 def _masked(value: str) -> str:
     if not value:
         return ""
     if len(value) <= 16:
         return "********"
     return f"{value[:10]}********{value[-6:]}"
-
-
-def _is_masked(value: str) -> bool:
-    return "****" in value or "..." in value
 
 
 def _env_neon_settings() -> NeonRuntimeSettings:
@@ -58,19 +40,6 @@ def _env_neon_settings() -> NeonRuntimeSettings:
 
 def load_neon_settings(mask: bool = False) -> NeonRuntimeSettings:
     config = _env_neon_settings()
-    path = neon_config_path()
-    if path.exists():
-        raw = json.loads(path.read_text(encoding="utf-8"))
-        saved = NeonRuntimeSettings(
-            read_url=unprotect_secret(str(raw.get("read_url", ""))),
-            write_url=unprotect_secret(str(raw.get("write_url", ""))),
-            owner_url=unprotect_secret(str(raw.get("owner_url", ""))),
-        )
-        config = NeonRuntimeSettings(
-            read_url=saved.read_url or config.read_url,
-            write_url=saved.write_url or config.write_url,
-            owner_url=saved.owner_url or config.owner_url,
-        )
     if mask:
         return NeonRuntimeSettings(
             read_url=_masked(config.read_url),
@@ -81,28 +50,8 @@ def load_neon_settings(mask: bool = False) -> NeonRuntimeSettings:
 
 
 def save_neon_settings(new_settings: NeonRuntimeSettings) -> NeonRuntimeStatus:
-    current = load_neon_settings(mask=False)
-
-    def merge(current_value: str, incoming_value: str) -> str:
-        if incoming_value and not _is_masked(incoming_value):
-            return incoming_value
-        if incoming_value == "":
-            return ""
-        return current_value
-
-    merged = NeonRuntimeSettings(
-        read_url=merge(current.read_url, new_settings.read_url),
-        write_url=merge(current.write_url, new_settings.write_url),
-        owner_url=merge(current.owner_url, new_settings.owner_url),
-    )
-    path = neon_config_path()
-    payload = {
-        "read_url": protect_secret(merged.read_url),
-        "write_url": protect_secret(merged.write_url),
-        "owner_url": protect_secret(merged.owner_url),
-    }
-    path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
-    restrict_secret_file(path)
+    """Compatibility no-op: Neon credentials are controlled by environment only."""
+    _ = new_settings
     return neon_status(mask=True)
 
 
