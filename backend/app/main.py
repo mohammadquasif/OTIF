@@ -163,7 +163,7 @@ def _frontend_dist_dir() -> Path | None:
 
 frontend_dist = _frontend_dist_dir()
 if frontend_dist:
-    app.mount("/app/assets", StaticFiles(directory=frontend_dist / "assets"), name="desktop-assets")
+    app.mount("/assets", StaticFiles(directory=frontend_dist / "assets"), name="desktop-assets")
 
     @app.get("/app", include_in_schema=False)
     @app.get("/app/{path:path}", include_in_schema=False)
