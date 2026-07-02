@@ -953,15 +953,24 @@ function App() {
     event?.preventDefault();
     setStatusNotice(null);
     addActivityLog('info', 'browser.docs.open', 'Opening Browser UI in browser.', apiDocsUrl);
+
+    if (!isTauriDesktop()) {
+      // Browser mode: just open in a new tab
+      window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
+      addActivityLog('success', 'browser.docs.open', 'Browser UI opened in new tab.', apiDocsUrl);
+      return;
+    }
+
+    // Tauri desktop mode: use native OS shell to open in default browser
     try {
       const openedUrl = await invokeDesktop<string>('open_browser_fallback');
       setStatusNotice(`Opened Browser UI in your browser: ${openedUrl}`);
       addActivityLog('success', 'browser.docs.open', 'Browser UI opened through Tauri command.', openedUrl);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
+      // Fallback: try window.open which works in WebView2 too
       window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
-      setError(`Open this URL in your browser: ${apiDocsUrl}. ${message}`);
-      addActivityLog('error', 'browser.docs.open', 'Tauri browser open failed; used browser fallback.', message);
+      addActivityLog('warning', 'browser.docs.open', 'Tauri browser open failed; used window.open fallback.', message);
     }
   }, [addActivityLog, apiDocsUrl]);
 
@@ -3960,7 +3969,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         )}
       </main>
 
-      {/* Persistent browser API access link in footer */}
+      {/* Persistent browser access link in footer */}
       <footer className="app-footer">
         <span className="footer-fallback-label">🌐 Browser UI:</span>
         <a
@@ -3968,10 +3977,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
           target="_blank"
           rel="noopener noreferrer"
           className="footer-fallback-url"
-          title="Open OTIF API documentation in your browser"
+          title={isTauriDesktop() ? 'Open OTIF in your default browser' : 'Copy this URL to open OTIF in another browser tab'}
           onClick={openApiDocs}
         >
-          {apiDocsUrl} - open
+          {apiDocsUrl}
         </a>
         <span className="footer-version">OTIF v1.1.3 · Free &amp; Open Source · Apache-2.0</span>
       </footer>
