@@ -163,9 +163,12 @@ def _frontend_dist_dir() -> Path | None:
 
 frontend_dist = _frontend_dist_dir()
 if frontend_dist:
-    app.mount("/assets", StaticFiles(directory=frontend_dist / "assets"), name="desktop-assets")
-
+    from fastapi.responses import RedirectResponse
+    
     @app.get("/app", include_in_schema=False)
+    async def desktop_browser_fallback_no_slash():
+        return RedirectResponse(url="/app/")
+
     @app.get("/app/{path:path}", include_in_schema=False)
     async def desktop_browser_fallback(path: str = ""):
         requested = frontend_dist / path

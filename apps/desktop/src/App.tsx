@@ -3912,7 +3912,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         >
           {apiDocsUrl} - open
         </a>
-        <span className="footer-version">OTIF v1.1.2 · Free &amp; Open Source · Apache-2.0</span>
+        <span className="footer-version">OTIF v1.1.3 · Free &amp; Open Source · Apache-2.0</span>
       </footer>
     </div>
   );
