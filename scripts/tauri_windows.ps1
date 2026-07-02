@@ -38,12 +38,16 @@ function Invoke-Tauri {
 
     # ── Pre-launch cleanup ──────────────────────────────────────────────
     # Kill any leftover otif-desktop.exe that would lock the build output
-    $null = taskkill /F /IM "otif-desktop.exe" /T 2>$null
+    try {
+        taskkill /F /IM "otif-desktop.exe" /T 2>$null
+    } catch { }
     # Kill any process hogging the backend port (18765) so the sidecar can start
     $portPid = (netstat -ano | Select-String "127.0.0.1:18765 " | ForEach-Object { ($_ -split '\s+')[-1] } | Select-Object -First 1)
     if ($portPid -match '^\d+$') {
         Write-Host "[OTIF] Clearing stale backend on port 18765 (PID $portPid)"
-        $null = taskkill /F /PID $portPid 2>$null
+        try {
+            taskkill /F /PID $portPid 2>$null
+        } catch { }
     }
     Start-Sleep -Milliseconds 500
 
