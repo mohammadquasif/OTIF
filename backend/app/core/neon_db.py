@@ -133,11 +133,18 @@ async def is_connected() -> bool:
 async def verify_schema() -> dict:
     """Return Neon schema readiness without mutating the database."""
     if _read_pool is None:
+        config = load_neon_settings(mask=False)
+        configured = bool(config.read_url or config.write_url or config.owner_url)
         return {
             "connected": False,
+            "configured": configured,
             "ready": False,
-            "missing_tables": REQUIRED_TABLES,
-            "message": "Neon read pool is not initialized.",
+            "missing_tables": [] if not configured else REQUIRED_TABLES,
+            "message": (
+                "Neon is not configured. Bundled local skill packs are active."
+                if not configured
+                else "Neon is configured, but the read connection is unavailable. Check credentials and network."
+            ),
         }
     try:
         async with _read_pool.acquire() as conn:
@@ -154,6 +161,7 @@ async def verify_schema() -> dict:
         missing = [table for table in REQUIRED_TABLES if table not in found]
         return {
             "connected": True,
+            "configured": True,
             "ready": not missing,
             "missing_tables": missing,
             "required_tables": REQUIRED_TABLES,
@@ -162,6 +170,7 @@ async def verify_schema() -> dict:
     except Exception as exc:
         return {
             "connected": False,
+            "configured": True,
             "ready": False,
             "missing_tables": REQUIRED_TABLES,
             "message": str(exc),

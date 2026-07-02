@@ -39,6 +39,7 @@ $pyInstallerArgs = @(
     "--distpath", $distDir,
     "--paths", $backendPath,
     "--add-data", "$seedsDir;skill-seeds",
+    "--add-data", "$root\.env;.",
     "--collect-all", "app",
     "--collect-submodules", "uvicorn",
     "--collect-submodules", "fastapi",

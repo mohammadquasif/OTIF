@@ -7,9 +7,28 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import Field, field_validator
 
 
+import sys
+from pathlib import Path
+
+import os
+
+def get_env_file_paths() -> tuple[str, ...]:
+    paths = []
+    bundle_root = getattr(sys, "_MEIPASS", None)
+    if bundle_root:
+        paths.append(str(Path(bundle_root) / ".env"))
+        
+    data_dir = os.environ.get("OTIF_DATA_DIR")
+    if data_dir:
+        paths.append(str(Path(data_dir) / ".env"))
+        
+    paths.append(".env")
+    paths.append("../.env")
+    return tuple(paths)
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file="../.env",
+        env_file=get_env_file_paths(),
         env_file_encoding="utf-8",
         extra="ignore",
     )

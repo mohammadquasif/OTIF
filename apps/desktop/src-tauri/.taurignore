@@ -1,9 +1,0 @@
-# Tauri file watcher ignore file
-# Prevents Tauri dev from rebuilding when these files change
-
-# Pre-compiled backend sidecar binaries - changing these should NOT trigger a Rust recompile
-binaries/
-binaries/*.exe
-
-# Build artifacts
-target/

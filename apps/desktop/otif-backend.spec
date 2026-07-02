@@ -1,12 +1,23 @@
 # -*- mode: python ; coding: utf-8 -*-
+from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.utils.hooks import collect_all
+
+datas = [('D:\\Projects Personal_GitHub\\OTIF\\skill-seeds', 'skill-seeds'), ('D:\\Projects Personal_GitHub\\OTIF\\apps\\desktop\\dist', 'frontend-dist')]
+binaries = []
+hiddenimports = []
+hiddenimports += collect_submodules('uvicorn')
+hiddenimports += collect_submodules('fastapi')
+hiddenimports += collect_submodules('pydantic')
+tmp_ret = collect_all('app')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
 a = Analysis(
-    ['D:\\Projects Personal_GitHub\\OTIF\\backend\\app\\desktop_server.py'],
+    ['D:\\Projects Personal_GitHub\\OTIF\\backend\\run_desktop.py'],
     pathex=['D:\\Projects Personal_GitHub\\OTIF\\backend'],
-    binaries=[],
-    datas=[],
-    hiddenimports=[],
+    binaries=binaries,
+    datas=datas,
+    hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

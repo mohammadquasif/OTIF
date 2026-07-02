@@ -40,13 +40,15 @@ Writing a rigorous dissertation or journal manuscript requires navigating strict
 
 ### 👩‍🎓 For Non-Technical Researchers (One-Click Standalone Installer)
 
-You do **not** need Python, Node.js, or command-line experience to use OTIF. The standalone desktop application bundles all analysis engines and academic skill sets inside a single installer.
+You do **not** need Python, Node.js, Rust, Visual Studio, or command-line experience to use OTIF. The standalone desktop application bundles the UI, local backend sidecar, analysis engines, and academic skill sets inside a single installer.
 
 1. Go to the official **[GitHub Releases Page](https://github.com/mohammadquasif/OTIF/releases)**.
 2. Download the latest Windows standalone installer: **`OTIF_Setup_x64.exe`**.
 3. Double-click the installer and follow the prompt to install OTIF on your PC.
 4. Launch **OTIF** from your Start Menu or Desktop shortcut. The splash screen will initialize the local database and verify all academic skill rules automatically within seconds.
 5. **Ready!** Drag and drop your `.docx`, `.pdf`, or `.txt` manuscript to begin your first audit.
+
+> **Windows runtime note:** Visual Studio Build Tools / `link.exe` are only required when compiling OTIF from source. End users who install the released `.exe` or `.msi` do not need Microsoft C++ build tools.
 
 > **💡 Note on Local AI Engines:** OTIF runs all structural diagnostics offline out of the box. If you wish to use the *Integrity-Preserving Revision* feature to polish academic prose locally, download and run [Ollama](https://ollama.com/) on your machine—OTIF detects running local models automatically. Cloud AI keys (OpenAI, DeepSeek, Gemini) can also be configured securely in desktop Settings.
 
@@ -59,6 +61,7 @@ If you wish to modify the codebase, develop custom academic skill rules, or insp
 #### Prerequisites
 - **Git**, **Node.js v20+**, and **Python 3.11+** installed on your system.
 - **Rust toolchain** (stable) if compiling native Tauri desktop binaries.
+- **Windows source builds only:** Visual Studio Build Tools 2022 with **Desktop development with C++**, **MSVC v143 C++ build tools**, and a **Windows 10/11 SDK**. OTIF's `npm run desktop:dev` and `npm run desktop:build` scripts automatically load this toolchain when installed and show a clear message if `link.exe` is missing.
 
 #### 1. Clone the Repository
 ```bash

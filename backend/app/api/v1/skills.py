@@ -149,8 +149,13 @@ async def force_skill_pull():
     """Force re-pull all skills from Neon DB (like 'Update virus definitions')."""
     schema = await neon_db.verify_schema()
     if not schema["ready"]:
+        message = (
+            "Offline mode: bundled local skill packs are active. Configure Neon to sync community skill updates."
+            if not schema.get("configured")
+            else "Neon is configured, but offline or schema is not ready. Bundled local skill packs remain active."
+        )
         return {
-            "message": "Neon is offline or schema is not ready. Bundled seed skills remain active.",
+            "message": message,
             "status": skill_manager.status,
             "neon_schema": schema,
         }

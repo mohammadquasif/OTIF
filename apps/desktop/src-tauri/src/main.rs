@@ -112,7 +112,8 @@ fn check_backend_services(app_handle: tauri::AppHandle) -> Result<String, String
     let port = backend_port();
     let port_open = is_backend_port_open();
     let current_api = backend_has_current_api();
-    let support_url = format!("http://127.0.0.1:{port}/docs");
+    let support_url = format!("http://127.0.0.1:{port}/app");
+    let localhost_url = format!("http://localhost:{port}/app");
     let status = if !port_open {
         "Backend port is not listening."
     } else if current_api {
@@ -122,7 +123,7 @@ fn check_backend_services(app_handle: tauri::AppHandle) -> Result<String, String
     };
 
     Ok(format!(
-        "OTIF backend service check\n\nStatus: {status}\nPort: 127.0.0.1:{port}\nCurrent API: {}\nBrowser fallback: {support_url}\nLog folder: {}\n\n{}",
+        "OTIF backend service check\n\nStatus: {status}\nPort: 127.0.0.1:{port}\nCurrent API: {}\nBrowser fallback: {support_url}\nLocalhost URL: {localhost_url}\nLog folder: {}\n\n{}",
         if current_api { "available" } else { "not available" },
         data_dir.display(),
         collect_log_output(&data_dir)
@@ -320,6 +321,21 @@ fn backend_command(
     app_handle: &tauri::AppHandle,
     data_dir: &Path,
 ) -> Result<(String, Vec<String>, PathBuf), String> {
+    #[cfg(debug_assertions)]
+    {
+        if let Some(repo_root) = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(Path::parent)
+            .and_then(Path::parent)
+            .map(Path::to_path_buf)
+        {
+            if let Some(cmd) = python_backend_command(&repo_root) {
+                write_startup_log(data_dir, "[OTIF] using live python backend in development mode");
+                return Ok(cmd);
+            }
+        }
+    }
+
     if let Some(path) = packaged_backend_path(app_handle, data_dir) {
         let staged_path = stage_packaged_backend(&path, data_dir)?;
         write_startup_log(
@@ -335,6 +351,7 @@ fn backend_command(
 
     let repo_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
         .parent()
+        .and_then(Path::parent)
         .and_then(Path::parent)
         .map(Path::to_path_buf)
         .ok_or_else(|| "Could not resolve repository root".to_string())?;

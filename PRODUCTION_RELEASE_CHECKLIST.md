@@ -89,7 +89,8 @@ Run export smoke test:
 - Windows installer builds successfully.
 - App is code-signed before public distribution.
 - Installer includes backend sidecar and required Python packages.
-- Fresh-machine install test passes without developer tools.
+- Fresh-machine install test passes without developer tools: no Visual Studio Build Tools, Rust, Node.js, or Python required on the end-user PC.
+- Start Menu/Desktop launch starts the bundled backend sidecar and serves the browser fallback at `http://127.0.0.1:18765/app`.
 - Uninstall removes application binaries without deleting user projects unless explicitly requested.
 
 ## 10. Release Evidence
