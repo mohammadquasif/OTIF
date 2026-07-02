@@ -381,7 +381,7 @@ fn backend_has_current_api() -> bool {
 }
 
 fn support_browser_url() -> String {
-    format!("http://127.0.0.1:{}/docs", backend_port())
+    format!("http://127.0.0.1:{}/app", backend_port())
 }
 
 fn open_url(url: &str) -> Result<(), String> {

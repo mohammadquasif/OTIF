@@ -149,7 +149,7 @@ def _frontend_dist_dir() -> Path | None:
         Path(os.environ.get("OTIF_FRONTEND_DIST", "")),
         bundle_root / "frontend-dist",
         Path(sys.executable).resolve().parent / "frontend-dist" if getattr(sys, "frozen", False) else Path(),
-        Path(__file__).resolve().parents[3] / "apps" / "desktop" / "dist",
+        Path(__file__).resolve().parents[2] / "apps" / "desktop" / "dist",
     ]
     for candidate in candidates:
         if candidate and (candidate / "index.html").exists():

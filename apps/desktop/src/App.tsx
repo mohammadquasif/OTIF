@@ -677,7 +677,7 @@ function App() {
     [chapterDrafts],
   );
   const apiRoot = API_BASE.replace(/\/api\/v1$/, '');
-  const apiDocsUrl = `${apiRoot}/docs`;
+  const apiDocsUrl = `${apiRoot}/app`;
   const normalizedDesignAccent = designAccentHex.trim();
   const designAccentValid = /^#?[0-9A-Fa-f]{6}$/.test(normalizedDesignAccent);
   const approvedReviewCount = new Set([...approvedImprovementIds, ...completedImprovementIds]).size;
@@ -921,18 +921,18 @@ function App() {
   const openApiDocs = useCallback(async (event?: MouseEvent<HTMLAnchorElement>) => {
     event?.preventDefault();
     setStatusNotice(null);
-    addActivityLog('info', 'browser.docs.open', 'Opening API docs in browser.', apiDocsUrl);
+    addActivityLog('info', 'browser.docs.open', 'Opening Browser UI in browser.', apiDocsUrl);
     try {
       const invoke = window.__TAURI__?.core?.invoke;
       if (invoke) {
         const openedUrl = await invoke<string>('open_browser_fallback');
-        setStatusNotice(`Opened API docs in your browser: ${openedUrl}`);
-        addActivityLog('success', 'browser.docs.open', 'API docs opened through Tauri command.', openedUrl);
+        setStatusNotice(`Opened Browser UI in your browser: ${openedUrl}`);
+        addActivityLog('success', 'browser.docs.open', 'Browser UI opened through Tauri command.', openedUrl);
         return;
       }
       window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
-      setStatusNotice(`Opened API docs in your browser: ${apiDocsUrl}`);
-      addActivityLog('success', 'browser.docs.open', 'API docs opened through browser fallback.', apiDocsUrl);
+      setStatusNotice(`Opened Browser UI in your browser: ${apiDocsUrl}`);
+      addActivityLog('success', 'browser.docs.open', 'Browser UI opened through browser fallback.', apiDocsUrl);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       window.open(apiDocsUrl, '_blank', 'noopener,noreferrer');
@@ -3901,7 +3901,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
       {/* Persistent browser API access link in footer */}
       <footer className="app-footer">
-        <span className="footer-fallback-label">🌐 API Docs:</span>
+        <span className="footer-fallback-label">🌐 Browser UI:</span>
         <a
           href={apiDocsUrl}
           target="_blank"
@@ -3912,7 +3912,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         >
           {apiDocsUrl} - open
         </a>
-        <span className="footer-version">OTIF v1.0.22 · Free &amp; Open Source · Apache-2.0</span>
+        <span className="footer-version">OTIF v1.0.23 · Free &amp; Open Source · Apache-2.0</span>
       </footer>
     </div>
   );
