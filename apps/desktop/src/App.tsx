@@ -564,6 +564,14 @@ function App() {
   const [isTestingNeon, setIsTestingNeon] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (statusNotice) {
+      const timer = setTimeout(() => setStatusNotice(null), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [statusNotice]);
+
   const [contributeEnabled, setContributeEnabled] = useState(true);
 
   // ── Projects ───────────────────────────────────────────────────
@@ -2028,7 +2036,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         )}
 
         {statusNotice && !error && (
-          <div className="alert alert-success">
+          <div className="alert alert-success toast-notification">
             <CheckCircle2 size={16} />
             <span>{statusNotice}</span>
             <button className="btn btn-secondary btn-sm" onClick={() => setStatusNotice(null)}>
@@ -3904,7 +3912,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         >
           {apiDocsUrl} - open
         </a>
-        <span className="footer-version">OTIF v1.0.21 · Free &amp; Open Source · Apache-2.0</span>
+        <span className="footer-version">OTIF v1.0.22 · Free &amp; Open Source · Apache-2.0</span>
       </footer>
     </div>
   );

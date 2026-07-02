@@ -2292,6 +2292,7 @@ select.settings-input {
   overflow: hidden;
 }
 
+
 .activity-log-header {
   display: flex;
   align-items: center;
@@ -2547,6 +2548,11 @@ select.settings-input {
 /* ── Persistent Browser Fallback Footer (UX-3) ─────────────────── */
 .app-footer {
   display: flex;
+  position: fixed;
+  bottom: 0;
+  left: 240px;
+  right: 0;
+  z-index: 50;
   align-items: center;
   gap: 12px;
   padding: 6px 20px;
@@ -2589,3 +2595,19 @@ select.settings-input {
   color: var(--text-disabled);
   white-space: nowrap;
 }
+
+.toast-notification {
+  position: fixed;
+  bottom: 48px; /* Above the footer */
+  right: 20px;
+  z-index: 100;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  animation: slideInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  min-width: 300px;
+}
+
+@keyframes slideInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
