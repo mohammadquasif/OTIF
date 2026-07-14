@@ -1,0 +1,25 @@
+{
+  "source_id": "pubmed",
+  "query": "# The Impact of Digital Transformation on SME Performance",
+  "created_at": 1784015950.6161492,
+  "matches": [
+    {
+      "title": "Global, regional, and national burden of stroke and its risk factors, 1990-2021: a systematic analysis for the Global Burden of Disease Study 2021.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/39304265/",
+      "year": "2024",
+      "abstract": "The Lancet. Neurology"
+    },
+    {
+      "title": "How maritime logistic SMEs lead and gain competitive advantage by applying information technology?",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/36324782/",
+      "year": "2022",
+      "abstract": "Frontiers in psychology"
+    },
+    {
+      "title": "AI-Enabled Opportunities and Transformation Challenges for SMEs in the Post-pandemic Era: A Review and Research Agenda.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/35570947/",
+      "year": "2022",
+      "abstract": "Frontiers in public health"
+    }
+  ]
+}

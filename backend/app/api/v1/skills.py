@@ -51,23 +51,35 @@ async def test_neon_connection():
 
 
 # ── GET /skills/status ────────────────────────────────────────────
+# ── Status cache (60 seconds) ────────────────────────────────────
+import time as _time
+_status = {"cache": None, "ts": 0.0}
+
+
 @router.get("/status")
 async def skill_status():
     """
     Get current skill engine status.
     Shows: loaded skills, versions, confidence scores, pending updates.
+    Results cached for 60 seconds to avoid repeated Neon round-trips.
     """
+    now = _time.time()
+    if _status["cache"] is not None and (now - _status["ts"]) < 60:
+        return _status["cache"]
+
     neon_schema = await neon_db.verify_schema()
     neon_connected = bool(neon_schema["connected"])
     updates = await skill_manager.check_for_updates() if neon_schema["ready"] else []
 
-    return {
+    _status["cache"] = {
         "neon_connected": neon_connected,
         "neon_schema": neon_schema,
         "skill_engine": skill_manager.status,
         "pending_updates": updates,
         "update_count": len(updates),
     }
+    _status["ts"] = now
+    return _status["cache"]
 
 
 # ── GET /skills/ ──────────────────────────────────────────────────
@@ -149,21 +161,26 @@ async def force_skill_pull():
     """Force re-pull all skills from Neon DB (like 'Update virus definitions')."""
     schema = await neon_db.verify_schema()
     if not schema["ready"]:
+        local_mode = not schema.get("configured")
         message = (
-            "Offline mode: bundled local skill packs are active. Configure Neon to sync community skill updates."
-            if not schema.get("configured")
+            "Local mode: bundled skill packs are active. Configure Neon only when you want community skill sync."
+            if local_mode
             else "Neon is configured, but offline or schema is not ready. Bundled local skill packs remain active."
         )
         return {
             "message": message,
             "status": skill_manager.status,
             "neon_schema": schema,
+            "sync_mode": "local" if local_mode else "degraded",
+            "severity": "info" if local_mode else "warning",
         }
     status = await skill_manager.startup_pull()
     return {
         "message": "Skills re-pulled from Neon DB",
         "status": status,
         "neon_schema": await neon_db.verify_schema(),
+        "sync_mode": "neon",
+        "severity": "success",
     }
 
 

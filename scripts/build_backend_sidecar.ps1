@@ -39,7 +39,6 @@ $pyInstallerArgs = @(
     "--distpath", $distDir,
     "--paths", $backendPath,
     "--add-data", "$seedsDir;skill-seeds",
-    "--add-data", "$root\.env;.",
     "--collect-all", "app",
     "--collect-submodules", "uvicorn",
     "--collect-submodules", "fastapi",
@@ -61,5 +60,11 @@ if (-not (Test-Path -LiteralPath $exe)) {
     throw "Expected backend sidecar was not created: $exe"
 }
 
-Copy-Item -LiteralPath $exe -Destination (Join-Path $outputPath "otif-backend.exe") -Force
-Write-Output "Backend sidecar ready: $(Join-Path $outputPath 'otif-backend.exe')"
+$targetExe = Join-Path $outputPath "otif-backend.exe"
+try {
+    Copy-Item -LiteralPath $exe -Destination $targetExe -Force
+} catch {
+    throw "Could not update $targetExe. Close any running OTIF desktop/backend processes and run this script again. Original error: $($_.Exception.Message)"
+}
+
+Write-Output "Backend sidecar ready: $targetExe"

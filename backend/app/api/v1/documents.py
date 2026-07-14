@@ -12,7 +12,7 @@ from app.db import local_db
 
 router = APIRouter()
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".md"}
 
 
 def _uploads_dir() -> Path:
@@ -102,6 +102,62 @@ async def upload_document(
         "message": "Document uploaded locally. Ready for analysis.",
         "privacy_note": "This document is stored on your machine only.",
     }
+
+
+# ── Reference Library (MUST be before /{doc_id} to avoid route capture) ───
+
+@router.get("/references")
+async def list_references():
+    """List all imported reference documents for cite-while-you-write."""
+    refs = await local_db.get_references()
+    return {
+        "references": [
+            {
+                "id": r.get("id", ""),
+                "filename": r.get("title", "Untitled"),
+                "size_bytes": 0,
+                "uploaded_at": r.get("created_at", ""),
+                "doc_type": "reference",
+                "doi": r.get("doi"),
+                "authors": r.get("authors"),
+                "year": r.get("year"),
+            }
+            for r in refs
+        ],
+        "count": len(refs),
+    }
+
+
+@router.post("/references/import")
+async def import_reference(file: UploadFile = File(...)):
+    """Import a PDF or DOCX as a reference document for cross-referencing."""
+    ext = Path(file.filename or "unknown").suffix.lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail=f"Reference file type '{ext}' not supported. Use PDF, DOCX, or TXT.")
+    ref_id = str(uuid.uuid4())
+    ref_path = _uploads_dir() / f"_ref_{ref_id}{ext}"
+    contents = await file.read()
+    ref_path.write_bytes(contents)
+    await local_db.add_reference(
+        project_id=None,
+        citation_key=f"ref:{ref_id[:12]}",
+        title=file.filename or "Imported Reference",
+        authors=None, year=None, doi=None, url=str(ref_path),
+    )
+    return {
+        "ref_id": ref_id, "filename": file.filename,
+        "size_bytes": len(contents),
+        "message": "Reference imported. Available for cross-reference searches.",
+    }
+
+
+@router.delete("/references/{ref_id}")
+async def delete_reference(ref_id: str):
+    """Remove a reference document from the library."""
+    deleted = await local_db.delete_reference(ref_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Reference '{ref_id}' not found.")
+    return {"message": f"Reference '{ref_id}' removed.", "ref_id": ref_id}
 
 
 @router.get("/{doc_id}")

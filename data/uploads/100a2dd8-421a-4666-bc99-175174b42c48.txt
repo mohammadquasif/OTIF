@@ -1,0 +1,20 @@
+# Test
+
+Abstract
+This is a test research paper about digital transformation in Indian SMEs. It uses mixed methods.
+
+Introduction
+Digital transformation is important for business competitiveness. SMEs form the backbone of the Indian economy.
+
+Methodology
+This study uses a mixed-methods approach with surveys of 200 SMEs across India.
+
+Results
+Findings show positive correlation between digital maturity and operational efficiency.
+
+Conclusion
+Digital transformation positively impacts SME performance. Future research should examine long-term impacts.
+
+References
+Braun, V., & Clarke, V. (2006). Using thematic analysis in psychology. Qualitative Research in Psychology, 3(2), 77-101.
+Vial, G. (2019). Understanding digital transformation. Journal of Strategic Information Systems, 28(2), 118-144.

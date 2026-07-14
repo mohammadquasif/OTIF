@@ -503,6 +503,7 @@ fn spawn_backend(app_handle: &tauri::AppHandle, state: &BackendProcess) -> Resul
         .current_dir(cwd)
         .env("OTIF_BACKEND_PORT", backend_port())
         .env("OTIF_DATA_DIR", &data_dir)
+        .env("OTIF_LAUNCHED_BY_TAURI", "1")
         .stdin(Stdio::null())
         .stdout(Stdio::from(stdout))
         .stderr(Stdio::from(stderr))

@@ -9,6 +9,7 @@ from __future__ import annotations
 import re
 import shutil
 import subprocess
+from html import unescape
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -52,6 +53,109 @@ def export_dir(base_uploads_dir: Path, doc_id: str) -> Path:
     path = base_uploads_dir / f"{doc_id}_exports"
     path.mkdir(parents=True, exist_ok=True)
     return path
+
+
+# ── Real ToC / LOT / LOF generation ─────────────────────────────
+
+WORDS_PER_PAGE = {"ugc": 320, "apa7": 350, "ieee": 450, "harvard": 350, "springer": 400, "elsevier": 400, "default": 380}
+
+def _extract_toc_entries(chapters: list[dict], norm: str) -> list[dict]:
+    """Parse chapter content and extract headings, figures, and tables with estimated page numbers."""
+    wpp = WORDS_PER_PAGE.get(norm, WORDS_PER_PAGE["default"])
+    entries: list[dict] = []
+    figures: list[dict] = []
+    tables: list[dict] = []
+
+    cumulative_pages = 1  # Start after title page
+    # Front matter pages
+    cumulative_pages += 2  # title page + subtitle
+
+    for ch_idx, chapter in enumerate(chapters):
+        title = str(chapter.get("title") or f"Chapter {ch_idx + 1}")
+        text = str(chapter.get("edited_text") or chapter.get("text") or "")
+        word_count = len(text.split())
+
+        # Heading entry for ToC
+        entries.append({
+            "level": 1, "title": title, "page": cumulative_pages,
+            "words": word_count, "chapter_index": ch_idx,
+        })
+
+        # Extract sub-headings and figures/tables from HTML or markdown
+        # Look for markdown headings ## and ###
+        for m in re.finditer(r"^(#{2,4})\s+(.+)$", text, re.MULTILINE):
+            level = len(m.group(1))
+            sub_title = m.group(2).strip()
+            sub_words = len(text[m.start():].split())
+            sub_page = cumulative_pages + max(0, (word_count - sub_words) // wpp)
+            entries.append({
+                "level": min(level, 3), "title": sub_title, "page": max(cumulative_pages, sub_page),
+                "words": 0, "chapter_index": ch_idx,
+            })
+
+        # Extract diagrams/figures
+        for m in re.finditer(r"(?:```mermaid\n.*?```|Figure\s+\d+[.:]\s*(.+?)(?:\n|$))", text, re.IGNORECASE | re.DOTALL):
+            caption = m.group(1).strip() if m.lastindex else "Diagram"
+            fig_pos = len(text[:m.start()].split())
+            fig_page = cumulative_pages + max(0, fig_pos // wpp)
+            figures.append({
+                "caption": caption[:120], "page": max(cumulative_pages, fig_page),
+                "chapter": title,
+            })
+
+        # Extract tables
+        for m in re.finditer(r"Table\s+\d+[.:]\s*(.+?)(?:\n|$)", text, re.IGNORECASE):
+            caption = m.group(1).strip()
+            tbl_pos = len(text[:m.start()].split())
+            tbl_page = cumulative_pages + max(0, tbl_pos // wpp)
+            tables.append({
+                "caption": caption[:120], "page": max(cumulative_pages, tbl_page),
+                "chapter": title,
+            })
+
+        # Advance page counter
+        chapter_pages = max(1, word_count // wpp)
+        cumulative_pages += chapter_pages
+
+    return entries, figures, tables
+
+
+def build_toc_text(entries: list[dict]) -> str:
+    """Build a formatted Table of Contents string with dot leaders and page numbers."""
+    lines = ["Table of Contents", "=" * 50, ""]
+    for entry in entries:
+        indent = "  " * (entry["level"] - 1)
+        title = entry["title"][:80]
+        page = str(entry["page"])
+        dots = "." * max(2, 55 - len(indent) - len(title) - len(page))
+        lines.append(f"{indent}{title} {dots} {page}")
+    return "\n".join(lines)
+
+
+def build_lot_text(figures: list[dict]) -> str:
+    """Build a formatted List of Figures with captions and page numbers."""
+    lines = ["List of Figures", "=" * 50, ""]
+    for i, fig in enumerate(figures, 1):
+        caption = fig["caption"][:90]
+        page = str(fig["page"])
+        dots = "." * max(2, 55 - len(f"Figure {i}: ") - len(caption) - len(page))
+        lines.append(f"Figure {i}: {caption} {dots} {page}")
+    if not figures:
+        lines.append("(No figures in this document)")
+    return "\n".join(lines)
+
+
+def build_lol_text(tables: list[dict]) -> str:
+    """Build a formatted List of Tables with captions and page numbers."""
+    lines = ["List of Tables", "=" * 50, ""]
+    for i, tbl in enumerate(tables, 1):
+        caption = tbl["caption"][:90]
+        page = str(tbl["page"])
+        dots = "." * max(2, 55 - len(f"Table {i}: ") - len(caption) - len(page))
+        lines.append(f"Table {i}: {caption} {dots} {page}")
+    if not tables:
+        lines.append("(No tables in this document)")
+    return "\n".join(lines)
 
 
 def safe_filename(value: str, fallback: str = "otif_thesis") -> str:
@@ -184,12 +288,31 @@ def compile_chapter_text(chapters: list[dict[str, Any]]) -> str:
     chunks: list[str] = []
     for chapter in chapters:
         title = str(chapter.get("title") or "Untitled chapter").strip()
-        text = str(chapter.get("edited_text") or chapter.get("text") or "").strip()
+        text = rich_text_to_plain_text(str(chapter.get("edited_text") or chapter.get("text") or ""))
         if title:
             chunks.append(title)
         if text:
             chunks.append(text)
     return "\n\n".join(chunks).strip()
+
+
+def rich_text_to_plain_text(value: str) -> str:
+    """Convert TipTap/editor HTML or plain text into export-ready manuscript text."""
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    if "<" not in text or ">" not in text:
+        return text
+
+    text = re.sub(r"(?i)<\s*br\s*/?\s*>", "\n", text)
+    text = re.sub(r"(?i)</\s*(p|div|h[1-6]|li|blockquote|tr)\s*>", "\n\n", text)
+    text = re.sub(r"(?i)<\s*li[^>]*>", "- ", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = unescape(text)
+    text = text.replace("\xa0", " ")
+    text = re.sub(r"[ \t]+\n", "\n", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
 
 def _normalize_text(value: str) -> str:
@@ -359,7 +482,7 @@ def create_preserved_docx(
 
     for chapter in chapters:
         title = str(chapter.get("title") or "").strip()
-        edited_blocks = _split_blocks(str(chapter.get("edited_text") or chapter.get("text") or ""))
+        edited_blocks = _split_blocks(rich_text_to_plain_text(str(chapter.get("edited_text") or chapter.get("text") or "")))
         if not title or not edited_blocks:
             continue
 
@@ -474,6 +597,7 @@ def create_docx(
 
     theme = resolve_theme(design_theme, design_accent_hex)
     accent = RGBColor.from_string(theme["accent"])
+    muted = RGBColor.from_string(theme.get("muted", "888888"))
 
     doc = Document()
     section = doc.sections[0]
@@ -510,17 +634,52 @@ def create_docx(
     subtitle.add_run(f"{doc_type.title()} | {NORM_LABELS.get(norm, norm.upper())} | {theme['name']}")
 
     doc.add_paragraph()
+    # ── Real ToC / LOT / LOF with computed page numbers ──
+    toc_entries, figures_list, tables_list = _extract_toc_entries(chapters, norm)
+
     doc.add_heading("Table of Contents", level=1)
-    _add_field_paragraph(doc, 'TOC \\o "1-3" \\h \\z \\u', "Update fields to generate the table of contents.")
+    for entry in toc_entries:
+        indent = "    " * (entry["level"] - 1)
+        p = doc.add_paragraph()
+        p.paragraph_format.space_after = Pt(2)
+        p.paragraph_format.space_before = Pt(1)
+        p.add_run(f"{indent}{entry['title']}").font.size = Pt(11)
+        # Dot leader
+        dot_run = p.add_run(f"  . . . . . . . . . . . . . . . . . . . .  {entry['page']}")
+        dot_run.font.size = Pt(9)
+        dot_run.font.color.rgb = muted
+
+    doc.add_page_break()
     doc.add_heading("List of Tables", level=1)
-    _add_field_paragraph(doc, 'TOC \\h \\z \\c "Table"', "Update fields to generate the list of tables.")
+    if tables_list:
+        for i, tbl in enumerate(tables_list, 1):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_after = Pt(2)
+            p.add_run(f"Table {i}: {tbl['caption'][:100]}").font.size = Pt(10)
+            dots = p.add_run(f"  . . . . . . . . . . . . . . . . . . . .  {tbl['page']}")
+            dots.font.size = Pt(9)
+            dots.font.color.rgb = muted
+    else:
+        doc.add_paragraph("(No tables in this document)")
+
+    doc.add_page_break()
     doc.add_heading("List of Figures", level=1)
-    _add_field_paragraph(doc, 'TOC \\h \\z \\c "Figure"', "Update fields to generate the list of figures.")
+    if figures_list:
+        for i, fig in enumerate(figures_list, 1):
+            p = doc.add_paragraph()
+            p.paragraph_format.space_after = Pt(2)
+            p.add_run(f"Figure {i}: {fig['caption'][:100]}").font.size = Pt(10)
+            dots = p.add_run(f"  . . . . . . . . . . . . . . . . . . . .  {fig['page']}")
+            dots.font.size = Pt(9)
+            dots.font.color.rgb = muted
+    else:
+        doc.add_paragraph("(No figures in this document)")
+
     doc.add_page_break()
 
     for chapter in chapters:
         doc.add_heading(str(chapter.get("title") or "Untitled chapter"), level=1)
-        body = str(chapter.get("edited_text") or chapter.get("text") or "").strip()
+        body = rich_text_to_plain_text(str(chapter.get("edited_text") or chapter.get("text") or ""))
         for block in re.split(r"\n\s*\n+", body):
             block = block.strip()
             if not block:
@@ -815,7 +974,7 @@ def create_pdf(
 
     for chapter in chapters:
         story.append(Paragraph(escape(str(chapter.get("title") or "Untitled chapter")), h1))
-        body_text = str(chapter.get("edited_text") or chapter.get("text") or "").strip()
+        body_text = rich_text_to_plain_text(str(chapter.get("edited_text") or chapter.get("text") or ""))
         for block in re.split(r"\n\s*\n+", body_text):
             block = block.strip()
             if block:

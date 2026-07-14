@@ -33,18 +33,13 @@ import {
   WifiOff,
   Zap,
   BadgeCheck,
-  BarChart2,
-  ExternalLink,
-  Layers,
   Palette,
-  Percent,
-  ScanSearch,
   ThumbsUp,
-  ThumbsDown,
   type LucideIcon,
 } from 'lucide-react';
 
 import { API_BASE } from './api';
+import { DocumentView } from './components/DocumentView';
 
 type TauriCoreBridge = {
   invoke?: <T>(command: string, args?: Record<string, unknown>) => Promise<T>;
@@ -137,7 +132,7 @@ interface ModelOption {
 }
 
 interface ProviderOption {
-  id: 'ollama' | 'deepseek' | 'gemini' | 'openai';
+  id: 'ollama' | 'deepseek' | 'gemini' | 'openai' | 'claude';
   name: string;
   mode: 'local' | 'cloud';
   configured: boolean;
@@ -229,6 +224,8 @@ interface ImprovementItem {
   evidence: string;
   requires_ai: boolean;
   chapter_id?: string;
+  page_range?: string;
+  analysis_source?: 'rules' | 'skills' | 'ai_review' | string;
 }
 
 interface ChapterResult {
@@ -303,8 +300,11 @@ interface StreamEvent {
   category?: string;
   requires_approval?: boolean;
   gate?: string;
+  internet_reachable?: boolean;
+  research_connectivity?: Record<string, unknown>;
   ai_detection?: AIDetectionResult;
   turnitin_similarity?: TurnitinSimilarity;
+  ai_review?: Record<string, unknown>;
 }
 
 interface RewriteApprovalResult {
@@ -366,23 +366,6 @@ interface FinalizeResult {
   limitations: string[];
 }
 
-interface ChapterRewriteProposal {
-  doc_id: string;
-  chapter_id: string;
-  title: string;
-  provider: ProviderOption['id'];
-  model: string | null;
-  privacy_mode: string;
-  proposed_text: string;
-  citation_lock: {
-    locked_count: number;
-    all_restored: boolean;
-    missing_tokens: string[];
-  };
-  requires_user_apply: boolean;
-  message: string;
-}
-
 interface DiagramResult {
   diagram_id: string;
   mermaid_source: string;
@@ -432,12 +415,6 @@ interface TurnitinSimilarity {
   interpretation: string;
 }
 
-interface PerChapterDesign {
-  chapterId: string;
-  theme: string;
-  accentHex: string;
-}
-
 type DiagnosticLevel = 'info' | 'success' | 'warning' | 'error';
 
 interface DiagnosticLogEntry {
@@ -471,6 +448,14 @@ interface ThreadMessage {
   created_at: string;
 }
 
+const threadContent = (message: ThreadMessage): Record<string, unknown> =>
+  typeof message.content === 'string' ? {} : message.content;
+
+const isAnalysisSnapshot = (message: ThreadMessage) => {
+  const content = threadContent(message);
+  return message.message_type === 'analysis_result' && Boolean(content.scores);
+};
+
 interface Discovery {
   id: string;
   project_id: string;
@@ -483,6 +468,7 @@ interface Discovery {
 }
 
 type TabId = 'projects' | 'analyze' | 'skills' | 'community' | 'settings';
+type AnalysisStepId = 'upload' | 'live' | 'report' | 'plan' | 'download';
 
 // ─────────────────────────────────────────────────────────────────
 // Constants
@@ -638,12 +624,9 @@ function App() {
   const [chapterDrafts, setChapterDrafts] = useState<EditableChapter[]>([]);
   const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
   const [completedChapterIds, setCompletedChapterIds] = useState<string[]>([]);
-  const [chapterGuidance, setChapterGuidance] = useState<string | null>(null);
+  const [_chapterGuidance, setChapterGuidance] = useState<string | null>(null);
   const [finalizeResult, setFinalizeResult] = useState<FinalizeResult | null>(null);
   const [isFinalizing, setIsFinalizing] = useState(false);
-  const [isRewritingChapter, setIsRewritingChapter] = useState(false);
-  const [chapterProposal, setChapterProposal] = useState<ChapterRewriteProposal | null>(null);
-  const [showCompiledPreview, setShowCompiledPreview] = useState(true);
   const [serviceDiagnostics, setServiceDiagnostics] = useState<string | null>(null);
   const [isCheckingServices, setIsCheckingServices] = useState(false);
   const [isRestartingBackend, setIsRestartingBackend] = useState(false);
@@ -653,11 +636,11 @@ function App() {
   // ── New feature state ──────────────────────────────────────────
   const [aiDetection, setAiDetection] = useState<AIDetectionResult | null>(null);
   const [turnitinSimilarity, setTurnitinSimilarity] = useState<TurnitinSimilarity | null>(null);
-  const [perChapterDesigns, setPerChapterDesigns] = useState<PerChapterDesign[]>([]);
   const [showDesignPanel, setShowDesignPanel] = useState(false);
-  const [showTurnitinDetail, setShowTurnitinDetail] = useState(false);
-  const [approvalMode, setApprovalMode] = useState<'one-by-one' | 'batch'>('one-by-one');
   const [currentApprovalIndex, setCurrentApprovalIndex] = useState(0);
+  const [activeAnalysisStep, setActiveAnalysisStep] = useState<AnalysisStepId>('upload');
+  const [showLiveEditDrawer, setShowLiveEditDrawer] = useState(false);
+  const [liveEditLog, setLiveEditLog] = useState<string[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
@@ -680,64 +663,100 @@ function App() {
   const neonConnected = status?.neon_connected ?? false;
   const activeChapter = chapterDrafts.find((chapter) => chapter.id === activeChapterId) ?? chapterDrafts[0] ?? null;
   const activeImprovementPlan = useMemo(
-    () => improvementPlan.filter((item) => !completedImprovementIds.includes(item.id)),
-    [improvementPlan, completedImprovementIds],
+    () => improvementPlan.filter(
+      (item) =>
+        !approvedImprovementIds.includes(item.id) &&
+        !completedImprovementIds.includes(item.id),
+    ),
+    [improvementPlan, approvedImprovementIds, completedImprovementIds],
   );
   const completedImprovementPlan = useMemo(
-    () => improvementPlan.filter((item) => completedImprovementIds.includes(item.id)),
-    [improvementPlan, completedImprovementIds],
+    () => improvementPlan.filter(
+      (item) =>
+        approvedImprovementIds.includes(item.id) ||
+        completedImprovementIds.includes(item.id),
+    ),
+    [improvementPlan, approvedImprovementIds, completedImprovementIds],
   );
-  const approvedScopeIds = approvalResult?.approved_item_ids ?? approvedImprovementIds;
-  const changedChapterCount = useMemo(
-    () => chapterDrafts.filter((chapter) => chapter.edited_text !== chapter.original_text).length,
-    [chapterDrafts],
+  const approvedRewriteItemIds = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...approvedImprovementIds,
+          ...completedImprovementIds,
+          ...(approvalResult?.approved_item_ids ?? []),
+        ]),
+      ).filter((itemId) => improvementPlan.some((item) => item.id === itemId)),
+    [approvalResult, approvedImprovementIds, completedImprovementIds, improvementPlan],
   );
+  const allImprovementIds = useMemo(() => improvementPlan.map((item) => item.id), [improvementPlan]);
+  const workflowRewriteItemIds = approvedRewriteItemIds.length > 0 ? approvedRewriteItemIds : allImprovementIds;
+  const approvedReviewCount = new Set([
+    ...approvedImprovementIds,
+    ...completedImprovementIds,
+    ...(approvalResult?.approved_item_ids ?? []),
+  ]).size;
+  const analysisHistory = useMemo(() => thread.filter(isAnalysisSnapshot), [thread]);
+  const visibleThread = showFullReviewLog ? thread : thread.slice(-6);
   const completionPercent = chapterDrafts.length
     ? Math.round((completedChapterIds.length / chapterDrafts.length) * 100)
     : 0;
-  const visibleThread = showFullReviewLog ? thread : thread.slice(-6);
-  const compiledPreview = useMemo(
-    () =>
-      chapterDrafts
-        .map((chapter, index) => `${index + 1}. ${chapter.title}\n\n${chapter.edited_text}`)
-        .join('\n\n'),
-    [chapterDrafts],
-  );
   const apiRoot = API_BASE.replace(/\/api\/v1$/, '');
   const apiDocsUrl = `${apiRoot}/app`;
+  const activeDocId = uploadResult?.doc_id ?? currentProject?.doc_id ?? null;
   const normalizedDesignAccent = designAccentHex.trim();
   const designAccentValid = /^#?[0-9A-Fa-f]{6}$/.test(normalizedDesignAccent);
-  const approvedReviewCount = new Set([...approvedImprovementIds, ...completedImprovementIds]).size;
-  const sourceCheckedCount =
-    researchSources?.checked_source_count ?? researchSources?.sources.filter((source) => source.status === 'checked').length ?? 0;
-  const sourceNeedsKeyCount = researchSources?.sources.filter((source) => source.status === 'needs_key').length ?? 0;
-  const sourceMatchCount =
-    researchSources?.sources.reduce((total, source) => total + (source.matches?.length ?? 0), 0) ?? 0;
-  const workflowSteps = [
+  const approvedPercent = improvementPlan.length
+    ? Math.round((approvedReviewCount / improvementPlan.length) * 100)
+    : 0;
+  const planGroups = useMemo(() => {
+    const chapterTitle = (chapterId?: string) =>
+      chapterResults.find((chapter) => chapter.id === chapterId)?.title ??
+      chapterDrafts.find((chapter) => chapter.id === chapterId)?.title ??
+      'Whole document';
+    const groups = new Map<string, { title: string; items: ImprovementItem[] }>();
+    improvementPlan.forEach((item) => {
+      const key = item.chapter_id ?? 'whole_document';
+      if (!groups.has(key)) groups.set(key, { title: chapterTitle(item.chapter_id), items: [] });
+      groups.get(key)?.items.push(item);
+    });
+    return Array.from(groups.values());
+  }, [chapterDrafts, chapterResults, improvementPlan]);
+  const analysisStepperSteps: Array<{
+    id: AnalysisStepId;
+    label: string;
+    detail: string;
+    state: 'done' | 'active' | 'todo';
+  }> = [
     {
+      id: 'upload',
       label: 'Upload',
-      detail: uploadResult?.filename ?? currentProject?.filename ?? 'Waiting for document',
-      state: uploadResult || currentProject?.doc_id ? 'done' : 'todo',
+      detail: uploadResult?.filename ?? currentProject?.filename ?? 'Choose document',
+      state: uploadResult || currentProject?.doc_id ? 'done' : activeAnalysisStep === 'upload' ? 'active' : 'todo',
     },
     {
-      label: 'Analyze',
-      detail: scores ? `${sourceCheckedCount}/${researchSources?.source_count ?? researchSources?.sources.length ?? 0} sources checked` : 'Run AI + skill audit',
-      state: scores ? 'done' : isBusy ? 'active' : 'todo',
+      id: 'live',
+      label: 'Live Analysis',
+      detail: isBusy ? 'Checking now' : streamEvents.length ? `${streamEvents.length} events` : 'Run checks',
+      state: isBusy || activeAnalysisStep === 'live' ? 'active' : scores ? 'done' : 'todo',
     },
     {
-      label: 'Approve',
-      detail: improvementPlan.length ? `${approvedReviewCount}/${improvementPlan.length} plan items` : 'Plan not ready',
-      state: improvementPlan.length && approvedReviewCount >= improvementPlan.length ? 'done' : improvementPlan.length ? 'active' : 'todo',
+      id: 'report',
+      label: 'Report',
+      detail: scores ? 'Scores ready' : 'Not ready',
+      state: activeAnalysisStep === 'report' ? 'active' : scores ? 'done' : 'todo',
     },
     {
-      label: 'Revise',
-      detail: chapterDrafts.length ? `${completedChapterIds.length}/${chapterDrafts.length} chapters complete` : 'Open chapter workflow',
-      state: chapterDrafts.length && completedChapterIds.length >= chapterDrafts.length ? 'done' : chapterDrafts.length ? 'active' : 'todo',
+      id: 'plan',
+      label: 'Improvement Plan',
+      detail: improvementPlan.length ? `${approvedReviewCount}/${improvementPlan.length} approved` : scores ? 'Rebuild needed' : 'Not ready',
+      state: activeAnalysisStep === 'plan' ? 'active' : improvementPlan.length ? 'done' : 'todo',
     },
     {
-      label: 'Export',
-      detail: finalizeResult ? `${finalizeResult.artifacts.length} file(s) ready` : 'DOCX/PDF pending',
-      state: finalizeResult ? 'done' : 'todo',
+      id: 'download',
+      label: 'Download',
+      detail: finalizeResult ? `${finalizeResult.artifacts.length} file(s)` : chapterDrafts.length ? 'Ready to finalize' : 'After approval',
+      state: activeAnalysisStep === 'download' ? 'active' : finalizeResult ? 'done' : 'todo',
     },
   ];
 
@@ -778,6 +797,42 @@ function App() {
       })
       .join('\n\n---\n\n'),
   [activityLog]);
+
+  const restoreAnalysisSnapshot = useCallback((message: ThreadMessage, silent = false) => {
+    const content = threadContent(message);
+    const savedPlan = Array.isArray(content.improvement_plan)
+      ? content.improvement_plan as ImprovementItem[]
+      : [];
+
+    setScores((content.scores as PreflightScores | undefined) ?? null);
+    setFindings(Array.isArray(content.findings) ? content.findings as Finding[] : []);
+    setImprovementPlan(savedPlan);
+    setChapterResults(Array.isArray(content.chapters) ? content.chapters as ChapterResult[] : []);
+    setResearchSources((content.research_sources as ResearchSourcesReport | undefined) ?? null);
+    setIntegrityReport((content.integrity_report as IntegrityReport | undefined) ?? null);
+    setAiDetection((content.ai_detection as AIDetectionResult | undefined) ?? null);
+    setTurnitinSimilarity((content.turnitin_similarity as TurnitinSimilarity | undefined) ?? null);
+    setStreamEvents([]);
+    setApprovedImprovementIds([]);
+    setCompletedImprovementIds([]);
+    setApprovalResult(null);
+    setChapterDrafts([]);
+    setActiveChapterId(null);
+    setCompletedChapterIds([]);
+    setChapterGuidance(null);
+    setFinalizeResult(null);
+    setCurrentApprovalIndex(0);
+    setActiveAnalysisStep('plan');
+
+    if (!silent) {
+      const timestamp = new Date(message.created_at).toLocaleString();
+      setStatusNotice(
+        savedPlan.length
+          ? `Loaded saved analysis and ${savedPlan.length} improvement items from ${timestamp}.`
+          : `Loaded saved analysis scores from ${timestamp}. Re-run analysis to rebuild the missing plan.`,
+      );
+    }
+  }, []);
 
   const copyActivityLog = useCallback(async () => {
     const content = formatActivityLog() || 'No activity log entries yet.';
@@ -857,13 +912,17 @@ function App() {
     }
   }, []);
 
-  const loadThread = useCallback(async (projectId: string) => {
+  const loadThread = useCallback(async (projectId: string, restoreLatest = true) => {
     try {
       const res = await axios.get<{ messages: ThreadMessage[] }>(`${API_BASE}/projects/${projectId}/thread`);
       setThread(res.data.messages);
+      const latestAnalysis = [...res.data.messages].reverse().find(isAnalysisSnapshot);
+      if (restoreLatest && latestAnalysis) {
+        restoreAnalysisSnapshot(latestAnalysis, true);
+      }
       setTimeout(() => threadEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
     } catch { /* non-fatal */ }
-  }, []);
+  }, [restoreAnalysisSnapshot]);
 
   const loadDiscoveries = useCallback(async (projectId: string) => {
     try {
@@ -1042,6 +1101,16 @@ function App() {
     }
   }, [currentProject, loadThread, loadDiscoveries, neonConnected]);
 
+  useEffect(() => {
+    if (activeImprovementPlan.length === 0) {
+      setCurrentApprovalIndex(0);
+      return;
+    }
+    if (currentApprovalIndex > activeImprovementPlan.length - 1) {
+      setCurrentApprovalIndex(activeImprovementPlan.length - 1);
+    }
+  }, [activeImprovementPlan.length, currentApprovalIndex]);
+
   // ─────────────────────────────────────────────────────────────
   // Project actions
   // ─────────────────────────────────────────────────────────────
@@ -1057,6 +1126,8 @@ function App() {
       });
       setProjects((prev) => [res.data, ...prev]);
       setCurrentProject(res.data);
+      setDocType(res.data.doc_type);
+      setTargetFormat(res.data.norm);
       setThread([]);
       setNewProjectName('');
       setShowCreateProject(false);
@@ -1088,13 +1159,12 @@ function App() {
     setActiveChapterId(null);
     setCompletedChapterIds([]);
     setChapterGuidance(null);
-    setChapterProposal(null);
     setFinalizeResult(null);
+    setActiveAnalysisStep(project.doc_id ? 'report' : 'upload');
     setActiveTab('analyze');
   };
 
   const deleteProject = async (projectId: string) => {
-    if (!window.confirm('Delete this project and all its data? This cannot be undone.')) return;
     try {
       await axios.delete(`${API_BASE}/projects/${projectId}`);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
@@ -1121,7 +1191,7 @@ function App() {
     try {
       await axios.post(`${API_BASE}/projects/${projectId}/sync-skills`);
       await refreshData();
-      await loadThread(projectId);
+      await loadThread(projectId, false);
       setProjects((prev) =>
         prev.map((p) => (p.id === projectId ? { ...p, skill_sync_at: new Date().toISOString() } : p)),
       );
@@ -1158,15 +1228,29 @@ function App() {
           message?: string;
           missing_tables?: string[];
         };
+        sync_mode?: 'local' | 'degraded' | 'neon';
+        severity?: 'info' | 'warning' | 'success';
       }>(`${API_BASE}/skills/pull`);
       const schema = res.data.neon_schema;
       const offlineMode = !schema?.ready;
+      const localMode = res.data.sync_mode === 'local' || (!schema?.configured && offlineMode);
       const message = res.data.message ?? schema?.message ?? 'Skill sync completed.';
       setNeonResult(message);
       setStatusNotice(message);
       await refreshData();
-      if (currentProject) await loadThread(currentProject.id);
-      if (offlineMode) {
+      if (currentProject) await loadThread(currentProject.id, false);
+      if (localMode) {
+        addActivityLog('info', 'skills.sync.global', message, {
+          neon: {
+            configured: Boolean(schema?.configured),
+            connected: Boolean(schema?.connected),
+            ready: Boolean(schema?.ready),
+            missing_tables: schema?.missing_tables?.length ?? 0,
+          },
+          local_skill_count: res.data.status?.cache?.skill_count,
+          sync_mode: 'local',
+        });
+      } else if (offlineMode) {
         addActivityLog('warning', 'skills.sync.global', message, {
           neon: {
             configured: Boolean(schema?.configured),
@@ -1175,6 +1259,7 @@ function App() {
             missing_tables: schema?.missing_tables?.length ?? 0,
           },
           local_skill_count: res.data.status?.cache?.skill_count,
+          sync_mode: res.data.sync_mode ?? 'degraded',
         });
       } else {
         addActivityLog('success', 'skills.sync.global', message, {
@@ -1183,6 +1268,7 @@ function App() {
             ready: true,
           },
           local_skill_count: res.data.status?.cache?.skill_count,
+          sync_mode: res.data.sync_mode ?? 'neon',
         });
       }
     } catch (err) {
@@ -1218,12 +1304,11 @@ function App() {
     setActiveChapterId(null);
     setCompletedChapterIds([]);
     setChapterGuidance(null);
-    setChapterProposal(null);
     setFinalizeResult(null);
     setAiDetection(null);
     setTurnitinSimilarity(null);
-    setPerChapterDesigns([]);
     setCurrentApprovalIndex(0);
+    setActiveAnalysisStep('live');
     addActivityLog('info', 'document.upload', 'Upload and analysis started.', {
       filename: file.name,
       sizeBytes: file.size,
@@ -1245,7 +1330,7 @@ function App() {
       await runAnalysis(upload.data.doc_id);
       await refreshData();
       if (currentProject) {
-        await loadThread(currentProject.id);
+        await loadThread(currentProject.id, false);
         await loadProjects();
       }
     } catch (err) {
@@ -1260,6 +1345,7 @@ function App() {
   };
 
   const runAnalysis = async (docId: string) => {
+    setActiveAnalysisStep('live');
     addActivityLog('info', 'analysis.run', 'Analysis started.', {
       docId,
       docType,
@@ -1307,12 +1393,16 @@ function App() {
         if (event.improvement_plan) {
           setImprovementPlan(event.improvement_plan);
           setCurrentApprovalIndex(0);
+          setActiveAnalysisStep(event.improvement_plan.length ? 'plan' : 'report');
         }
         if (event.chapters) setChapterResults(event.chapters);
         if (event.research_sources) setResearchSources(event.research_sources);
         if (event.integrity_report) setIntegrityReport(event.integrity_report);
         if (event.ai_detection) setAiDetection(event.ai_detection);
         if (event.turnitin_similarity) setTurnitinSimilarity(event.turnitin_similarity);
+        if (event.stage === 'internet_warning') {
+          addActivityLog('warning', 'analysis.run', event.message ?? 'Open research source checks unavailable.', event);
+        }
         if (event.stage === 'error') {
           addActivityLog('error', 'analysis.run', event.message ?? 'Analysis failed.', event);
           throw new Error(event.message ?? 'Analysis failed.');
@@ -1320,6 +1410,43 @@ function App() {
       }
     }
     addActivityLog('success', 'analysis.run', 'Analysis completed.', { docId });
+  };
+
+  const rebuildCurrentAnalysis = async () => {
+    if (!activeDocId) {
+      setError('No document is attached to this project. Upload a document first.');
+      setActiveAnalysisStep('upload');
+      return;
+    }
+    setIsBusy(true);
+    setError(null);
+    setStreamEvents([]);
+    setScores(null);
+    setFindings([]);
+    setImprovementPlan([]);
+    setApprovedImprovementIds([]);
+    setCompletedImprovementIds([]);
+    setApprovalResult(null);
+    setChapterResults([]);
+    setResearchSources(null);
+    setIntegrityReport(null);
+    setAiDetection(null);
+    setTurnitinSimilarity(null);
+    setFinalizeResult(null);
+    setActiveAnalysisStep('live');
+    try {
+      await runAnalysis(activeDocId);
+      await refreshData();
+      if (currentProject) {
+        await loadThread(currentProject.id, false);
+        await loadProjects();
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Analysis failed.';
+      setError(message);
+    } finally {
+      setIsBusy(false);
+    }
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -1334,7 +1461,9 @@ function App() {
   };
 
   const approveAllRemainingImprovements = () => {
-    setApprovedImprovementIds(activeImprovementPlan.map((item) => item.id));
+    setApprovedImprovementIds((prev) =>
+      Array.from(new Set([...prev, ...allImprovementIds])),
+    );
     setApprovalResult(null);
   };
 
@@ -1342,21 +1471,6 @@ function App() {
     setOutputFormats((prev) =>
       prev.includes(format) ? prev.filter((existing) => existing !== format) : [...prev, format],
     );
-  };
-
-  // ── Per-chapter design helpers ──────────────────────────────
-  const getChapterDesign = (chapterId: string) =>
-    perChapterDesigns.find((d) => d.chapterId === chapterId) ?? null;
-
-  const setChapterDesign = (chapterId: string, theme: string, accentHex: string) => {
-    setPerChapterDesigns((prev) => {
-      const without = prev.filter((d) => d.chapterId !== chapterId);
-      return [...without, { chapterId, theme, accentHex }];
-    });
-  };
-
-  const clearChapterDesign = (chapterId: string) => {
-    setPerChapterDesigns((prev) => prev.filter((d) => d.chapterId !== chapterId));
   };
 
   // ── One-by-one approval navigation ───────────────────────────
@@ -1433,42 +1547,24 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
   };
 
-  const downloadCreditStatement = async () => {
-    if (!uploadResult) return;
-    try {
-      const res = await axios.get(`${API_BASE}/analysis/credit-statement/${uploadResult.doc_id}`, {
-        params: { project_id: currentProject?.id },
-      });
-      const statement = res.data.credit_statement;
-      const blob = new Blob([statement], { type: 'text/markdown;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `CRediT_AI_Disclosure_${uploadResult.filename ?? 'thesis'}.md`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (err) {
-      alert('Failed to generate CRediT statement.');
-    }
-  };
-
   const approveRewrite = async () => {
-    if (!uploadResult) return;
-    const selectedIds = approvedImprovementIds.filter((itemId) =>
-      activeImprovementPlan.some((item) => item.id === itemId),
-    );
+    if (!activeDocId) return;
+    const selectedIds = workflowRewriteItemIds;
     if (selectedIds.length === 0) return;
     setIsBusy(true);
     setError(null);
+    setShowLiveEditDrawer(true);
+    setLiveEditLog(['🚀 Starting chapter rewrite workflow...']);
     addActivityLog('info', 'rewrite.approve', 'Approved improvement rewrite started.', {
-      docId: uploadResult.doc_id,
+      docId: activeDocId,
       approvedItemCount: selectedIds.length,
       drawDiagrams,
       outputFormats,
     });
     try {
+      setLiveEditLog(prev => [...prev, `📋 Sending ${selectedIds.length} approved improvement(s) to AI...`]);
       const res = await axios.post<RewriteApprovalResult>(`${API_BASE}/analysis/approve-rewrite`, {
-        doc_id: uploadResult.doc_id,
+        doc_id: activeDocId,
         approved_item_ids: selectedIds,
         doc_type: docType,
         norm: targetFormat,
@@ -1479,6 +1575,12 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         output_formats: outputFormats,
         maintain_front_matter: true,
       });
+      setLiveEditLog(prev => [...prev,
+        `✅ Rewrite approved — ${res.data.approved_items?.length ?? selectedIds.length} item(s) processed`,
+        `🤖 Provider: ${res.data.active_provider ?? 'AI'}${res.data.active_model ? ` / ${res.data.active_model}` : ''}`,
+        res.data.rewrite_note ? `📝 ${res.data.rewrite_note}` : '',
+        '📖 Loading chapter editor...',
+      ].filter(Boolean));
       setApprovalResult(res.data);
       addActivityLog('success', 'rewrite.approve', 'Approved improvement rewrite completed.', res.data);
       setCompletedImprovementIds((prev) => Array.from(new Set([...prev, ...selectedIds])));
@@ -1486,19 +1588,29 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
       // Log to thread
       if (currentProject) {
-        await loadThread(currentProject.id);
+        await loadThread(currentProject.id, false);
       }
 
       // If diagram checkbox is ticked → generate diagram immediately
       if (drawDiagrams && improvementPlan.length > 0) {
+        setLiveEditLog(prev => [...prev, '🖼️ Generating diagram...']);
         await generateDiagram();
       }
       await loadChapterEditor(false);
+      setLiveEditLog(prev => [...prev, '🎉 Chapter workflow ready! You can now edit chapters and finalize.']);
+      setShowLiveEditDrawer(false);
+      setActiveAnalysisStep('download');
+      // Scroll to the document view after render
+      setTimeout(() => {
+        const docView = document.querySelector('.document-workspace');
+        docView?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
     } catch (err) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.detail ?? err.message
         : 'Rewrite approval failed.';
       setError(String(message));
+      setLiveEditLog(prev => [...prev, `❌ Error: ${String(message)}`]);
       addActivityLog('error', 'rewrite.approve', 'Rewrite approval failed.', message);
     } finally {
       setIsBusy(false);
@@ -1506,11 +1618,11 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   };
 
   const generateDiagram = async () => {
-    if (!uploadResult) return;
+    if (!activeDocId) return;
     setIsBusy(true);
     setError(null);
     addActivityLog('info', 'diagram.generate', 'Diagram generation started.', {
-      docId: uploadResult.doc_id,
+      docId: activeDocId,
       diagramStyle,
       designTheme,
     });
@@ -1518,7 +1630,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       const planText = improvementPlan.map((item) => `${item.title}: ${item.action}`).join('\n');
       const res = await axios.post<DiagramResult>(`${API_BASE}/diagrams/generate`, {
         plan_text: planText,
-        doc_id: uploadResult.doc_id,
+        doc_id: activeDocId,
         project_id: currentProject?.id ?? null,
         design_theme: designTheme,
         diagram_style: diagramStyle,
@@ -1527,7 +1639,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       });
       setDiagramResult(res.data);
       setEditedMermaid(res.data.mermaid_source);
-      if (currentProject) await loadThread(currentProject.id);
+      if (currentProject) await loadThread(currentProject.id, false);
       addActivityLog('success', 'diagram.generate', 'Diagram generated.', {
         diagramId: res.data.diagram_id,
         caption: res.data.caption,
@@ -1560,17 +1672,25 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   };
 
   const loadChapterEditor = async (showBusy = true) => {
-    if (!uploadResult) return;
+    if (!activeDocId) return;
     if (showBusy) setIsBusy(true);
     setError(null);
     try {
-      const res = await axios.get<ChapterEditorResult>(`${API_BASE}/analysis/chapter-editor/${uploadResult.doc_id}`, {
+      const res = await axios.get<ChapterEditorResult>(`${API_BASE}/analysis/chapter-editor/${activeDocId}`, {
         params: { doc_type: docType, norm: targetFormat },
       });
       setChapterDrafts(res.data.chapters);
       setActiveChapterId(res.data.chapters[0]?.id ?? null);
       setChapterGuidance(res.data.revision_guidance);
-      setChapterProposal(null);
+      setApprovalResult(res.data.approval);
+      if (res.data.approval?.approved_item_ids?.length) {
+        setCompletedImprovementIds((prev) =>
+          Array.from(new Set([...prev, ...res.data.approval!.approved_item_ids])),
+        );
+        setApprovedImprovementIds((prev) =>
+          prev.filter((itemId) => !res.data.approval!.approved_item_ids.includes(itemId)),
+        );
+      }
       setFinalizeResult(null);
       if (res.data.requires_approval) {
         setError(res.data.message);
@@ -1594,60 +1714,6 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
 
   const selectChapter = (chapterId: string) => {
     setActiveChapterId(chapterId);
-    setChapterProposal((prev) => (prev?.chapter_id === chapterId ? prev : null));
-  };
-
-  const resetActiveChapter = () => {
-    if (!activeChapter) return;
-    updateChapterDraft(activeChapter.id, activeChapter.original_text);
-  };
-
-  const draftChapterRewrite = async () => {
-    if (!uploadResult || !activeChapter) return;
-    if (approvedScopeIds.length === 0) {
-      setError('Approve at least one improvement item before drafting a chapter revision.');
-      return;
-    }
-    setIsRewritingChapter(true);
-    setError(null);
-    addActivityLog('info', 'chapter.rewrite.draft', 'Chapter rewrite proposal started.', {
-      docId: uploadResult.doc_id,
-      chapterId: activeChapter.id,
-      approvedItemCount: approvedScopeIds.length,
-    });
-    try {
-      const res = await axios.post<ChapterRewriteProposal>(`${API_BASE}/analysis/chapter-rewrite-proposal`, {
-        doc_id: uploadResult.doc_id,
-        chapter_id: activeChapter.id,
-        title: activeChapter.title,
-        text: activeChapter.edited_text,
-        approved_item_ids: approvedScopeIds,
-        doc_type: docType,
-        norm: targetFormat,
-      });
-      setChapterProposal(res.data);
-      addActivityLog('success', 'chapter.rewrite.draft', 'Chapter rewrite proposal generated.', {
-        chapterId: res.data.chapter_id,
-      });
-    } catch (err) {
-      const message = axios.isAxiosError(err)
-        ? err.response?.data?.detail ?? err.message
-        : 'Chapter rewrite proposal failed.';
-      setError(String(message));
-      addActivityLog('error', 'chapter.rewrite.draft', 'Chapter rewrite proposal failed.', message);
-    } finally {
-      setIsRewritingChapter(false);
-    }
-  };
-
-  const applyChapterProposal = () => {
-    if (!chapterProposal) return;
-    updateChapterDraft(chapterProposal.chapter_id, chapterProposal.proposed_text);
-    setActiveChapterId(chapterProposal.chapter_id);
-    setCompletedChapterIds((prev) =>
-      prev.includes(chapterProposal.chapter_id) ? prev : [...prev, chapterProposal.chapter_id],
-    );
-    setChapterProposal(null);
   };
 
   const markActiveChapterComplete = () => {
@@ -1658,18 +1724,18 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
   };
 
   const finalizeThesis = async () => {
-    if (!uploadResult || chapterDrafts.length === 0) return;
+    if (!activeDocId || chapterDrafts.length === 0) return;
     setIsFinalizing(true);
     setError(null);
     addActivityLog('info', 'thesis.finalize', 'Final thesis export started.', {
-      docId: uploadResult.doc_id,
+      docId: activeDocId,
       chapterCount: chapterDrafts.length,
       outputFormats,
       designTheme,
     });
     try {
       const res = await axios.post<FinalizeResult>(`${API_BASE}/analysis/finalize-thesis`, {
-        doc_id: uploadResult.doc_id,
+        doc_id: activeDocId,
         chapters: chapterDrafts,
         doc_type: docType,
         norm: targetFormat,
@@ -1681,7 +1747,8 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
         project_id: currentProject?.id ?? null,
       });
       setFinalizeResult(res.data);
-      if (currentProject) await loadThread(currentProject.id);
+      setActiveAnalysisStep('download');
+      if (currentProject) await loadThread(currentProject.id, false);
       addActivityLog('success', 'thesis.finalize', 'Final thesis export completed.', {
         artifactCount: res.data.artifacts?.length ?? 0,
       });
@@ -1700,12 +1767,18 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
     artifact.download_url.startsWith('http') ? artifact.download_url : `${apiRoot}${artifact.download_url}`;
 
   const downloadArtifact = (artifact: FinalizedArtifact) => {
-    // BUG 3 FIX: Tauri WebView2 blocks programmatic anchor.click() on localhost URLs.
-    // window.open() with '_blank' works correctly in both WebView2 and regular browsers:
-    // - In Tauri desktop: opens the OS default browser which handles the download
-    // - In browser: opens a new tab which triggers the file download from the backend
     const href = artifactHref(artifact);
-    window.open(href, '_blank', 'noopener,noreferrer');
+    const anchor = document.createElement('a');
+    anchor.href = href;
+    anchor.download = artifact.filename;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+    window.setTimeout(() => {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    }, 150);
     addActivityLog('success', 'artifact.download', 'Artifact download opened in browser.', {
       format: artifact.format,
       href,
@@ -1845,11 +1918,11 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
       title={
         neonConnected
           ? `Neon Connected — Last Synced: ${status?.skill_engine.cache.loaded_at ? new Date(status.skill_engine.cache.loaded_at).toLocaleTimeString() : 'Just now'}`
-          : 'Neon offline — Using long-term local bundled seed skills'
+          : 'Local skill mode — bundled seed skills are active; Neon sync is optional'
       }
       disabled={isSyncing}
     >
-      <div className={`sync-dot ${neonConnected ? 'online' : 'offline'}`} />
+      <div className={`sync-dot ${neonConnected ? 'online' : 'local'}`} />
       <RefreshCw size={13} className={isSyncing ? 'spin' : ''} />
       <span>{isSyncing ? 'Syncing…' : `${skillCount} Skills`}</span>
     </button>
@@ -1883,12 +1956,17 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                 </span>
               )) : null}
               <span className="thread-text">{String(content.message ?? '')}</span>
+              {Boolean(content.scores) && (
+                <button className="btn btn-secondary btn-sm" onClick={() => restoreAnalysisSnapshot(msg)}>
+                  Open saved plan
+                </button>
+              )}
             </div>
           )}
           {msg.message_type === 'skill_sync' && (
             <p className="thread-text">
               🔄 {Number(content.skill_count ?? 0)} skills active · {Number(content.new_skills ?? 0)} new
-              · {neonConnected ? '☁️ Neon' : '📦 local'}
+              · {neonConnected ? 'Neon' : 'Local'}
             </p>
           )}
           {!['upload', 'analysis_result', 'skill_sync'].includes(msg.message_type) && (
@@ -2115,6 +2193,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
           </div>
         )}
 
+        {(showActivityLog || activeTab !== 'analyze' || Boolean(error)) && (
         <section className={`activity-log-panel ${showActivityLog ? 'expanded' : ''}`}>
           <div className="activity-log-header">
             <div className="activity-log-title">
@@ -2173,6 +2252,7 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
             </div>
           )}
         </section>
+        )}
 
         {serviceDiagnostics && (
           <div className="diagnostics-panel">
@@ -2317,188 +2397,162 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                   onChange={handleFileChange}
                 />
 
-                <section className="academic-chat-shell">
-                  <div className="academic-chat-main">
-                    <div className="assistant-bubble">
-                      <div className="assistant-avatar">
-                        <Bot size={18} />
-                      </div>
-                      <div className="assistant-message">
-                        <div className="assistant-message-kicker">Academic Review Assistant</div>
-                        <h2>{scores ? 'Your evidence report and improvement workflow are ready.' : 'Upload a thesis or paper and I will run the academic integrity workflow.'}</h2>
-                        <p>
-                          I will check active skills, AI-writing signals, originality, open academic sources,
-                          chapter/page improvement items, diagram opportunities, and final DOCX/PDF readiness.
-                        </p>
-                        <div className="assistant-action-row">
-                          <button
-                            className="btn btn-primary"
-                            onClick={() => fileInputRef.current?.click()}
-                            disabled={isBusy}
-                          >
-                            <UploadCloud size={16} />
-                            {uploadResult || currentProject.doc_id ? 'Analyze another version' : 'Upload document'}
-                          </button>
-                          {improvementPlan.length > 0 && (
-                            <button className="btn btn-secondary" onClick={() => setApprovalMode('one-by-one')}>
-                              <ThumbsUp size={16} />
-                              Review improvements
-                            </button>
-                          )}
-                          {chapterDrafts.length > 0 && (
-                            <button className="btn btn-secondary" onClick={() => void finalizeThesis()} disabled={isFinalizing || !designAccentValid}>
-                              <Download size={16} />
-                              {finalizeResult ? 'Regenerate package' : 'Finalize package'}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="workflow-timeline">
-                      {workflowSteps.map((step) => (
-                        <div key={step.label} className={`workflow-step ${step.state}`}>
-                          <span>{step.state === 'done' ? <CheckCircle2 size={14} /> : <Activity size={14} />}</span>
-                          <div>
-                            <strong>{step.label}</strong>
-                            <small>{step.detail}</small>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+                {/* ── Slim context banner (replaces the old verbose hero) ── */}
+                <div className="workflow-context-banner">
+                  <div className="workflow-context-left">
+                    <span className="eyebrow-label">
+                      {isBusy ? 'Analyzing…' : !activeDocId ? 'Getting started' : !scores ? 'Ready to analyze' : improvementPlan.length === 0 ? 'Action needed' : activeImprovementPlan.length > 0 ? 'Approval needed' : finalizeResult ? 'Complete' : 'In progress'}
+                    </span>
+                    <p>
+                      {!activeDocId
+                        ? 'Upload a DOCX, PDF, DOC, or TXT file to begin your thesis review.'
+                        : isBusy
+                          ? 'Live academic checks are running — watch the stream in the Live Analysis tab.'
+                          : !scores
+                            ? 'Document attached. Click "Build report and plan" or switch to the Upload tab.'
+                            : scores && improvementPlan.length === 0
+                              ? 'Report ready — improvement plan needs rebuilding once. Re-run analysis.'
+                              : activeImprovementPlan.length > 0
+                                ? `${activeImprovementPlan.length} improvement items awaiting approval in the Improvement Plan tab.`
+                                : chapterDrafts.length === 0
+                                  ? 'All items approved. Open chapter workflow to begin edits.'
+                                  : finalizeResult
+                                    ? `${finalizeResult.artifacts.length} file(s) ready — go to Download tab.`
+                                    : `${completionPercent}% of chapters reviewed. Finalize when done.`}
+                    </p>
                   </div>
-
-                  <aside className="academic-chat-side">
-                    <div className="source-summary-card">
-                      <div className="source-summary-title">
-                        <GlobeLock size={16} />
-                        Open Source Coverage
-                      </div>
-                      <strong>{researchSources ? `${sourceCheckedCount}/${researchSources.source_count ?? researchSources.sources.length}` : '13'} sources</strong>
-                      <span>{researchSources ? `${sourceMatchCount} candidate matches` : 'Ready after analysis'}</span>
-                      {sourceNeedsKeyCount > 0 && <small>{sourceNeedsKeyCount} source(s) need API key configuration</small>}
-                    </div>
-                    <div className="source-chip-grid">
-                      {(researchSources?.sources ?? [
-                        { id: 'arxiv', name: 'arXiv', status: 'skipped' as const },
-                        { id: 'crossref', name: 'Crossref', status: 'skipped' as const },
-                        { id: 'openalex', name: 'OpenAlex', status: 'skipped' as const },
-                        { id: 'pubmed', name: 'PubMed', status: 'skipped' as const },
-                        { id: 'datacite', name: 'DataCite', status: 'skipped' as const },
-                        { id: 'eric', name: 'ERIC', status: 'skipped' as const },
-                      ]).slice(0, 8).map((source) => (
-                        <span key={source.id} className={`source-chip ${source.status}`}>
-                          {source.name}
-                        </span>
-                      ))}
-                    </div>
-                  </aside>
-                </section>
-
-                {/* Project thread */}
-                {thread.length > 0 && (
-                  <div className="card thread-card mb-6">
-                    <div className="card-header">
-                      <div>
-                        <div className="card-title">Review Log</div>
-                        <div className="card-subtitle">
-                          {showFullReviewLog ? 'Showing all project events.' : 'Showing latest events. Older entries are hidden.'}
-                        </div>
-                      </div>
-                      <div className="thread-header-actions">
-                        {thread.length > 6 && (
-                          <button className="btn btn-secondary btn-sm" onClick={() => setShowFullReviewLog((value) => !value)}>
-                            {showFullReviewLog ? 'Show recent only' : `Show ${thread.length - 6} older`}
-                          </button>
-                        )}
-                        <div className="badge badge-brand">{thread.length} entries</div>
-                      </div>
-                    </div>
-                    <div className="thread-scroll">
-                      {visibleThread.map((msg) => <ThreadEntry key={msg.id} msg={msg} />)}
-                      <div ref={threadEndRef} />
-                    </div>
-                  </div>
-                )}
-
-                {/* Analysis console */}
-                <div className="analysis-console">
-                  <div className="analysis-context-bar">
-                    <div className="context-field">
-                      <label className="settings-label" htmlFor="doc-type">Document</label>
-                      <select
-                        id="doc-type"
-                        className="settings-input full-width"
-                        value={docType}
-                        onChange={(e) => setDocType(e.target.value)}
-                        disabled={isBusy}
-                      >
-                        {docTypeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                      </select>
-                    </div>
-                    <div className="context-field">
-                      <label className="settings-label" htmlFor="target-format">Target Format</label>
-                      <select
-                        id="target-format"
-                        className="settings-input full-width"
-                        value={targetFormat}
-                        onChange={(e) => setTargetFormat(e.target.value)}
-                        disabled={isBusy}
-                      >
-                        {targetFormatOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                      </select>
-                    </div>
-                    <div className="context-summary">
-                      <span className="badge badge-cyan">Local preflight</span>
-                      <span className="badge badge-brand">
-                        {aiStatus?.active_provider ?? 'ollama'} / {aiStatus?.active_model ?? 'model pending'}
-                      </span>
-                      {currentProject.filename
-                        ? <span className="badge badge-green">📄 {currentProject.filename}</span>
-                        : <span className="badge badge-amber">No document attached</span>
-                      }
-                    </div>
-                  </div>
-
-                  {/* Gated upload: only show if no doc attached OR allow re-analysis */}
-                  {!currentProject.doc_id || !uploadResult ? (
-                    <button
-                      id="upload-doc-btn"
-                      className="upload-zone mb-6 compact-upload"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isBusy}
-                    >
-                      <UploadCloud className="upload-icon" />
-                      <div className="upload-title">
-                        {isBusy ? 'Verification Running…' : currentProject.doc_id ? 'Upload Replacement Document' : 'Upload Academic Document'}
-                      </div>
-                      <div className="upload-sub">PDF, DOCX, DOC, or TXT · stays on your machine</div>
-                      <span className="btn btn-primary">{isBusy ? 'Checking…' : 'Browse Local Files'}</span>
+                  <div className="workflow-context-actions">
+                    {!activeDocId ? (
+                      <button className="btn btn-primary" onClick={() => fileInputRef.current?.click()} disabled={isBusy}>
+                        <UploadCloud size={15} /> Upload document
+                      </button>
+                    ) : scores && improvementPlan.length === 0 ? (
+                      <button className="btn btn-primary" onClick={() => void rebuildCurrentAnalysis()} disabled={isBusy}>
+                        <Activity size={15} /> Rebuild plan
+                      </button>
+                    ) : !scores ? (
+                      <button className="btn btn-primary" onClick={() => void rebuildCurrentAnalysis()} disabled={isBusy}>
+                        <Activity size={15} /> Build report &amp; plan
+                      </button>
+                    ) : activeImprovementPlan.length > 0 ? (
+                      <button className="btn btn-primary" onClick={() => setActiveAnalysisStep('plan')}>
+                        <ThumbsUp size={15} /> Review plan
+                      </button>
+                    ) : chapterDrafts.length === 0 ? (
+                      <button className="btn btn-primary" onClick={() => void approveRewrite()} disabled={isBusy || completedImprovementPlan.length === 0 || outputFormats.length === 0 || !designAccentValid}>
+                        <Bot size={15} /> Create chapter workflow
+                      </button>
+                    ) : finalizeResult ? (
+                      <button className="btn btn-primary" onClick={() => setActiveAnalysisStep('download')}>
+                        <Download size={15} /> Go to download
+                      </button>
+                    ) : null}
+                    <button className="btn btn-secondary" onClick={() => fileInputRef.current?.click()} disabled={isBusy}>
+                      <UploadCloud size={15} /> New version
                     </button>
-                  ) : null}
+                  </div>
+                </div>
 
-                  {/* Stream + Results */}
-                  {(uploadResult || streamEvents.length > 0) && (
-                    <div className="analysis-workspace">
-                      <div className="card animate-scale verification-panel">
-                        <div className="card-header">
+                <section className="analysis-stepper-shell" aria-label="Document workflow">
+                  <div className="analysis-stepper-tabs">
+                    {analysisStepperSteps.map((step, index) => (
+                      <button
+                        key={step.id}
+                        className={`analysis-step-tab ${activeAnalysisStep === step.id ? 'active' : ''} ${step.state}`}
+                        onClick={() => setActiveAnalysisStep(step.id)}
+                      >
+                        <span className="step-tab-index">
+                          {step.state === 'done' ? '✓' : index + 1}
+                        </span>
+                        <strong>{step.label}</strong>
+                        <small>{step.detail}</small>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="analysis-stepper-panel">
+                    {/* ── STEP 1: Upload ── */}
+                    {activeAnalysisStep === 'upload' && (
+                      <div className="step-panel-stack">
+                        <div className="step-panel-header">
                           <div>
-                            <div className="card-title">Verification Stream</div>
-                            <div className="card-subtitle">
-                              {docTypeOptions.find((o) => o.id === docType)?.label} →{' '}
-                              {targetFormatOptions.find((o) => o.id === targetFormat)?.label}
-                            </div>
-                          </div>
-                          <div className={`badge ${scores ? 'badge-green' : 'badge-amber'}`}>
-                            {scores ? 'Complete' : 'Running'}
+                            <span className="eyebrow-label">Start or replace document</span>
+                            <h3>{activeDocId ? 'Document attached — ready to analyze.' : 'Upload a thesis or research paper.'}</h3>
+                            <p className="step-panel-copy">Choose document type and target format, then upload. OTIF will run live academic checks and build your report and improvement plan.</p>
                           </div>
                         </div>
-                        {uploadResult && <div className="file-pill">{uploadResult.filename}</div>}
-                        <div className="analysis-stream claude-stream">
-                          {streamEvents.map((event, index) => (
+
+                        {/* Doc type + format selectors */}
+                        <div className="analysis-context-bar" style={{ margin: '0 0 16px 0' }}>
+                          <div className="context-field">
+                            <label className="settings-label" htmlFor="doc-type-step">Document type</label>
+                            <select id="doc-type-step" className="settings-input full-width" value={docType} onChange={(e) => setDocType(e.target.value)} disabled={isBusy}>
+                              {docTypeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="context-field">
+                            <label className="settings-label" htmlFor="target-format-step">Target format</label>
+                            <select id="target-format-step" className="settings-input full-width" value={targetFormat} onChange={(e) => setTargetFormat(e.target.value)} disabled={isBusy}>
+                              {targetFormatOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                            </select>
+                          </div>
+                          <div className="context-summary">
+                            <span className="badge badge-cyan">Local preflight</span>
+                            <span className="badge badge-brand">{aiStatus?.active_provider ?? 'ollama'} / {aiStatus?.active_model ?? 'model pending'}</span>
+                            {currentProject?.filename
+                              ? <span className="badge badge-green">📄 {currentProject.filename}</span>
+                              : <span className="badge badge-amber">No document attached</span>
+                            }
+                          </div>
+                        </div>
+
+                        {/* Single upload zone */}
+                        <button
+                          id="upload-doc-btn"
+                          className="upload-zone mb-6"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isBusy}
+                        >
+                          <UploadCloud className="upload-icon" />
+                          <div className="upload-title">
+                            {isBusy ? 'Verification Running…' : activeDocId ? 'Upload Replacement Document' : 'Upload Academic Document'}
+                          </div>
+                          <div className="upload-sub">PDF, DOCX, DOC, or TXT · stays on your machine</div>
+                          <span className="btn btn-primary">{isBusy ? 'Checking…' : activeDocId ? 'Replace document' : 'Browse Local Files'}</span>
+                        </button>
+
+                        {activeDocId && (
+                          <div className="step-panel-actions">
+                            <button className="btn btn-primary" onClick={() => void rebuildCurrentAnalysis()} disabled={isBusy}>
+                              <Activity size={16} /> Build report &amp; plan
+                            </button>
+                            <button className="btn btn-secondary" onClick={() => setActiveAnalysisStep('live')}>
+                              <Activity size={16} /> View live stream
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── STEP 2: Live Analysis ── */}
+                    {activeAnalysisStep === 'live' && (
+                      <div className="step-panel-stack">
+                        <div className="step-panel-header">
+                          <div>
+                            <span className="eyebrow-label">Live Analysis</span>
+                            <h3>{isBusy ? 'OTIF is checking your document…' : streamEvents.length > 0 ? 'Analysis complete.' : 'Waiting for analysis.'}</h3>
+                            <p className="step-panel-copy">Watch OTIF check local skills, open-source availability, citation signals, AI-writing risk, and chapter quality in real time.</p>
+                          </div>
+                          {isBusy && <div className="badge badge-amber" style={{ animation: 'pulse 1s infinite' }}>Running</div>}
+                          {!isBusy && streamEvents.length > 0 && <div className="badge badge-green">Complete</div>}
+                        </div>
+
+                        {/* Full scrollable stream */}
+                        <div className="analysis-stream claude-stream" style={{ maxHeight: '340px', overflowY: 'auto', marginBottom: '16px' }}>
+                          {streamEvents.length > 0 ? streamEvents.map((event, index) => (
                             <div
                               key={`${event.stage}-${index}`}
-                              className={`stream-line ${event.stage === 'complete' ? 'complete' : ''} ${event.stage === 'error' ? 'error' : ''}`}
+                              className={`stream-line ${event.stage === 'complete' ? 'complete' : ''} ${event.stage === 'error' ? 'error' : ''} ${event.stage === 'internet_warning' ? 'warning' : ''}`}
                             >
                               {event.stage === 'complete' || event.stage === 'approval_required' ? (
                                 <CheckCircle2 size={14} />
@@ -2510,1066 +2564,602 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                               <div>
                                 <div className="stream-stage">{event.stage.replaceAll('_', ' ')}</div>
                                 <span>{event.message ?? event.skill ?? event.stage}</span>
-                                {event.gate && (
-                                  <span className="gate-badge">Gate: {event.gate}</span>
-                                )}
+                                {event.gate && <span className="gate-badge">Gate: {event.gate}</span>}
                               </div>
                             </div>
-                          ))}
+                          )) : (
+                            <div className="empty-inline">
+                              <Activity size={18} />
+                              No events yet. Upload a document or rebuild analysis to begin.
+                            </div>
+                          )}
                         </div>
-                      </div>
 
-                      {/* Scores + findings */}
-                      <div className="card animate-scale result-panel">
-                        <div className="card-header">
-                          <div>
-                            <div className="card-title">Analysis Results</div>
-                            <div className="card-subtitle">Scored by {skillCount} active skill rules</div>
-                          </div>
-                          <div className="badge badge-cyan">Document only</div>
-                        </div>
-                        {scores ? (
-                          <div className="score-list">
-                            {Object.entries(scores).map(([key, value]) => (
-                              <div className="score-row" key={key}>
-                                <span>{key.replaceAll('_', ' ')}</span>
-                                <strong>{typeof value === 'number' ? value.toFixed(1) : String(value ?? '—')}</strong>
+                        {/* Research connectors */}
+                        {researchSources && (
+                          <div style={{ border: '1px solid var(--border)', borderRadius: '10px', overflow: 'hidden' }}>
+                            <div
+                              style={{ padding: '12px 16px', background: 'var(--bg-overlay)', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
+                              onClick={() => setExpandConnectors(!expandConnectors)}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <span style={{ fontWeight: 600, fontSize: '14px' }}>🌐 Research Connectors</span>
+                                <span className="badge badge-cyan">{researchSources.sources.length} sources</span>
                               </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="empty-state compact">
-                            <div className="empty-title">Waiting for results</div>
+                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{expandConnectors ? '▲ Collapse' : '▼ Expand'}</span>
+                            </div>
+                            {expandConnectors && (
+                              <div style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                {researchSources.sources.map((source) => (
+                                  <div key={source.id} style={{ border: '1px solid var(--border)', borderRadius: '8px', padding: '12px', background: 'var(--bg-card-subtle, rgba(255,255,255,0.02))' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                                      <strong style={{ fontSize: '13px' }}>🌐 {source.name}</strong>
+                                      <div style={{ display: 'flex', gap: '6px' }}>
+                                        <span className={`badge ${source.status === 'checked' ? 'badge-green' : source.status === 'needs_key' ? 'badge-rose' : 'badge-amber'}`}>{source.matches?.length ?? 0} results</span>
+                                        <span className="badge badge-purple">{source.status}</span>
+                                      </div>
+                                    </div>
+                                    {source.matches && source.matches.length > 0 && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', paddingLeft: '8px', borderLeft: '2px solid var(--accent)' }}>
+                                        {source.matches.slice(0, 3).map((m, idx) => (
+                                          <div key={idx} style={{ fontSize: '12px' }}>
+                                            {m.url ? <a href={m.url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>{m.title} ↗</a> : <span>{m.title}</span>}
+                                            {m.year && <span style={{ color: 'var(--text-muted)', marginLeft: '6px' }}>{m.year}</span>}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
 
-                        {integrityReport && (
+                        {scores && (
+                          <div className="step-panel-actions" style={{ marginTop: '16px' }}>
+                            <button className="btn btn-primary" onClick={() => setActiveAnalysisStep('report')}>
+                              <CheckCircle2 size={15} /> View report
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeAnalysisStep === 'report' && (
+                      <div className="step-panel-stack">
+                        <div className="step-panel-header">
+                          <div>
+                            <span className="eyebrow-label">Evidence report</span>
+                            <h3>{scores ? 'Report is ready.' : 'No report loaded yet.'}</h3>
+                          </div>
+                          <div className="step-panel-actions compact">
+                            {scores && (
+                              <button className="btn btn-secondary" onClick={downloadReport}>
+                                <Download size={16} /> Download report
+                              </button>
+                            )}
+                            <button className="btn btn-primary" onClick={() => void rebuildCurrentAnalysis()} disabled={isBusy || !activeDocId}>
+                              <Activity size={16} />
+                              {scores ? 'Re-run analysis' : 'Build report'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {scores ? (
                           <>
-                            <div className="divider" />
-                            <div className="integrity-grade-panel">
-                              <div>
+                            {/* Key score cards */}
+                            <div className="quick-score-grid">
+                              {Object.entries(scores).slice(0, 8).map(([key, value]) => (
+                                <div className="quick-score" key={key}>
+                                  <span>{key.replaceAll('_', ' ')}</span>
+                                  <strong>{typeof value === 'number' ? value.toFixed(1) : String(value ?? 'n/a')}</strong>
+                                </div>
+                              ))}
+                            </div>
+
+                            {/* Integrity grade */}
+                            {integrityReport && (
+                              <div className="integrity-grade-panel" style={{ margin: '16px 0' }}>
                                 <div className="settings-group-title">Integrity Grade</div>
                                 <div className={`integrity-grade ${integrityReport.grade}`}>
                                   {integrityReport.grade.replaceAll('_', ' ')}
                                 </div>
-                              </div>
-                              <p className="text-secondary text-sm">
-                                AI-writing risk is a writing-pattern signal, not proof of authorship. The grade is based
-                                on local document checks, reachable open scholarly sources, and configured skills.
-                              </p>
-                            </div>
-                          </>
-                        )}
-
-                        {chapterResults.length > 0 && (
-                          <>
-                            <div className="divider" />
-                            <div className="settings-group-title">Chapter Signals</div>
-                            <div className="chapter-signal-list">
-                              {chapterResults.slice(0, 6).map((chapter) => (
-                                <div className="chapter-signal" key={chapter.id}>
-                                  <span>{chapter.title}</span>
-                                  <strong>{chapter.scores.overall_preflight}</strong>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        )}
-
-                        {findings.length > 0 && (
-                          <>
-                            <div className="divider" />
-                            <div className="settings-group-title">Flagged Phrases</div>
-                            <div className="finding-list">
-                              {findings.map((finding) => (
-                                <div className="finding-row" key={finding.word}>
-                                  <span>{finding.word}</span>
-                                  {finding.replacement && (
-                                    <span className="finding-replacement">→ {finding.replacement}</span>
-                                  )}
-                                  <span className="badge badge-amber">{finding.count}×</span>
-                                </div>
-                              ))}
-                            </div>
-                          </>
-                        )}
-                      </div>
-
-                      {/* Expandable Connector Intelligence Log (Thinking & Research) */}
-                      {researchSources && (
-                        <div className="card animate-scale research-connectors-panel">
-                          <div
-                            className="card-header"
-                            onClick={() => setExpandConnectors(!expandConnectors)}
-                            style={{ cursor: 'pointer', userSelect: 'none' }}
-                          >
-                            <div>
-                              <div className="card-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                <span>Thinking & Research Connectors</span>
-                                <span className="badge badge-cyan">{researchSources.sources.length} repositories checked</span>
-                              </div>
-                              <div className="card-subtitle">
-                                Active Query: "{researchSources.queries?.[0] ?? 'Scholarly document analysis'}"
-                              </div>
-                            </div>
-                            <div className="badge badge-purple" style={{ fontSize: '12px' }}>
-                              {expandConnectors ? '▲ Hide Log' : '▼ Expand Research Step'}
-                            </div>
-                          </div>
-
-                          {expandConnectors && (
-                            <div className="connector-accordion" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                              {researchSources.sources.map((source) => (
-                                <div
-                                  className="connector-card"
-                                  key={source.id}
-                                  style={{
-                                    border: '1px solid var(--border)',
-                                    borderRadius: '8px',
-                                    padding: '12px',
-                                    background: 'var(--bg-card-subtle, rgba(255,255,255,0.02))',
-                                  }}
-                                >
-                                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <span style={{ fontSize: '16px' }}>🌐</span>
-                                      <div>
-                                        <strong style={{ fontSize: '14px', color: 'var(--text-main)' }}>{source.name}</strong>
-                                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                                          {source.coverage ?? 'scholarly metadata'}
-                                          {source.cached ? ' · cached' : ''}
-                                          {source.requires_key ? ` · ${source.configured ? 'key configured' : 'key needed'}` : ''}
-                                        </div>
-                                      </div>
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '6px' }}>
-                                      <span className={`badge ${source.status === 'checked' ? 'badge-green' : source.status === 'needs_key' ? 'badge-rose' : 'badge-amber'}`}>
-                                        {source.matches?.length ?? 0} results found
-                                      </span>
-                                      <span className="badge badge-purple">{source.status}</span>
-                                    </div>
-                                  </div>
-
-                                  {source.access_note && (
-                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px', lineHeight: 1.45 }}>
-                                      {source.access_note}
-                                      {source.docs_url && (
-                                        <>
-                                          {' '}
-                                          <a href={source.docs_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>
-                                            API docs
-                                          </a>
-                                        </>
-                                      )}
-                                    </div>
-                                  )}
-
-                                  {source.matches && source.matches.length > 0 ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginTop: '8px', paddingLeft: '8px', borderLeft: '2px solid var(--accent)' }}>
-                                      {source.matches.map((m, idx) => (
-                                        <div key={idx} style={{ fontSize: '13px', lineHeight: '1.4' }}>
-                                          <div style={{ fontWeight: 500 }}>
-                                            {m.url ? (
-                                              <a href={m.url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
-                                                {m.title} ↗
-                                              </a>
-                                            ) : (
-                                              <span style={{ color: 'var(--text-main)' }}>{m.title}</span>
-                                            )}
-                                          </div>
-                                          {m.year && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Published / Indexed: {m.year}</div>}
-                                          {m.evidence && (
-                                            <div className={`source-evidence ${m.evidence.classification}`}>
-                                              <div>
-                                                <strong>{m.evidence.classification.replaceAll('_', ' ')}</strong>
-                                                <span> Â· {m.evidence.overlap_percent}% title/query overlap</span>
-                                              </div>
-                                              {m.evidence.shared_terms.length > 0 && (
-                                                <div>Shared terms: {m.evidence.shared_terms.join(', ')}</div>
-                                              )}
-                                              {m.evidence.document_passage && (
-                                                <div className="source-passage">"{m.evidence.document_passage}"</div>
-                                              )}
-                                            </div>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ) : (
-                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                      {source.message ?? 'No matching public entries found.'}
-                                    </div>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Ethical Boundaries Banner */}
-                      <div className="card animate-scale" style={{ borderLeft: '4px solid #10b981', background: 'rgba(16, 185, 129, 0.05)', marginBottom: '16px' }}>
-                        <div className="card-header" style={{ paddingBottom: '8px' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <ShieldCheck size={18} style={{ color: '#10b981' }} />
-                            <span className="card-title" style={{ fontSize: '15px' }}>Active Ethical &amp; Scope Boundaries</span>
-                          </div>
-                          <span className="badge badge-green">Strict Compliance Gate</span>
-                        </div>
-                        <div style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-                          <div style={{ marginBottom: '4px' }}>&bull; <strong>No Data Fabrication:</strong> OTIF never generates empirical observations, statistical data, or false findings.</div>
-                          <div style={{ marginBottom: '4px' }}>&bull; <strong>Deterministic Citation Locking:</strong> All DOIs and citations are extracted into immutable AST/Regex placeholders before syntactic revision.</div>
-                          <div>&bull; <strong>CRediT Disclosure Ready:</strong> Every revision action is immutably logged for transparent journal AI disclosure compliance.</div>
-                        </div>
-                      </div>
-
-                      {/* ── NEW: AI Detection Report Panel ── */}
-                      {aiDetection && (
-                        <div className="card animate-scale" style={{ borderLeft: `4px solid ${aiDetection.ai_detection_score >= 50 ? '#f59e0b' : '#10b981'}`, marginBottom: '16px' }}>
-                          <div className="card-header">
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <ScanSearch size={18} style={{ color: aiDetection.ai_detection_score >= 50 ? '#f59e0b' : '#10b981' }} />
-                              <div>
-                                <div className="card-title">AI Detection Report</div>
-                                <div className="card-subtitle">Multi-signal analysis — GPTZero / Copyleaks methodology</div>
-                              </div>
-                            </div>
-                            <span className={`badge ${aiDetection.ai_detection_score >= 75 ? 'badge-rose' : aiDetection.ai_detection_score >= 50 ? 'badge-amber' : aiDetection.ai_detection_score >= 25 ? 'badge-cyan' : 'badge-green'}`}>
-                              {aiDetection.confidence} confidence
-                            </span>
-                          </div>
-
-                          {/* Big Score Gauge */}
-                          <div style={{ padding: '0 20px 16px', display: 'flex', alignItems: 'center', gap: '24px' }}>
-                            <div style={{ position: 'relative', width: '100px', height: '100px', flexShrink: 0 }}>
-                              <svg width="100" height="100" viewBox="0 0 100 100">
-                                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="12" />
-                                <circle
-                                  cx="50" cy="50" r="40"
-                                  fill="none"
-                                  stroke={aiDetection.ai_detection_score >= 75 ? '#ef4444' : aiDetection.ai_detection_score >= 50 ? '#f59e0b' : aiDetection.ai_detection_score >= 25 ? '#3b82f6' : '#10b981'}
-                                  strokeWidth="12"
-                                  strokeDasharray={`${aiDetection.ai_detection_score * 2.51} 251`}
-                                  strokeLinecap="round"
-                                  transform="rotate(-90 50 50)"
-                                  style={{ transition: 'stroke-dasharray 0.8s ease' }}
-                                />
-                                <text x="50" y="46" textAnchor="middle" fontSize="20" fontWeight="700" fill="var(--text-main)">{aiDetection.ai_detection_score}%</text>
-                                <text x="50" y="62" textAnchor="middle" fontSize="9" fill="var(--text-muted)">AI DETECTED</text>
-                              </svg>
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <p style={{ fontSize: '13px', color: 'var(--text-main)', marginBottom: '8px', lineHeight: '1.5' }}>{aiDetection.verdict}</p>
-                              <div style={{ fontSize: '11px', padding: '6px 10px', background: 'var(--bg-overlay)', borderRadius: '6px', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-                                {aiDetection.turnitin_ai_equivalent}
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Signal Breakdown */}
-                          {aiDetection.signals && (
-                            <div style={{ padding: '0 20px 16px' }}>
-                              <div className="settings-group-title" style={{ marginBottom: '10px' }}><BarChart2 size={14} /> Signal Breakdown</div>
-                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '8px' }}>
-                                {Object.entries(aiDetection.signals).map(([key, val]) => (
-                                  <div key={key} style={{ background: 'var(--bg-overlay)', borderRadius: '6px', padding: '8px 10px' }}>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>{key.replace(/_/g, ' ')}</div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                      <div style={{ flex: 1, height: '4px', background: 'var(--border)', borderRadius: '2px', overflow: 'hidden' }}>
-                                        <div style={{ height: '100%', width: `${Math.min(100, Math.abs(val as number))}%`, background: key.includes('reduction') ? '#10b981' : (val as number) > 60 ? '#ef4444' : (val as number) > 30 ? '#f59e0b' : '#3b82f6', transition: 'width 0.5s ease' }} />
-                                      </div>
-                                      <span style={{ fontSize: '12px', fontWeight: 600, minWidth: '36px', textAlign: 'right' }}>{(val as number).toFixed(0)}</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* ── NEW: Turnitin-Style Similarity Panel ── */}
-                      {turnitinSimilarity && (
-                        <div className="card animate-scale" style={{ borderLeft: `4px solid ${turnitinSimilarity.similarity_index >= 40 ? '#ef4444' : turnitinSimilarity.similarity_index >= 20 ? '#f59e0b' : '#10b981'}`, marginBottom: '16px' }}>
-                          <div
-                            className="card-header"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => setShowTurnitinDetail(!showTurnitinDetail)}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <Percent size={18} style={{ color: turnitinSimilarity.similarity_index >= 40 ? '#ef4444' : '#10b981' }} />
-                              <div>
-                                <div className="card-title">Turnitin-Style Similarity Index</div>
-                                <div className="card-subtitle">{turnitinSimilarity.match_count} sources • n-gram shingle + cosine fingerprint</div>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span className={`badge ${turnitinSimilarity.similarity_index >= 40 ? 'badge-rose' : turnitinSimilarity.similarity_index >= 20 ? 'badge-amber' : 'badge-green'}`} style={{ fontSize: '18px', fontWeight: 700, padding: '6px 14px' }}>
-                                {turnitinSimilarity.similarity_index.toFixed(1)}%
-                              </span>
-                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{showTurnitinDetail ? '▲' : '▼'}</span>
-                            </div>
-                          </div>
-                          <div style={{ padding: '0 20px 16px' }}>
-                            <p style={{ fontSize: '13px', lineHeight: '1.5', color: 'var(--text-main)' }}>{turnitinSimilarity.interpretation}</p>
-                            <div style={{ display: 'flex', gap: '12px', marginTop: '10px' }}>
-                              <div style={{ flex: 1, height: '10px', background: 'var(--border)', borderRadius: '5px', overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${turnitinSimilarity.similarity_index}%`, background: turnitinSimilarity.similarity_index >= 40 ? 'linear-gradient(90deg,#ef4444,#dc2626)' : turnitinSimilarity.similarity_index >= 20 ? 'linear-gradient(90deg,#f59e0b,#d97706)' : 'linear-gradient(90deg,#10b981,#059669)', transition: 'width 1s ease', borderRadius: '5px' }} />
-                              </div>
-                              <span style={{ fontSize: '12px', fontWeight: 600 }}>{turnitinSimilarity.high_risk_matches} high risk • {turnitinSimilarity.medium_risk_matches} medium risk</span>
-                            </div>
-                          </div>
-
-                          {showTurnitinDetail && turnitinSimilarity.per_source_similarity.length > 0 && (
-                            <div style={{ padding: '0 20px 16px', borderTop: '1px solid var(--border)' }}>
-                              <div className="settings-group-title" style={{ marginBottom: '10px', marginTop: '12px' }}>Per-Source Similarity Breakdown</div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {turnitinSimilarity.per_source_similarity.slice(0, 8).map((src, idx) => (
-                                  <div key={idx} style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '8px 10px', background: 'var(--bg-overlay)', borderRadius: '6px', borderLeft: `3px solid ${src.risk_level === 'high' ? '#ef4444' : src.risk_level === 'medium' ? '#f59e0b' : src.risk_level === 'low' ? '#3b82f6' : 'var(--border)'}` }}>
-                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                      <div style={{ fontSize: '13px', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {src.source_url ? (
-                                          <a href={src.source_url} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
-                                            {src.source_title} <ExternalLink size={11} />
-                                          </a>
-                                        ) : src.source_title}
-                                      </div>
-                                      {src.source_year && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{src.source_year}</div>}
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-                                      <span className={`badge ${src.risk_level === 'high' ? 'badge-rose' : src.risk_level === 'medium' ? 'badge-amber' : 'badge-cyan'}`}>{src.combined_similarity.toFixed(1)}%</span>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* ── NEW: Design Skill Panel ── */}
-                      {improvementPlan.length > 0 && (
-                        <div className="card animate-scale" style={{ marginBottom: '16px', border: showDesignPanel ? '1px solid var(--accent)' : '1px solid var(--border)' }}>
-                          <div
-                            className="card-header"
-                            style={{ cursor: 'pointer' }}
-                            onClick={() => setShowDesignPanel(!showDesignPanel)}
-                          >
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <Palette size={18} style={{ color: 'var(--accent)' }} />
-                              <div>
-                                <div className="card-title">Design Skill</div>
-                                <div className="card-subtitle">Global theme shared across all chapters. Override per chapter if needed.</div>
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <span className="badge badge-brand" style={{ background: designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79', color: 'white' }}>
-                                {designThemeOptions.find(o => o.id === designTheme)?.label ?? designTheme}
-                              </span>
-                              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{showDesignPanel ? '▲' : '▼'}</span>
-                            </div>
-                          </div>
-
-                          {showDesignPanel && (
-                            <div style={{ padding: '0 20px 20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                              <div className="rewrite-option-grid">
-                                <label className="context-field">
-                                  <span className="settings-label">Global Design theme</span>
-                                  <select
-                                    className="settings-input full-width"
-                                    value={designTheme}
-                                    onChange={(e) => setDesignTheme(e.target.value)}
-                                  >
-                                    {designThemeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                                  </select>
-                                </label>
-                                <label className="context-field">
-                                  <span className="settings-label">Global Accent color</span>
-                                  <div className="color-input-row">
-                                    <input
-                                      type="color"
-                                      value={designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79'}
-                                      onChange={(e) => setDesignAccentHex(e.target.value)}
-                                      aria-label="Global document accent color"
-                                    />
-                                    <input
-                                      className={`settings-input full-width ${designAccentValid ? '' : 'input-error'}`}
-                                      value={designAccentHex}
-                                      onChange={(e) => setDesignAccentHex(e.target.value)}
-                                      placeholder="#1f4e79"
-                                    />
-                                  </div>
-                                </label>
-                                <label className="context-field">
-                                  <span className="settings-label">Diagram style</span>
-                                  <select
-                                    className="settings-input full-width"
-                                    value={diagramStyle}
-                                    onChange={(e) => setDiagramStyle(e.target.value)}
-                                  >
-                                    {diagramStyleOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                                  </select>
-                                </label>
-                              </div>
-
-                              {/* Per-chapter overrides */}
-                              {chapterResults.length > 0 && (
-                                <div>
-                                  <div className="settings-group-title" style={{ marginBottom: '10px' }}><Layers size={14} /> Per-Chapter Design Override (optional)</div>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                    {chapterResults.slice(0, 10).map((chapter) => {
-                                      const override = getChapterDesign(chapter.id);
-                                      return (
-                                        <div key={chapter.id} style={{ display: 'flex', gap: '10px', alignItems: 'center', padding: '8px 10px', background: 'var(--bg-overlay)', borderRadius: '6px' }}>
-                                          <span style={{ flex: 1, fontSize: '13px', fontWeight: 500 }}>{chapter.title}</span>
-                                          {override ? (
-                                            <>
-                                              <input
-                                                type="color"
-                                                value={override.accentHex}
-                                                onChange={(e) => setChapterDesign(chapter.id, override.theme, e.target.value)}
-                                                style={{ width: '28px', height: '28px', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0 }}
-                                              />
-                                              <select
-                                                className="settings-input"
-                                                style={{ width: '140px' }}
-                                                value={override.theme}
-                                                onChange={(e) => setChapterDesign(chapter.id, e.target.value, override.accentHex)}
-                                              >
-                                                {designThemeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                                              </select>
-                                              <button className="btn btn-secondary btn-sm" style={{ padding: '4px 8px' }} onClick={() => clearChapterDesign(chapter.id)}>Reset</button>
-                                            </>
-                                          ) : (
-                                            <button
-                                              className="btn btn-secondary btn-sm"
-                                              style={{ padding: '4px 10px', fontSize: '12px' }}
-                                              onClick={() => setChapterDesign(chapter.id, designTheme, designAccentHex)}
-                                            >
-                                              + Override
-                                            </button>
-                                          )}
-                                        </div>
-                                      );
-                                    })}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {improvementPlan.length > 0 && (
-                        <div className="card animate-scale improvement-plan-panel">
-                          <div className="card-header">
-                            <div>
-                              <div className="card-title">Improvement Work Queue</div>
-                              <div className="card-subtitle">
-                                Approve items one-by-one, then revise chapters and compile the full document.
-                              </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={downloadReport}
-                                title="Download detailed markdown report"
-                              >
-                                📥 Full Report (.md)
-                              </button>
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={downloadCreditStatement}
-                                title="Generate formal CRediT AI Contribution Statement"
-                                style={{ border: '1px solid #10b981', color: '#10b981' }}
-                              >
-                                📜 CRediT (.md)
-                              </button>
-                              <div className="badge badge-green">{approvedImprovementIds.length}/{improvementPlan.length} approved</div>
-                            </div>
-                          </div>
-
-                          {/* Progress bar */}
-                          <div style={{ padding: '0 20px 12px' }}>
-                            <div style={{ height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden', marginBottom: '6px' }}>
-                              <div style={{ height: '100%', width: `${improvementPlan.length > 0 ? (approvedImprovementIds.length / improvementPlan.length * 100) : 0}%`, background: 'linear-gradient(90deg, var(--accent), #10b981)', borderRadius: '4px', transition: 'width 0.4s ease' }} />
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--text-muted)' }}>
-                              <span>{approvedImprovementIds.length} approved</span>
-                              <span>{improvementPlan.length - approvedImprovementIds.length} remaining</span>
-                            </div>
-                          </div>
-
-                          <div className="workflow-strip">
-                            <div>
-                              <span>1</span>
-                              <strong>{activeImprovementPlan.length} active suggestion(s)</strong>
-                              <small>Approve the changes you want.</small>
-                            </div>
-                            <div>
-                              <span>2</span>
-                              <strong>{chapterDrafts.length || chapterResults.length} chapter block(s)</strong>
-                              <small>Work one chapter at a time.</small>
-                            </div>
-                            <div>
-                              <span>3</span>
-                              <strong>{finalizeResult ? 'Package ready' : 'Finalize pending'}</strong>
-                              <small>Download full DOCX/PDF.</small>
-                            </div>
-                          </div>
-
-                          {/* Approval mode toggle */}
-                          <div style={{ padding: '0 20px 12px', display: 'flex', gap: '8px' }}>
-                            <button
-                              className={`btn btn-sm ${approvalMode === 'one-by-one' ? 'btn-primary' : 'btn-secondary'}`}
-                              onClick={() => setApprovalMode('one-by-one')}
-                            >
-                              <ThumbsUp size={13} /> One-by-One
-                            </button>
-                            <button
-                              className={`btn btn-sm ${approvalMode === 'batch' ? 'btn-primary' : 'btn-secondary'}`}
-                              onClick={() => setApprovalMode('batch')}
-                            >
-                              <Layers size={13} /> Batch Review
-                            </button>
-                          </div>
-
-                          {/* One-by-one approval wizard */}
-                          {approvalMode === 'one-by-one' && activeImprovementPlan.length > 0 && (() => {
-                            const item = activeImprovementPlan[currentApprovalIndex] ?? activeImprovementPlan[0];
-                            const isApproved = item ? approvedImprovementIds.includes(item.id) : false;
-                            const progress = `${Math.min(currentApprovalIndex + 1, activeImprovementPlan.length)} / ${activeImprovementPlan.length}`;
-                            return item ? (
-                              <div style={{ margin: '0 20px 16px', border: '1px solid var(--accent)', borderRadius: '10px', overflow: 'hidden' }}>
-                                <div style={{ padding: '14px 16px', background: 'var(--bg-overlay)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
-                                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                                    <span style={{ fontWeight: 600, fontSize: '13px' }}>{progress}</span>
-                                    <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>{item.priority}</span>
-                                    {isApproved && <span className="badge badge-green">✓ Approved</span>}
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '6px' }}>
-                                    <button
-                                      className="btn btn-secondary btn-sm"
-                                      onClick={prevApprovalItem}
-                                      disabled={currentApprovalIndex === 0}
-                                      style={{ padding: '4px 10px' }}
-                                    >←</button>
-                                    <button
-                                      className="btn btn-secondary btn-sm"
-                                      onClick={skipCurrentItem}
-                                      disabled={currentApprovalIndex >= activeImprovementPlan.length - 1}
-                                      style={{ padding: '4px 10px' }}
-                                    >→</button>
-                                  </div>
-                                </div>
-                                <div style={{ padding: '16px' }}>
-                                  <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '8px' }}>{item.title}</div>
-                                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: '1.6' }}>{item.action}</p>
-                                  <div className="plan-evidence" style={{ marginBottom: '14px' }}>{item.evidence}</div>
-                                  <div style={{ display: 'flex', gap: '10px' }}>
-                                    <button
-                                      id={`approve-item-${item.id}`}
-                                      className={`btn ${isApproved ? 'btn-secondary' : 'btn-primary'}`}
-                                      onClick={() => {
-                                        toggleApprovedImprovement(item.id);
-                                        if (!isApproved && currentApprovalIndex < activeImprovementPlan.length - 1) {
-                                          setTimeout(() => setCurrentApprovalIndex((i) => i + 1), 300);
-                                        }
-                                      }}
-                                      style={{ flex: 1 }}
-                                    >
-                                      {isApproved ? <><ThumbsDown size={14} /> Unapprove</> : <><ThumbsUp size={14} /> Approve</>}
-                                    </button>
-                                    <button
-                                      className="btn btn-secondary"
-                                      onClick={skipCurrentItem}
-                                      disabled={currentApprovalIndex >= activeImprovementPlan.length - 1}
-                                    >
-                                      Skip →
-                                    </button>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : null;
-                          })()}
-
-                          {/* Batch approval list */}
-                          {approvalMode === 'batch' && (
-                            <div className="plan-list">
-                              {activeImprovementPlan.map((item) => (
-                                <label className="plan-item" key={item.id}>
-                                  <input
-                                    type="checkbox"
-                                    id={`plan-item-${item.id}`}
-                                    checked={approvedImprovementIds.includes(item.id)}
-                                    onChange={() => toggleApprovedImprovement(item.id)}
-                                  />
-                                  <div className="plan-copy">
-                                    <div className="plan-title-row">
-                                      <span>{item.title}</span>
-                                      <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>
-                                        {item.priority}
-                                      </span>
-                                    </div>
-                                    <p>{item.action}</p>
-                                    <div className="plan-evidence">{item.evidence}</div>
-                                  </div>
-                                </label>
-                              ))}
-                              {activeImprovementPlan.length === 0 && (
-                                <div className="empty-inline">
-                                  All suggestions have been approved. Continue chapter edits or finalize the package.
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {completedImprovementPlan.length > 0 && (
-                            <div className="completed-plan-list">
-                              <div className="settings-group-title">Approved and removed from active queue</div>
-                              {completedImprovementPlan.map((item) => (
-                                <div className="completed-plan-item" key={item.id}>
-                                  <CheckCircle2 size={14} />
-                                  <span>{item.title}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Approve All shortcut */}
-                          {approvedImprovementIds.length < improvementPlan.length && (
-                            <div style={{ padding: '0 20px 12px' }}>
-                              <button
-                                className="btn btn-secondary btn-sm"
-                                onClick={() => setApprovedImprovementIds(improvementPlan.map(i => i.id))}
-                              >
-                                <BadgeCheck size={14} /> Approve All ({improvementPlan.length})
-                              </button>
-                            </div>
-                          )}
-
-                          {/* Diagram toggle */}
-                          <div className="rewrite-options">
-                            <label className="option-toggle" id="draw-diagrams-toggle">
-                              <input
-                                type="checkbox"
-                                checked={drawDiagrams}
-                                onChange={(e) => setDrawDiagrams(e.target.checked)}
-                              />
-                              <span>Generate diagram from plan (Mermaid · themed)</span>
-                            </label>
-
-                            {drawDiagrams && (
-                              <div className="rewrite-option-grid">
-                                <label className="context-field">
-                                  <span className="settings-label">Diagram style</span>
-                                  <select
-                                    className="settings-input full-width"
-                                    value={diagramStyle}
-                                    onChange={(e) => setDiagramStyle(e.target.value)}
-                                  >
-                                    {diagramStyleOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
-                                  </select>
-                                </label>
+                                <p className="text-secondary text-sm" style={{ marginTop: '6px' }}>AI-writing risk is a writing-pattern signal. Grade is based on local checks, open scholarly sources, and configured skills.</p>
                               </div>
                             )}
 
-                            <div className="rewrite-option-grid">
+                            {/* AI Detection */}
+                            {aiDetection && (
+                              <div style={{ display: 'flex', gap: '12px', alignItems: 'center', padding: '12px 16px', background: 'var(--bg-overlay)', borderRadius: '10px', marginBottom: '12px', border: `1px solid ${aiDetection.ai_detection_score >= 50 ? '#f59e0b' : '#10b981'}` }}>
+                                <svg width="60" height="60" viewBox="0 0 100 100">
+                                  <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="12" />
+                                  <circle cx="50" cy="50" r="40" fill="none" stroke={aiDetection.ai_detection_score >= 75 ? '#ef4444' : aiDetection.ai_detection_score >= 50 ? '#f59e0b' : '#10b981'} strokeWidth="12" strokeDasharray={`${aiDetection.ai_detection_score * 2.51} 251`} strokeLinecap="round" transform="rotate(-90 50 50)" />
+                                  <text x="50" y="46" textAnchor="middle" fontSize="22" fontWeight="700" fill="var(--text-main)">{aiDetection.ai_detection_score}%</text>
+                                  <text x="50" y="62" textAnchor="middle" fontSize="9" fill="var(--text-muted)">AI RISK</text>
+                                </svg>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontWeight: 600, fontSize: '14px', marginBottom: '4px' }}>AI Detection Report</div>
+                                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>{aiDetection.verdict}</p>
+                                  <span className={`badge mt-2 ${aiDetection.ai_detection_score >= 75 ? 'badge-rose' : aiDetection.ai_detection_score >= 50 ? 'badge-amber' : 'badge-green'}`}>{aiDetection.confidence} confidence</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Turnitin similarity */}
+                            {turnitinSimilarity && (
+                              <div style={{ padding: '12px 16px', background: 'var(--bg-overlay)', borderRadius: '10px', marginBottom: '12px', border: `1px solid ${turnitinSimilarity.similarity_index >= 40 ? '#ef4444' : '#10b981'}` }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                  <strong style={{ fontSize: '14px' }}>Similarity Index</strong>
+                                  <span className={`badge ${turnitinSimilarity.similarity_index >= 40 ? 'badge-rose' : turnitinSimilarity.similarity_index >= 20 ? 'badge-amber' : 'badge-green'}`} style={{ fontSize: '16px', fontWeight: 700 }}>{turnitinSimilarity.similarity_index.toFixed(1)}%</span>
+                                </div>
+                                <div style={{ height: '8px', background: 'var(--border)', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div style={{ height: '100%', width: `${turnitinSimilarity.similarity_index}%`, background: turnitinSimilarity.similarity_index >= 40 ? '#ef4444' : '#10b981', borderRadius: '4px', transition: 'width 1s ease' }} />
+                                </div>
+                                <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px' }}>{turnitinSimilarity.interpretation}</p>
+                              </div>
+                            )}
+
+                            {/* Chapter signals */}
+                            {chapterResults.length > 0 && (
+                              <>
+                                <div className="divider" />
+                                <div className="settings-group-title"><span>Chapter Signals</span></div>
+                                <div className="chapter-signal-list">
+                                  {chapterResults.slice(0, 8).map((chapter) => (
+                                    <div className="chapter-signal" key={chapter.id}>
+                                      <span>{chapter.title}</span>
+                                      <strong>{chapter.scores.overall_preflight}</strong>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+
+                            {/* Flagged phrases */}
+                            {findings.length > 0 && (
+                              <>
+                                <div className="divider" />
+                                <div className="settings-group-title">Flagged Phrases</div>
+                                <div className="finding-list">
+                                  {findings.map((finding) => (
+                                    <div className="finding-row" key={finding.word}>
+                                      <span>{finding.word}</span>
+                                      {finding.replacement && <span className="finding-replacement">→ {finding.replacement}</span>}
+                                      <span className="badge badge-amber">{finding.count}×</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </>
+                            )}
+
+                            {/* Saved analysis runs */}
+                            {analysisHistory.length > 0 && (
+                              <>
+                                <div className="divider" />
+                                <div className="saved-analysis-heading">
+                                  <div>
+                                    <strong>Previous Runs</strong>
+                                    <span>Open any saved analysis to restore its plan.</span>
+                                  </div>
+                                  <span className="badge badge-cyan">{analysisHistory.length} run{analysisHistory.length === 1 ? '' : 's'}</span>
+                                </div>
+                                <div className="saved-analysis-list">
+                                  {[...analysisHistory].reverse().slice(0, 4).map((msg) => {
+                                    const content = threadContent(msg);
+                                    const savedScores = content.scores as Record<string, number> | undefined;
+                                    const planCount = Array.isArray(content.improvement_plan) ? content.improvement_plan.length : Number(content.improvement_plan_count ?? 0);
+                                    return (
+                                      <div className="saved-analysis-card" key={`saved-${msg.id}`}>
+                                        <div>
+                                          <strong>{new Date(msg.created_at).toLocaleString()}</strong>
+                                          <span>Overall {typeof savedScores?.overall === 'number' ? savedScores.overall.toFixed(1) : 'saved'} · {planCount || 'No'} plan items</span>
+                                        </div>
+                                        <button className="btn btn-primary btn-sm" onClick={() => restoreAnalysisSnapshot(msg)}>Open saved plan</button>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </>
+                            )}
+
+                            <div className="report-action-band">
+                              <span>{improvementPlan.length ? `${improvementPlan.length} improvement item(s) ready for approval.` : 'Re-run analysis to rebuild the improvement plan.'}</span>
+                              <button className="btn btn-primary btn-sm" onClick={() => improvementPlan.length ? setActiveAnalysisStep('plan') : void rebuildCurrentAnalysis()} disabled={!improvementPlan.length && (isBusy || !activeDocId)}>
+                                {improvementPlan.length ? 'Open improvement plan' : 'Rebuild plan'}
+                              </button>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="empty-inline">No report yet. Run analysis for this document.</div>
+                        )}
+                      </div>
+                    )}
+
+                    {activeAnalysisStep === 'plan' && (
+                      <div className="step-panel-stack">
+                        {/* Progress header */}
+                        <div className="plan-progress-header">
+                          <div className="plan-progress-counts">
+                            <strong>{approvedReviewCount}</strong>
+                            <span>/ {improvementPlan.length} items approved</span>
+                          </div>
+                          <div className="plan-progress-bar-wrap">
+                            <div className="plan-progress-bar-fill" style={{ width: `${approvedPercent}%` }} />
+                          </div>
+                          <div className="plan-download-btn-wrap">
+                            {(finalizeResult || chapterDrafts.length > 0) && (
+                              <button className="btn btn-secondary" onClick={() => finalizeResult ? void downloadArtifact(finalizeResult.artifacts[0]) : void finalizeThesis()} disabled={isFinalizing || outputFormats.length === 0} title="Download updated manuscript">
+                                <Download size={15} /> Download manuscript
+                              </button>
+                            )}
+                            <button className="btn btn-secondary btn-sm" onClick={approveAllRemainingImprovements} disabled={!activeImprovementPlan.length}>
+                              <BadgeCheck size={14} /> Approve all
+                            </button>
+                            <button className="btn btn-primary" onClick={() => void approveRewrite()} disabled={isBusy || workflowRewriteItemIds.length === 0 || outputFormats.length === 0 || !designAccentValid}>
+                              <Bot size={15} /> {approvedRewriteItemIds.length ? 'Create chapter workflow' : 'Approve all & open writer'}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Design + Output settings embedded in plan tab */}
+                        <div style={{ background: 'var(--bg-overlay)', borderRadius: '10px', padding: '14px 16px', marginBottom: '16px', border: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px', cursor: 'pointer' }} onClick={() => setShowDesignPanel(!showDesignPanel)}>
+                            <Palette size={16} style={{ color: 'var(--accent)' }} />
+                            <strong style={{ fontSize: '14px' }}>Design &amp; Output Settings</strong>
+                            <span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: 'auto' }}>{showDesignPanel ? '▲ Hide' : '▼ Expand'}</span>
+                          </div>
+                          {showDesignPanel && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                              <div className="rewrite-option-grid">
                                 <label className="context-field">
                                   <span className="settings-label">Design theme</span>
-                                  <select
-                                    className="settings-input full-width"
-                                    value={designTheme}
-                                    onChange={(e) => setDesignTheme(e.target.value)}
-                                  >
+                                  <select className="settings-input full-width" value={designTheme} onChange={(e) => setDesignTheme(e.target.value)}>
                                     {designThemeOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
                                   </select>
                                 </label>
-                              <label className="context-field">
-                                <span className="settings-label">Document accent color</span>
-                                <div className="color-input-row">
-                                  <input
-                                    type="color"
-                                    value={designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79'}
-                                    onChange={(e) => setDesignAccentHex(e.target.value)}
-                                    aria-label="Document accent color"
-                                  />
-                                  <input
-                                    className={`settings-input full-width ${designAccentValid ? '' : 'input-error'}`}
-                                    value={designAccentHex}
-                                    onChange={(e) => setDesignAccentHex(e.target.value)}
-                                    placeholder="#1f4e79"
-                                    spellCheck={false}
-                                  />
-                                </div>
-                                {!designAccentValid && (
-                                  <span className="field-error">Use a 6-digit hex color, for example #1F4E79.</span>
-                                )}
-                              </label>
-                            </div>
-
-                            <div className="format-toggle-row">
-                              {['docx', 'pdf'].map((format) => (
-                                <label className="option-chip" key={format}>
-                                  <input
-                                    type="checkbox"
-                                    checked={outputFormats.includes(format)}
-                                    onChange={() => toggleOutputFormat(format)}
-                                  />
-                                  <span>{format.toUpperCase()}</span>
+                                <label className="context-field">
+                                  <span className="settings-label">Document accent color</span>
+                                  <div className="color-input-row">
+                                    <input type="color" value={designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79'} onChange={(e) => setDesignAccentHex(e.target.value)} aria-label="Document accent color" />
+                                    <input className={`settings-input full-width ${designAccentValid ? '' : 'input-error'}`} value={designAccentHex} onChange={(e) => setDesignAccentHex(e.target.value)} placeholder="#1f4e79" spellCheck={false} />
+                                  </div>
+                                  {!designAccentValid && <span className="field-error">Use a 6-digit hex color, e.g. #1F4E79.</span>}
                                 </label>
+                              </div>
+                              <div className="rewrite-option-grid">
+                                <label className="option-toggle" id="draw-diagrams-toggle">
+                                  <input type="checkbox" checked={drawDiagrams} onChange={(e) => setDrawDiagrams(e.target.checked)} />
+                                  <span>Generate diagram from plan (Mermaid)</span>
+                                </label>
+                                {drawDiagrams && (
+                                  <label className="context-field">
+                                    <span className="settings-label">Diagram style</span>
+                                    <select className="settings-input full-width" value={diagramStyle} onChange={(e) => setDiagramStyle(e.target.value)}>
+                                      {diagramStyleOptions.map((o) => <option key={o.id} value={o.id}>{o.label}</option>)}
+                                    </select>
+                                  </label>
+                                )}
+                              </div>
+                              <div className="format-toggle-row">
+                                <span className="settings-label">Output format:</span>
+                                {['docx', 'pdf'].map((format) => (
+                                  <label className="option-chip" key={format}>
+                                    <input type="checkbox" checked={outputFormats.includes(format)} onChange={() => toggleOutputFormat(format)} />
+                                    <span>{format.toUpperCase()}</span>
+                                  </label>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {!showDesignPanel && (
+                            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                              <span className="badge badge-brand">{designThemeOptions.find(o => o.id === designTheme)?.label ?? designTheme}</span>
+                              <span className="badge" style={{ background: designAccentValid ? (normalizedDesignAccent.startsWith('#') ? normalizedDesignAccent : `#${normalizedDesignAccent}`) : '#1f4e79', color: '#fff' }}>{designAccentHex}</span>
+                              <span className="badge badge-cyan">{outputFormats.map(f => f.toUpperCase()).join(' + ') || 'No format selected'}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {improvementPlan.length ? (
+                          <>
+                            {/* One-by-one approval wizard */}
+                            {activeImprovementPlan.length > 0 && (() => {
+                              const item = activeImprovementPlan[currentApprovalIndex] ?? activeImprovementPlan[0];
+                              const progress = `${Math.min(currentApprovalIndex + 1, activeImprovementPlan.length)} / ${activeImprovementPlan.length}`;
+                              return item ? (
+                                <div style={{ margin: '0 0 16px', border: '1px solid var(--accent)', borderRadius: '10px', overflow: 'hidden' }}>
+                                  <div style={{ padding: '12px 16px', background: 'var(--bg-overlay)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                      <span style={{ fontWeight: 600, fontSize: '13px' }}>Queue {progress}</span>
+                                      <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>{item.priority}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px' }}>
+                                      <button className="btn btn-secondary btn-sm" onClick={prevApprovalItem} disabled={currentApprovalIndex === 0} style={{ padding: '4px 10px' }}>←</button>
+                                      <button className="btn btn-secondary btn-sm" onClick={skipCurrentItem} disabled={currentApprovalIndex >= activeImprovementPlan.length - 1} style={{ padding: '4px 10px' }}>→</button>
+                                    </div>
+                                  </div>
+                                  <div style={{ padding: '16px' }}>
+                                    <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '8px' }}>{item.title}</div>
+                                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: '1.6' }}>{item.action}</p>
+                                    <div className="plan-evidence" style={{ marginBottom: '14px' }}>{item.evidence}</div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                      <button id={`approve-item-${item.id}`} className="btn btn-primary" onClick={() => toggleApprovedImprovement(item.id)} style={{ flex: 1 }}>
+                                        <ThumbsUp size={14} /> Approve &amp; remove from queue
+                                      </button>
+                                      <button className="btn btn-secondary" onClick={skipCurrentItem} disabled={currentApprovalIndex >= activeImprovementPlan.length - 1}>Skip →</button>
+                                    </div>
+                                  </div>
+                                </div>
+                              ) : null;
+                            })()}
+
+                            {/* Chapter plan groups */}
+                            <div className="chapter-plan-list">
+                              {planGroups.map((group) => (
+                                <div className="chapter-plan-group" key={group.title}>
+                                  <div className="chapter-plan-title">
+                                    <strong>📖 {group.title}</strong>
+                                    <span>{group.items.filter(i => approvedImprovementIds.includes(i.id) || completedImprovementIds.includes(i.id)).length}/{group.items.length} approved</span>
+                                  </div>
+                                  {group.items.map((item) => {
+                                    const approved = approvedImprovementIds.includes(item.id) || completedImprovementIds.includes(item.id);
+                                    return (
+                                      <div className={`chapter-plan-item ${approved ? 'approved' : 'pending'}`} key={item.id}>
+                                        <div>
+                                          <div className="chapter-plan-item-title">
+                                            <span>{item.title}</span>
+                                            <span className={`badge ${item.priority === 'high' ? 'badge-amber' : 'badge-cyan'}`}>{item.priority}</span>
+                                            <span className={`badge ${approved ? 'badge-green' : 'badge-brand'}`}>{approved ? '✓ Approved' : 'Pending'}</span>
+                                          </div>
+                                          <p>{item.action}</p>
+                                          <small>{item.evidence}</small>
+                                        </div>
+                                        {!approved && (
+                                          <button className="btn btn-primary btn-sm" onClick={() => toggleApprovedImprovement(item.id)}>
+                                            <ThumbsUp size={14} /> Approve
+                                          </button>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
                               ))}
                             </div>
-                          </div>
 
-                          <div className="approval-actions">
-                            <button
-                              className="btn btn-secondary"
-                              onClick={approveAllRemainingImprovements}
-                              disabled={isBusy || activeImprovementPlan.length === 0}
-                            >
-                              Select all remaining
-                            </button>
-                            <button
-                              id="approve-rewrite-btn"
-                              className="btn btn-primary"
-                              onClick={() => void approveRewrite()}
-                              disabled={isBusy || approvedImprovementIds.length === 0 || outputFormats.length === 0 || !designAccentValid}
-                            >
-                              <Bot size={16} />
-                              Approve selected and open chapter workflow
-                              {drawDiagrams && ' + Diagram'}
-                            </button>
-                            {(approvalResult || completedImprovementPlan.length > 0) && (
-                              <button
-                                className="btn btn-secondary"
-                                onClick={() => void loadChapterEditor()}
-                                disabled={isBusy}
-                              >
-                                <FileText size={16} />
-                                Open chapter editor
-                              </button>
-                            )}
-                            {approvalResult && (
-                              <div className="approval-result">
-                                ✅ Approved {approvalResult.approved_items.length} item(s) ·{' '}
-                                {approvalResult.active_provider}
-                                {approvalResult.active_model ? ` / ${approvalResult.active_model}` : ''}.{' '}
-                                {approvalResult.rewrite_note}
+                            {approvalResult?.rewrite_preview && (
+                              <div className="rewrite-preview">
+                                <div className="settings-group-title">Revision Preview</div>
+                                <p>{approvalResult.rewrite_preview}</p>
                               </div>
                             )}
-                          </div>
 
-                          {approvalResult?.rewrite_preview && (
-                            <div className="rewrite-preview">
-                              <div className="settings-group-title">Integrity-Preserving Revision Preview</div>
-                              <p>{approvalResult.rewrite_preview}</p>
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Diagram result */}
-                      {diagramResult && (
-                        <div className="card animate-scale diagram-panel">
-                          <div className="card-header">
-                            <div>
-                              <div className="card-title">📐 Generated Diagram</div>
-                              <div className="card-subtitle">{diagramResult.caption}</div>
-                            </div>
-                            <div className="badge badge-green">Mermaid · {designTheme.replace('_', ' ')}</div>
-                          </div>
-
-                          <div className="diagram-mermaid-block">
-                            <pre className="mermaid-source">{diagramResult.themed_source}</pre>
-                          </div>
-
-                          <div className="diagram-actions">
-                            <button
-                              className="btn btn-secondary btn-sm"
-                              onClick={() => { setEditingDiagram(!editingDiagram); setEditedMermaid(editedMermaid || diagramResult.mermaid_source); }}
-                            >
-                              {editingDiagram ? 'Close editor' : 'Edit Mermaid source'}
-                            </button>
-                            <button
-                              id="save-diagram-btn"
-                              className="btn btn-primary btn-sm"
-                              onClick={() => void saveDiagram()}
-                              disabled={isBusy}
-                            >
-                              <CheckCircle2 size={14} /> Save & Approve
-                            </button>
-                          </div>
-
-                          <MermaidPreview chart={editedMermaid || diagramResult.mermaid_source} />
-
-                          {editingDiagram && (
-                            <textarea
-                              className="mermaid-editor"
-                              value={editedMermaid}
-                              onChange={(e) => setEditedMermaid(e.target.value)}
-                              rows={16}
-                              spellCheck={false}
-                              style={{ width: '100%', padding: '10px', background: 'var(--bg-overlay)', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: '6px', fontFamily: 'monospace', marginBottom: '12px' }}
-                            />
-                          )}
-
-                          <div className="diagram-caption-row">
-                            <span className="settings-desc">
-                              📌 Caption: <strong>{diagramResult.caption}</strong>
-                            </span>
-                            <span className="settings-desc">
-                              ℹ️ Edit the Mermaid source above if needed, then Save & Approve to lock it for export.
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {chapterDrafts.length > 0 && (
-                        <div className="card animate-scale chapter-editor-panel">
-                          <div className="card-header">
-                            <div>
-                              <div className="card-title">Chapter Live Editor</div>
-                              <div className="card-subtitle">
-                                Edit approved chapter text locally, preview the compiled document, then export DOCX/PDF.
+                            {/* Prominent action button at bottom of plan items */}
+                            <div style={{
+                              marginTop: '20px', padding: '20px',
+                              background: 'linear-gradient(135deg, hsla(258,75%,55%,0.12), hsla(191,90%,55%,0.08))',
+                              border: '1px solid var(--border-brand)',
+                              borderRadius: 'var(--r-lg)',
+                              textAlign: 'center',
+                            }}>
+                              <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                                {approvedImprovementIds.length > 0
+                                  ? `${approvedImprovementIds.length} improvement(s) approved — ready to rewrite your document.`
+                                  : 'Approve the improvements above, then click below to start the AI-powered rewrite.'}
+                              </div>
+                              <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px' }}>
+                                Your document will be rewritten chapter-by-chapter with the selected design theme. All citations are locked and preserved.
+                              </p>
+                              <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                                <button
+                                  className="btn btn-secondary"
+                                  onClick={approveAllRemainingImprovements}
+                                  disabled={!activeImprovementPlan.length}
+                                >
+                                  <BadgeCheck size={16} /> Approve All First
+                                </button>
+                                <button
+                                  className="btn btn-primary btn-lg"
+                                  onClick={() => void approveRewrite()}
+                                  disabled={isBusy || workflowRewriteItemIds.length === 0 || outputFormats.length === 0 || !designAccentValid}
+                                  style={{ padding: '12px 32px', fontSize: '15px' }}
+                                >
+                                  <Bot size={18} /> {approvedRewriteItemIds.length ? 'Rewrite My Document with AI' : 'Approve All & Open AI Writer'}
+                                </button>
                               </div>
                             </div>
-                            <div className="badge badge-green">{chapterDrafts.length} chapters loaded</div>
+                          </>
+                        ) : (
+                          <div className="missing-plan-card">
+                            <strong>Improvement plan not ready.</strong>
+                            <p>Re-run analysis to build the full chapter-wise plan.</p>
+                            <button className="btn btn-primary" onClick={() => void rebuildCurrentAnalysis()} disabled={isBusy || !activeDocId}>
+                              <Activity size={16} /> Rebuild report and improvement plan
+                            </button>
                           </div>
+                        )}
+                      </div>
+                    )}
 
-                          {chapterGuidance && (
-                            <div className="revision-guidance">
-                              <div className="settings-group-title">AI revision guidance</div>
-                              <p>{chapterGuidance}</p>
-                            </div>
-                          )}
 
-                          <div className="chapter-progress-strip">
-                            <div>
-                              <strong>{completedChapterIds.length}/{chapterDrafts.length}</strong>
-                              <span>chapters marked complete</span>
-                            </div>
-                            <div>
-                              <strong>{changedChapterCount}</strong>
-                              <span>chapter(s) edited</span>
-                            </div>
-                            <div>
-                              <strong>{completionPercent}%</strong>
-                              <span>ready for final compile</span>
-                            </div>
+                    {activeAnalysisStep === 'download' && (
+                      <div className="step-panel-stack">
+                        <div className="step-panel-header">
+                          <div>
+                            <span className="eyebrow-label">Final manuscript package</span>
+                            <h3>{finalizeResult ? 'Package ready — download your files.' : 'Finalize full thesis or paper.'}</h3>
+                            <p className="step-panel-copy">Edit chapters, compile a preview, then export as DOCX and/or PDF.</p>
                           </div>
+                          <div className="step-panel-actions compact">
+                            <button className="btn btn-secondary" onClick={() => void loadChapterEditor()} disabled={isBusy || !activeDocId}>
+                              <FileText size={16} /> Open chapter editor
+                            </button>
+                            <button className="btn btn-primary" onClick={() => void finalizeThesis()} disabled={isFinalizing || chapterDrafts.length === 0 || outputFormats.length === 0 || !designAccentValid}>
+                              <Download size={16} /> {isFinalizing ? 'Finalizing...' : finalizeResult ? 'Regenerate DOCX/PDF' : 'Finalize and download'}
+                            </button>
+                          </div>
+                        </div>
 
-                          <div className="chapter-editor-layout">
-                            <div className="chapter-rail">
+                        {/* Chapter Navigation + AI-Powered Document View */}
+                        {chapterDrafts.length > 0 && activeChapter && (
+                          <>
+                            {/* Chapter tabs */}
+                            <div style={{
+                              display: 'flex', gap: '4px', flexWrap: 'wrap',
+                              padding: '4px', background: 'var(--bg-overlay)',
+                              borderRadius: 'var(--r-md)', marginBottom: '8px',
+                            }}>
                               {chapterDrafts.map((chapter, index) => {
-                                const changed = chapter.edited_text !== chapter.original_text;
                                 const completed = completedChapterIds.includes(chapter.id);
+                                const isActive = activeChapter?.id === chapter.id;
                                 return (
                                   <button
                                     key={chapter.id}
-                                    className={`chapter-tab ${activeChapter?.id === chapter.id ? 'active' : ''} ${completed ? 'complete' : ''}`}
                                     onClick={() => selectChapter(chapter.id)}
+                                    style={{
+                                      display: 'flex', alignItems: 'center', gap: '6px',
+                                      padding: '6px 12px', fontSize: '12px', fontWeight: 600,
+                                      borderRadius: 'var(--r-sm)', border: '1px solid transparent',
+                                      background: isActive ? 'var(--brand-500)' : 'transparent',
+                                      color: isActive ? '#fff' : completed ? 'var(--score-excellent)' : 'var(--text-secondary)',
+                                      cursor: 'pointer', transition: 'all var(--t-fast)',
+                                      whiteSpace: 'nowrap',
+                                    }}
                                   >
-                                    <span>{index + 1}. {chapter.title}</span>
-                                    <small>{completed ? 'complete' : changed ? 'edited' : `${chapter.word_count ?? 0} words`}</small>
+                                    {completed ? '✓' : index + 1}. {chapter.title}
                                   </button>
                                 );
                               })}
+                              <span style={{
+                                marginLeft: 'auto', alignSelf: 'center',
+                                fontSize: '11px', color: 'var(--text-muted)',
+                                padding: '0 8px',
+                              }}>
+                                {completedChapterIds.length}/{chapterDrafts.length} done
+                              </span>
                             </div>
 
-                            <div className="chapter-edit-surface">
-                              {activeChapter && (
-                                <>
-                                  <div className="chapter-edit-toolbar">
-                                    <div>
-                                      <div className="settings-label">Editing</div>
-                                      <strong>{activeChapter.title}</strong>
-                                    </div>
-                                    <div className="chapter-toolbar-actions">
-                                      <button className="btn btn-secondary btn-sm" onClick={resetActiveChapter}>
-                                        Reset chapter
-                                      </button>
-                                      <button className="btn btn-secondary btn-sm" onClick={markActiveChapterComplete}>
-                                        {completedChapterIds.includes(activeChapter.id) ? 'Reopen chapter' : 'Mark chapter complete'}
-                                      </button>
-                                      <button
-                                        className="btn btn-primary btn-sm"
-                                        onClick={() => void draftChapterRewrite()}
-                                        disabled={isRewritingChapter || approvedScopeIds.length === 0}
-                                        title={approvedScopeIds.length === 0 ? 'Approve at least one improvement item first' : 'Draft AI-assisted revision for this chapter'}
-                                      >
-                                        <Bot size={14} />
-                                        {isRewritingChapter ? 'Drafting...' : 'Draft AI revision'}
-                                      </button>
-                                      <button
-                                        className="btn btn-secondary btn-sm"
-                                        onClick={() => setShowCompiledPreview((value) => !value)}
-                                      >
-                                        {showCompiledPreview ? 'Hide preview' : 'Show preview'}
-                                      </button>
-                                    </div>
-                                  </div>
+                            <DocumentView
+                              docId={activeDocId}
+                              docType={docType}
+                              norm={targetFormat}
+                              chapter={activeChapter}
+                              improvements={improvementPlan}
+                              approvedImprovementIds={approvedRewriteItemIds}
+                              onUpdateChapter={updateChapterDraft}
+                              onToggleApproval={toggleApprovedImprovement}
+                              onApproveAll={approveAllRemainingImprovements}
+                              onMarkComplete={markActiveChapterComplete}
+                              isComplete={completedChapterIds.includes(activeChapter.id)}
+                            />
+                          </>
+                        )}
 
-                                  <textarea
-                                    className="chapter-editor-textarea"
-                                    value={activeChapter.edited_text}
-                                    onChange={(e) => updateChapterDraft(activeChapter.id, e.target.value)}
-                                    spellCheck
-                                  />
-
-                                  {chapterProposal && chapterProposal.chapter_id === activeChapter.id && (
-                                    <div className="chapter-proposal">
-                                      <div className="chapter-proposal-header">
-                                        <div>
-                                          <div className="settings-group-title">AI chapter proposal</div>
-                                          <span className="settings-desc">
-                                            {chapterProposal.provider} / {chapterProposal.model ?? 'selected model'} · citations locked: {chapterProposal.citation_lock.locked_count}
-                                          </span>
-                                        </div>
-                                        <div className="chapter-toolbar-actions">
-                                          <button className="btn btn-secondary btn-sm" onClick={() => setChapterProposal(null)}>
-                                            Reject
-                                          </button>
-                                          <button className="btn btn-primary btn-sm" onClick={applyChapterProposal}>
-                                            <CheckCircle2 size={14} />
-                                            Apply to chapter
-                                          </button>
-                                        </div>
-                                      </div>
-                                      <pre>{chapterProposal.proposed_text.slice(0, 8000)}</pre>
-                                      {!chapterProposal.citation_lock.all_restored && (
-                                        <div className="field-error">
-                                          Some citation placeholders were not restored. Review carefully before applying.
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                </>
-                              )}
-                            </div>
-                          </div>
-
-                          {showCompiledPreview && (
-                            <div className="compiled-preview">
-                              <div className="compiled-preview-header">
-                                <div>
-                                  <div className="settings-group-title">Compiled document preview</div>
-                                  <span className="settings-desc">
-                                    {compiledPreview.split(/\s+/).filter(Boolean).length.toLocaleString()} words assembled
-                                  </span>
-                                </div>
-                                <button
-                                  className="btn btn-primary"
-                                  onClick={() => void finalizeThesis()}
-                                  disabled={isFinalizing || outputFormats.length === 0 || !designAccentValid}
-                                >
-                                  <FileText size={16} />
-                                  {isFinalizing ? 'Finalizing...' : 'Finalize full document package'}
-                                </button>
-                              </div>
-                              <pre>{compiledPreview.slice(0, 12000)}</pre>
-                              {compiledPreview.length > 12000 && (
-                                <div className="settings-desc">Preview truncated for speed. Full edited text is exported.</div>
-                              )}
-                            </div>
-                          )}
-
-                          {!showCompiledPreview && (
-                            <div className="finalize-dock">
-                              <div>
-                                <div className="settings-group-title">Final full document package</div>
-                                <span className="settings-desc">
-                                  Compile all edited chapters into one downloadable DOCX/PDF.
-                                </span>
-                              </div>
-                              <button
-                                className="btn btn-primary"
-                                onClick={() => void finalizeThesis()}
-                                disabled={isFinalizing || outputFormats.length === 0 || !designAccentValid}
-                              >
-                                <FileText size={16} />
-                                {isFinalizing ? 'Finalizing...' : 'Finalize and download full document'}
+                        {/* Artifact download cards */}
+                        {finalizeResult ? (
+                          <div className="artifact-grid compact-artifacts">
+                            {finalizeResult.artifacts.map((artifact) => (
+                              <button key={artifact.filename} className="artifact-card" onClick={() => downloadArtifact(artifact)}>
+                                <FileText size={20} />
+                                <span>{artifact.format.toUpperCase()}</span>
+                                <strong>{artifact.filename}</strong>
+                                <small>{(artifact.size_bytes / 1024).toFixed(1)} KB</small>
                               </button>
-                            </div>
-                          )}
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="download-readiness-grid">
+                            <div><strong>{chapterDrafts.length}</strong><span>chapters loaded</span></div>
+                            <div><strong>{completedChapterIds.length}</strong><span>chapters complete</span></div>
+                            <div><strong>{outputFormats.map((f) => f.toUpperCase()).join(' + ') || 'None'}</strong><span>selected output</span></div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </section>
 
-                          {finalizeResult && (
-                            <div className="finalize-output">
-                              <div className="card-header compact-header">
-                                <div>
-                                  <div className="card-title">Final Thesis Package Ready</div>
-                                  <div className="card-subtitle">
-                                    Generated after approval from {finalizeResult.chapter_count} edited chapter(s).
-                                  </div>
-                                </div>
-                                <div className="badge badge-green">Ready to download</div>
-                              </div>
+                {/* Diagram result — shown below stepper when available */}
+                {diagramResult && (
+                  <div className="card animate-scale diagram-panel" style={{ marginTop: '20px' }}>
+                    <div className="card-header">
+                      <div>
+                        <div className="card-title">📐 Generated Diagram</div>
+                        <div className="card-subtitle">{diagramResult.caption}</div>
+                      </div>
+                      <div className="badge badge-green">Mermaid · {designTheme.replace('_', ' ')}</div>
+                    </div>
+                    <div className="diagram-mermaid-block">
+                      <pre className="mermaid-source">{diagramResult.themed_source}</pre>
+                    </div>
+                    <div className="diagram-actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => { setEditingDiagram(!editingDiagram); setEditedMermaid(editedMermaid || diagramResult.mermaid_source); }}>{editingDiagram ? 'Close editor' : 'Edit Mermaid source'}</button>
+                      <button id="save-diagram-btn" className="btn btn-primary btn-sm" onClick={() => void saveDiagram()} disabled={isBusy}><CheckCircle2 size={14} /> Save &amp; Approve</button>
+                    </div>
+                    <MermaidPreview chart={editedMermaid || diagramResult.mermaid_source} />
+                    {editingDiagram && (
+                      <textarea className="mermaid-editor" value={editedMermaid} onChange={(e) => setEditedMermaid(e.target.value)} rows={16} spellCheck={false} style={{ width: '100%', padding: '10px', background: 'var(--bg-overlay)', color: 'var(--text-main)', border: '1px solid var(--border)', borderRadius: '6px', fontFamily: 'monospace', marginBottom: '12px' }} />
+                    )}
+                  </div>
+                )}
 
-                              <div className="artifact-grid">
-                                {finalizeResult.artifacts.map((artifact) => (
-                                  <button
-                                    key={artifact.filename}
-                                    className="artifact-card"
-                                    onClick={() => downloadArtifact(artifact)}
-                                  >
-                                    <FileText size={20} />
-                                    <span>{artifact.format.toUpperCase()}</span>
-                                    <strong>{artifact.filename}</strong>
-                                    <small>{(artifact.size_bytes / 1024).toFixed(1)} KB</small>
-                                  </button>
-                                ))}
-                              </div>
+                {/* Review Log */}
+                {thread.length > 0 && (
+                  <div className="card thread-card" style={{ marginTop: '20px' }}>
+                    <div className="card-header">
+                      <div>
+                        <div className="card-title">Review Log</div>
+                        <div className="card-subtitle">{showFullReviewLog ? 'Showing all project events.' : 'Showing latest events.'}</div>
+                      </div>
+                      <div className="thread-header-actions">
+                        {thread.length > 6 && (
+                          <button className="btn btn-secondary btn-sm" onClick={() => setShowFullReviewLog((v) => !v)}>{showFullReviewLog ? 'Show recent only' : `Show ${thread.length - 6} older`}</button>
+                        )}
+                        <div className="badge badge-brand">{thread.length} entries</div>
+                      </div>
+                    </div>
+                    <div className="thread-scroll">
+                      {visibleThread.map((msg) => <ThreadEntry key={msg.id} msg={msg} />)}
+                      <div ref={threadEndRef} />
+                    </div>
+                  </div>
+                )}
 
-                              {finalizeResult.field_update_status && (
-                                <div className={`front-matter-status ${finalizeResult.field_update_status.updated_by_word ? 'ready' : 'needs-open'}`}>
-                                  <div className="settings-group-title">Front matter and page-number fields</div>
-                                  <p>
-                                    {finalizeResult.field_update_status.updated_by_word
-                                      ? 'TOC, list of tables, and list of figures were updated by Word automation before export.'
-                                      : 'TOC, list of tables, and list of figures are embedded and set to update when opened in Word. Automated page-number update needs Microsoft Word automation or LibreOffice on this machine.'}
-                                  </p>
-                                </div>
-                              )}
-
-                              {finalizeResult.preservation_report && (
-                                <div className="preservation-summary">
-                                  <div className="settings-group-title">DOCX preservation summary</div>
-                                  <div className="score-compare-grid">
-                                    {Object.entries(finalizeResult.preservation_report).slice(0, 8).map(([key, value]) => (
-                                      <div className="score-compare" key={key}>
-                                        <span>{key.replaceAll('_', ' ')}</span>
-                                        <strong>{Array.isArray(value) ? value.join(', ') || 'none' : String(value ?? 'n/a')}</strong>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-
-                              <div className="score-compare-grid">
-                                {Object.entries(finalizeResult.after_scores).slice(0, 8).map(([key, after]) => (
-                                  <div className="score-compare" key={key}>
-                                    <span>{key.replaceAll('_', ' ')}</span>
-                                    <strong>
-                                      {String(finalizeResult.before_scores[key] ?? 'n/a')}{' -> '}{String(after ?? 'n/a')}
-                                    </strong>
-                                  </div>
-                                ))}
-                              </div>
-
-                              {finalizeResult.limitations.length > 0 && (
-                                <div className="export-limitations">
-                                  {finalizeResult.limitations.map((item) => (
-                                    <span key={item}>{item}</span>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
+                {/* ── Live Editing Drawer ── */}
+                {showLiveEditDrawer && (
+                  <div className="live-edit-overlay">
+                    <div className="live-edit-drawer">
+                      <div className="live-edit-header">
+                        <div className="live-edit-title">
+                          <Bot size={20} style={{ color: 'var(--accent)' }} />
+                          <strong>AI is rewriting your document</strong>
+                        </div>
+                        <button className="btn btn-secondary btn-sm" onClick={() => setShowLiveEditDrawer(false)} disabled={isBusy} style={{ opacity: isBusy ? 0.4 : 1 }}>✕ Close</button>
+                      </div>
+                      {isBusy && (
+                        <div className="live-edit-progress">
+                          <div className="live-edit-progress-bar" />
+                        </div>
+                      )}
+                      <div className="live-edit-log">
+                        {liveEditLog.map((line, i) => (
+                          <div key={i} className={`live-edit-line ${line.startsWith('❌') ? 'error' : line.startsWith('🎉') ? 'success' : ''}`}>
+                            <span className="live-edit-dot" />
+                            {line}
+                          </div>
+                        ))}
+                      </div>
+                      {!isBusy && liveEditLog.some(l => l.startsWith('🎉')) && (
+                        <div className="live-edit-footer">
+                          <button className="btn btn-primary" onClick={() => { setShowLiveEditDrawer(false); setActiveAnalysisStep('download'); }}>
+                            <FileText size={15} /> Open Chapter Editor →
+                          </button>
                         </div>
                       )}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
+
               </>
             )}
           </div>
@@ -3624,10 +3214,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
               <div className="settings-row">
                 <div>
                   <div className="settings-label">Connection status</div>
-                  <div className="settings-desc">Falls back to seed skills when offline.</div>
+                  <div className="settings-desc">Bundled seed skills run locally. Neon is optional for community updates.</div>
                 </div>
-                <span className={`badge ${neonConnected ? 'badge-green' : 'badge-amber'}`}>
-                  {neonConnected ? 'Connected' : 'Offline'}
+                <span className={`badge ${neonConnected ? 'badge-green' : 'badge-cyan'}`}>
+                  {neonConnected ? 'Connected' : 'Local'}
                 </span>
               </div>
               <div className="settings-row">
@@ -3877,8 +3467,8 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
                     Installed desktop uses protected app-data credentials, not the source .env file.
                   </div>
                 </div>
-                <span className={`badge ${neonConnected ? 'badge-green' : 'badge-amber'}`}>
-                  {neonConnected ? 'Connected' : neonDraft?.configured ? 'Configured' : 'Offline'}
+                <span className={`badge ${neonConnected ? 'badge-green' : neonDraft?.configured ? 'badge-amber' : 'badge-cyan'}`}>
+                  {neonConnected ? 'Connected' : neonDraft?.configured ? 'Configured' : 'Local'}
                 </span>
               </div>
               {neonDraft && (
@@ -3925,10 +3515,10 @@ ${improvementPlan.length > 0 ? improvementPlan.map((item, idx) => `### Item ${id
               </div>
               <div className="settings-row">
                 <div>
-                  <div className="settings-label">🌐 Internet gate</div>
-                  <div className="settings-desc">Analysis is blocked if internet (CrossRef) is unreachable.</div>
+                  <div className="settings-label">Internet research scope</div>
+                  <div className="settings-desc">OTIF probes multiple open scholarly APIs. If none respond, analysis continues as local-only and marks external verification unavailable.</div>
                 </div>
-                <span className="badge badge-amber">Strict — always ON</span>
+                <span className="badge badge-cyan">Source-aware</span>
               </div>
               <div className="settings-row">
                 <div>

@@ -1,0 +1,853 @@
+{
+  "analysis_mode": "local_preflight",
+  "coverage": {
+    "local_document_only": true,
+    "open_research_sources_checked": [
+      "arxiv",
+      "crossref",
+      "europe_pmc",
+      "pubmed",
+      "datacite",
+      "eric",
+      "osf_preprints",
+      "zenodo",
+      "semantic_scholar",
+      "doaj",
+      "base",
+      "inspire_hep"
+    ],
+    "local_corpus_checked": []
+  },
+  "limitations": [
+    "This preflight does not check against all research papers.",
+    "Similarity and originality require configured local corpora or open research connectors.",
+    "Scores are derived only from the uploaded document text and loaded local skill rules."
+  ],
+  "metrics": {
+    "word_count": 219,
+    "sentence_count": 20,
+    "unique_word_ratio": 0.648,
+    "avg_sentence_length": 10.9,
+    "citation_coverage": 27.3,
+    "citation_quality": 19.6,
+    "citation_sentence_count": 3,
+    "claim_sentence_count": 11,
+    "doi_count": 0,
+    "url_count": 0,
+    "references_present": false,
+    "paragraph_count": 8,
+    "near_duplicate_pairs": 0,
+    "internal_duplication_risk": 0,
+    "burstiness": 67.2,
+    "passive_voice_ratio": 0.0,
+    "template_opener_count": 0,
+    "researcher_voice_markers": 2,
+    "long_quote_words": 0,
+    "humanization_score": 96,
+    "ai_writing_risk": 5,
+    "originality_evidence_matrix": 20,
+    "originality_dimensions": {
+      "literature_gap": 0,
+      "applied_integration": 10,
+      "artefact_contribution": 10,
+      "methodological_boundary": 0,
+      "practical_implication": 0
+    },
+    "hedging_count": 0,
+    "hedging_density_per_1000": 0.0,
+    "hedging_risk": "over_assertive",
+    "rq_count": 0,
+    "rq_traceback_score": null,
+    "unanswered_rqs": [],
+    "norm_issues": [],
+    "norm_valid": true,
+    "is_imrad": true,
+    "missing_sections": []
+  },
+  "findings": [],
+  "scores": {
+    "plagiarism_risk": 16.0,
+    "originality_score": 45.3,
+    "originality_evidence_matrix": 20,
+    "citation_quality": 19.6,
+    "humanization_score": 96,
+    "ai_writing_risk": 5,
+    "ai_pattern_risk": 5,
+    "phrase_quality": 96,
+    "citation_signal": 19.6,
+    "structure_signal": 86.7,
+    "hedging_risk": "over_assertive",
+    "rq_traceback_score": null,
+    "overall_preflight": 71.1
+  },
+  "chapters": [
+    {
+      "id": "whole-document",
+      "title": "Whole Document",
+      "metrics": {
+        "word_count": 219,
+        "sentence_count": 20,
+        "unique_word_ratio": 0.648,
+        "avg_sentence_length": 10.9,
+        "citation_coverage": 27.3,
+        "citation_quality": 19.6,
+        "citation_sentence_count": 3,
+        "claim_sentence_count": 11,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 8,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 67.2,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 2,
+        "long_quote_words": 0,
+        "humanization_score": 96,
+        "ai_writing_risk": 5,
+        "originality_evidence_matrix": 20,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 10,
+          "artefact_contribution": 10,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": []
+      },
+      "scores": {
+        "plagiarism_risk": 16.0,
+        "originality_score": 40.5,
+        "originality_evidence_matrix": 20,
+        "citation_quality": 19.6,
+        "humanization_score": 96,
+        "ai_writing_risk": 5,
+        "ai_pattern_risk": 5,
+        "phrase_quality": 96,
+        "citation_signal": 19.6,
+        "structure_signal": 86.7,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 70.3
+      },
+      "findings": []
+    }
+  ],
+  "research_sources": {
+    "internet_checked": true,
+    "sources": [
+      {
+        "id": "arxiv",
+        "name": "arXiv",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Building and development of an organizational competence for digital transformation in SMEs",
+            "url": "http://arxiv.org/abs/2406.01615v1",
+            "year": "2024",
+            "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+          },
+          {
+            "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+            "url": "http://arxiv.org/abs/2107.08351v2",
+            "year": "2021",
+            "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+          },
+          {
+            "title": "Classifying SMEs for Approaching Cybersecurity Competence and Awareness",
+            "url": "http://arxiv.org/abs/2110.05370v1",
+            "year": "2021",
+            "abstract": "Cybersecurity is increasingly a concern for small and medium-sized enterprises (SMEs), and there exist many awareness training programs and tools for them. The literature mainly studies SMEs as a unitary type of company and provides one-size-fits-all recommendations and solutions. However, SMEs are not homogeneous. They are diverse with different vulnerabilities, cybersecurity needs, and competenc"
+          },
+          {
+            "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+            "url": "http://arxiv.org/abs/1910.08604v3",
+            "year": "2019",
+            "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+          },
+          {
+            "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+            "url": "http://arxiv.org/abs/2309.07064v2",
+            "year": "2023",
+            "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+          }
+        ],
+        "cached": false,
+        "base_url": "https://export.arxiv.org/api/query",
+        "coverage": "preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://info.arxiv.org/help/api/index.html",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "crossref",
+        "name": "Crossref",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Digital Transformation in Microfinance SMEs",
+            "url": "https://doi.org/10.1142/9789811272721_0008",
+            "year": 2023,
+            "abstract": ""
+          },
+          {
+            "title": "Digital Transformation in Logistics SMEs",
+            "url": "https://doi.org/10.1142/9789811272721_0007",
+            "year": 2023,
+            "abstract": ""
+          },
+          {
+            "title": "Digital Transformation in Healthcare SMEs",
+            "url": "https://doi.org/10.1142/9789811272721_0006",
+            "year": 2023,
+            "abstract": ""
+          },
+          {
+            "title": "Enhancing SMEs\u2019 Digital Transformation Capabilities through Partnership with Universities",
+            "url": "https://doi.org/10.1142/9789811272721_0003",
+            "year": 2023,
+            "abstract": ""
+          },
+          {
+            "title": "Digital Transformation of African SMEs: Understanding Digital Transformation",
+            "url": "https://doi.org/10.2174/9789815223347124020006",
+            "year": 2024,
+            "abstract": "<jats:p>While the current literature has enhanced our understanding of specific aspects of digital transformation, we lack a comprehensive representation of the nature of this transition and the effects it has on SMEs in Africa. Small and medium businesses (SMEs) in Africa are largely responsible for the region's economic growth and development. Digital transformation (DT) of organisations improve"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.crossref.org/works",
+        "coverage": "DOI metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "europe_pmc",
+        "name": "Europe PMC",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Assessing the Impact of Digital Transformation in SMEs on the Achievement of Sustainable Development Goals",
+            "url": "10.20944/preprints202604.1597.v1",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "Digital Transformation in SMEs: Pre and Post-Covid-19 Era: A Comparative Bibliometric Analysis",
+            "url": "10.20944/preprints202410.0944.v1",
+            "year": "2024",
+            "abstract": ""
+          },
+          {
+            "title": "The contribution of organizational culture, structure, and leadership factors in the digital transformation of SMEs: a mixed-methods approach.",
+            "url": "10.1007/s10111-022-00714-2",
+            "year": "2023",
+            "abstract": ""
+          },
+          {
+            "title": "Sustainable SMEs Performance: Knowledge Management, Human Resource Digital Transformation, and Innovation Capability Mediation",
+            "url": "10.21203/rs.3.rs-9262489/v1",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "The Role of Digital Transformation in Enhancing SME Performance and Competitiveness in India",
+            "url": "10.21203/rs.3.rs-9990986/v1",
+            "year": "2026",
+            "abstract": ""
+          }
+        ],
+        "cached": false,
+        "base_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+        "coverage": "biomedical papers",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "pubmed",
+        "name": "PubMed / NCBI",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "AI usage and employee creativity: the mediating role of work engagement and the moderating role of technology acceptance.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42293870/",
+            "year": "2026",
+            "abstract": "Frontiers in psychology"
+          },
+          {
+            "title": "Toward robust social media sentiment for SMEs: a comparative study of dictionary-based and machine learning approaches with insights for hybrid methodologies.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/41994583/",
+            "year": "2025",
+            "abstract": "Frontiers in big data"
+          },
+          {
+            "title": "Design and evaluation of an embedded automation system for optimized cut-shape placement on coconut shells in sustainable key tag manufacturing.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/41941524/",
+            "year": "2026",
+            "abstract": "PloS one"
+          },
+          {
+            "title": "The orchestrating role of platform enterprises in digital inclusion: A network game perspective from industrial clusters.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/41920849/",
+            "year": "2026",
+            "abstract": "PloS one"
+          },
+          {
+            "title": "Unlocking the road to entrepreneurial success: quality drivers and digital competence in cloud computing adoption.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/41792405/",
+            "year": "2026",
+            "abstract": "Scientific reports"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+        "coverage": "biomedical citations",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "datacite",
+        "name": "DataCite",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Swords into Plowshares: Helping Defense Industries become Profitable with Peace",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.15238706",
+            "year": 2024,
+            "abstract": "Preface\n\n\"They will beat their swords into plowshares and their spears into pruning hooks. Nation will not take up sword against nation, nor will they train for war anymore.\" - Isaiah 2:4, NIV Bible\n\nPreface: A Vision of Hope\n\nIn a world that often feels torn by conflict and strife, the ancient words of the prophet Isaiah offer a vision of profound hope. \"They will beat their swords into plowshare"
+          },
+          {
+            "title": "Swords into Plowshares: Helping Defense Industries become Profitable with Peace",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.15238707",
+            "year": 2024,
+            "abstract": "Preface\n\n\"They will beat their swords into plowshares and their spears into pruning hooks. Nation will not take up sword against nation, nor will they train for war anymore.\" - Isaiah 2:4, NIV Bible\n\nPreface: A Vision of Hope\n\nIn a world that often feels torn by conflict and strife, the ancient words of the prophet Isaiah offer a vision of profound hope. \"They will beat their swords into plowshare"
+          },
+          {
+            "title": "[SLIDES] Thematic Event: Scaling Digital Health Solutions: Connecting TEFs, EDIHs and DIGITAL for Health Innovation",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21335203",
+            "year": 2026,
+            "abstract": "This is the slide deck of the Event \"Scaling Digital Health Solutions: Connecting TEFs, EDIHs and DIGITAL for Health Innovation\". The event was organised by DEDEP.eu, CoordinaTEF and DTA Phase II supporting the network of EDIHs and was held on 7 July 2026.\u00a0\n\nHealthcare sector is undergoing rapid digital transformation, much like other sectors. Artificial intelligence, robotics, and data-driven sol"
+          },
+          {
+            "title": "[SLIDES] Thematic Event: Scaling Digital Health Solutions: Connecting TEFs, EDIHs and DIGITAL for Health Innovation",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21335204",
+            "year": 2026,
+            "abstract": "This is the slide deck of the Event \"Scaling Digital Health Solutions: Connecting TEFs, EDIHs and DIGITAL for Health Innovation\". The event was organised by DEDEP.eu, CoordinaTEF and DTA Phase II supporting the network of EDIHs and was held on 7 July 2026.\u00a0\n\nHealthcare sector is undergoing rapid digital transformation, much like other sectors. Artificial intelligence, robotics, and data-driven sol"
+          },
+          {
+            "title": "AI-DRIVEN TRANSFORMATION OF THE DIGITAL ECONOMY: INNOVATION, COMPETITION, AND STRATEGIC OPPORTUNITIES IN EMERGING MARKETS",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21299342",
+            "year": 2026,
+            "abstract": "AI is rapidly reshaping the global economy, offering transformative opportunities across sectors. This article examines how AI-driven innovation influences competitive advantage and economic growth, with focus on Uzbekistan's Digital Economy Vision 2030. A systematic review of peer-reviewed literature (2022\u20132025) maps adoption frameworks and compares AI integration across enterprise sizes. Results"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.datacite.org/dois",
+        "coverage": "datasets and DOI records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://support.datacite.org/docs/api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "eric",
+        "name": "ERIC",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Stakeholder-Centered Development of New Curriculum Content in Higher Education: A Case Study in Creating a Course on the Green and Digital Transformation of SMEs",
+            "url": "https://eric.ed.gov/?id=EJ1447626",
+            "year": 2024,
+            "abstract": "Universities should increasingly collaborate with industries and international counterparts to meet the needs of students, businesses and other stakeholders. However, the literature has not provided a comprehensive response to these aspects of curriculum development. This study has two objectives: to propose a method of curriculum content development in higher education according to the stakeholde"
+          },
+          {
+            "title": "Identification of Constraints to Implementation of Entrepreneurship Digitalization Training: The Case of Batik SMEs in Indonesia",
+            "url": "https://eric.ed.gov/?id=ED652402",
+            "year": 2023,
+            "abstract": "The digital world in the creative industry has provided new opportunities for entrepreneurs to utilize and exploit products and services in a more transparent and widespread manner. Products and services can grow exponentially and be offered to all users and communities throughout the world without time and space limitations. Creative SMEs, especially batik SMEs, are currently required to keep abr"
+          },
+          {
+            "title": "Investigating the Emerging and Future Trends of Knowledge Management in Small and Medium Enterprises: A Science Mapping Approach",
+            "url": "https://eric.ed.gov/?id=EJ1430203",
+            "year": 2024,
+            "abstract": "Purpose: This study aims to evaluate the knowledge structure of knowledge management (KM) applications within small and medium enterprises (SMEs). In pursuit of excellence, SMEs must adopt KM like large corporations, even with limited resources. Design/methodology/approach: Through a bibliometric approach, this study evaluates current themes based on bibliographic coupling analysis and predicts fu"
+          },
+          {
+            "title": "Grasp the Challenge of Digital Transition in SMEs--A Training Course Geared towards Decision-Makers",
+            "url": "https://eric.ed.gov/?id=EJ1293318",
+            "year": 2021,
+            "abstract": "Small and medium-sized enterprises (SMEs) in Europe risk their competitiveness if they fail to embrace digitalization. Indeed, SMEs are aware of the need to digitalize--more than one in two SMEs are concerned that they may lose competitiveness if they do not adopt new digital technologies. However, a key obstacle is related with decision-makers' lack of awareness concerning digital technologies po"
+          },
+          {
+            "title": "Industry 4.0 Technologies Adoption and Obstacles in Manufacturing SMEs -- Challenges for Strategy and Organisational Learning",
+            "url": "https://eric.ed.gov/?id=EJ1508051",
+            "year": 2026,
+            "abstract": "Purpose: This study aims to examine the adoption of key Industry 4.0 technologies, perceived obstacles and the role of organisational learning in manufacturing small and medium-sized enterprises (SMEs). It also explores how contingency factors such as employee count, turnover, research and development (R&D) spending and technological intensity influence adoption and obstacle severity. Design/metho"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.ies.ed.gov/eric/",
+        "coverage": "education research",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://eric.ed.gov/?api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "osf_preprints",
+        "name": "OSF Preprints",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.osf.io/v2/preprints/",
+        "coverage": "open preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.osf.io/v2/docs/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "zenodo",
+        "name": "Zenodo",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Transformarea digital\u0103 a imm-urilor din Republica Moldova",
+            "url": null,
+            "year": "2024",
+            "abstract": "<p><span>The present work represents a theoretical-methodological foray into the digitization of SMEs in the Republic of Moldova. Thus, the purpose of the research is to identify the possibilities of digital transformation of SMEs in the Republic of Moldova as a result of the multiple crises that impose, more and more and urgently this transformation approach. </span><span>So, SMEs in our country "
+          },
+          {
+            "title": "KEY FACTORS OF COMPETITIVENESS IN SMES:  EVALUATION OF INNOVATION AND DIGITALIZATION  STRATEGIES",
+            "url": null,
+            "year": "2024",
+            "abstract": ""
+          },
+          {
+            "title": "Determinants of Digital Transformation Adoption: An Empirical Investigation of SMEs in Viet Nam",
+            "url": null,
+            "year": "2025",
+            "abstract": "<p>In the era of the digital economy, digital transformation (DT) has become a critical approach for firms to gain competitive advantages in the context of intense and dynamic market competition. Companies across almost all industries have undergone or are currently undergoing digital transformation. Due to their limited resources and capabilities, the digitalization process of small and medium-si"
+          },
+          {
+            "title": "DIGITAL TRANSFORMATION IN SMALL AND MEDIUM ENTERPRISES (SMES): BARRIERS, STRATEGIES, AND FUTURE OUTLOOK",
+            "url": null,
+            "year": "2025",
+            "abstract": "<p><a href=\"https://ijetrm.com/issues/files/Sep-2025-17-1758128209-SEP29.pdf\" target=\"_blank\" rel=\"noopener\">Digital transformation</a> has emerged as a vital enabler of competitiveness and survival in the international economy<br>but still, small and medium enterprises (SMEs) are still confronted with immense challenges of uptake and<br>utilization of digital technology. This paper discusses the "
+          },
+          {
+            "title": "Digital Technology Transformation of SMEs: Indonesian Case Study",
+            "url": null,
+            "year": "2022",
+            "abstract": "<p>The transition to the industry 4.0 era has forced businesses worldwide, including Indonesia, to adapt to digital transformation. The problem faced by small and medium-sized businesses is the readiness to adopt digital technology. It is necessary to study the readiness of Small Medium Sized Enterprises (SMEs) to face changes so that information and needs from SMEs can be obtained to adapt to thi"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://zenodo.org/api/records",
+        "coverage": "research outputs and datasets",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "semantic_scholar",
+        "name": "Semantic Scholar",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.semanticscholar.org/graph/v1/paper/search",
+        "coverage": "literature graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.semanticscholar.org/api-docs/graph",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "openalex",
+        "name": "OpenAlex",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.openalex.org/works",
+        "coverage": "global scholarly graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://developers.openalex.org/",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "doaj",
+        "name": "DOAJ",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://doaj.org/api/search/articles",
+        "coverage": "open access journals",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "core",
+        "name": "CORE",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.core.ac.uk/v3/search/works",
+        "coverage": "open access repository records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "base",
+        "name": "BASE",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi",
+        "coverage": "repository metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "inspire_hep",
+        "name": "INSPIRE-HEP",
+        "status": "checked",
+        "message": "1 public result(s)",
+        "matches": [
+          {
+            "title": "Smart Production 2035: AI, IoT, and Quantum Computing in European Manufacturing",
+            "url": "https://doi.org/10.1109/ICCTA65425.2025.11166150",
+            "year": "2025",
+            "abstract": "This paper investigates the current and future role of innovative technologies in production management within European industrial companies. Rooted in the historical evolution of industrial revolutions, the study focuses on the ongoing transformation known as Industry 4.0, characterized by the integration of digital technologies such as IoT, big data, AI, and emerging concepts like quantum comput"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://inspirehep.net/api",
+        "coverage": "high-energy physics, astrophysics, particle physics",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://github.com/inspirehep/rest-api-doc",
+        "requires_key": false,
+        "configured": true
+      }
+    ],
+    "queries": [
+      "# Digital Transformation in SMEs",
+      "digital transformation performance india mixed-methods",
+      "india mixed-methods framework understanding strategic"
+    ],
+    "ai_detection": {
+      "ai_detection_score": 14,
+      "confidence": "low",
+      "signals": {
+        "perplexity_risk": 48.1,
+        "burstiness_risk": 0,
+        "template_opener_risk": 0,
+        "passive_voice_risk": 0.0,
+        "researcher_voice_reduction": 0,
+        "repetition_risk": 0,
+        "uniform_length_risk": 8.0
+      },
+      "verdict": "Low AI-generation probability (14%). Writing patterns are consistent with human academic authorship.",
+      "turnitin_ai_equivalent": "Likely human-authored (<25% \u2014 equivalent to Turnitin AI low signal)"
+    },
+    "turnitin_style_similarity": null,
+    "connectivity": {
+      "internet_reachable": true,
+      "reachable_count": 6,
+      "checked_count": 6,
+      "sources": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Crossref responded with HTTP 200"
+        },
+        {
+          "id": "arxiv",
+          "name": "arXiv",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "arXiv responded with HTTP 200"
+        },
+        {
+          "id": "datacite",
+          "name": "DataCite",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "DataCite responded with HTTP 200"
+        },
+        {
+          "id": "europe_pmc",
+          "name": "Europe PMC",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Europe PMC responded with HTTP 200"
+        },
+        {
+          "id": "semantic_scholar",
+          "name": "Semantic Scholar",
+          "status": "reachable",
+          "status_code": 429,
+          "message": "Semantic Scholar responded with HTTP 429"
+        },
+        {
+          "id": "openalex",
+          "name": "OpenAlex",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "OpenAlex responded with HTTP 200"
+        }
+      ]
+    }
+  },
+  "formatting_plan": {
+    "target": "APA 7",
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "export_formats": [
+      "docx",
+      "pdf"
+    ],
+    "design_themes": [
+      "classic_blue",
+      "mono_formal",
+      "emerald_academic",
+      "maroon_submission"
+    ]
+  },
+  "improvement_plan": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 45.3; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.\n\nReal citation suggestions from open research sources:\n  \u2022 Building and development of an organizational competence for digital transformation in SMEs (2024) \u2014 via arXiv\n  \u2022 A Novel Approach to Analyze Fashion Digital Archive from Humanities (2021) \u2014 via arXiv\n  \u2022 Classifying SMEs for Approaching Cybersecurity Competence and Awareness (2021) \u2014 via arXiv\n  \u2022 Digital Transformation in Microfinance SMEs (2023) \u2014 via Crossref\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works.",
+      "evidence": "Citation quality is 19.6; citation coverage is 27.3% across claim-like sentences. 21 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": [
+        {
+          "title": "Building and development of an organizational competence for digital transformation in SMEs",
+          "year": "2024",
+          "url": "http://arxiv.org/abs/2406.01615v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+          "year": "2021",
+          "url": "http://arxiv.org/abs/2107.08351v2",
+          "source": "arXiv"
+        },
+        {
+          "title": "Classifying SMEs for Approaching Cybersecurity Competence and Awareness",
+          "year": "2021",
+          "url": "http://arxiv.org/abs/2110.05370v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "Digital Transformation in Microfinance SMEs",
+          "year": "2023",
+          "url": "https://doi.org/10.1142/9789811272721_0008",
+          "source": "Crossref"
+        },
+        {
+          "title": "Digital Transformation in Logistics SMEs",
+          "year": "2023",
+          "url": "https://doi.org/10.1142/9789811272721_0007",
+          "source": "Crossref"
+        },
+        {
+          "title": "Digital Transformation in Healthcare SMEs",
+          "year": "2023",
+          "url": "https://doi.org/10.1142/9789811272721_0006",
+          "source": "Crossref"
+        }
+      ]
+    },
+    {
+      "id": "whole-document-improvement",
+      "title": "Improve Whole Document (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Whole Document scores: AI risk 5, originality 40.5, citation 19.6, structure 86.7.",
+      "requires_ai": true,
+      "chapter_id": "whole-document",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "diagram-opportunities",
+      "title": "Identify and draft required diagrams",
+      "priority": "medium",
+      "action": "After approval, detect methodology/process/model sections and draft academic diagrams only where they clarify the argument.",
+      "evidence": "Diagram generation is optional and requires separate approval in the rewrite options.",
+      "requires_ai": true
+    },
+    {
+      "id": "target-format",
+      "title": "Apply APA 7 checks",
+      "priority": "medium",
+      "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+      "evidence": "Target format selected: APA 7.",
+      "requires_ai": false
+    },
+    {
+      "id": "front-matter-integrity",
+      "title": "Maintain TOC, list of tables, and list of figures",
+      "priority": "medium",
+      "action": "Preserve heading hierarchy, table captions, figure captions, page-aware front matter, and export-ready DOCX/PDF structure.",
+      "evidence": "Required for APA 7 output and final submission polish.",
+      "requires_ai": false
+    }
+  ],
+  "integrity_report": {
+    "title": "OTIF Academic Integrity Evidence Report",
+    "doc_type": "research_paper",
+    "target_format": "APA 7",
+    "grade": "needs_integrity_review",
+    "scope": {
+      "local_document_analysis": true,
+      "open_research_sources_checked": [
+        "arXiv",
+        "Crossref",
+        "Europe PMC",
+        "PubMed / NCBI",
+        "DataCite",
+        "ERIC",
+        "OSF Preprints",
+        "Zenodo",
+        "Semantic Scholar",
+        "DOAJ",
+        "BASE",
+        "INSPIRE-HEP"
+      ],
+      "full_web_or_private_corpus_checked": false,
+      "ai_writing_score_is_risk_signal": true
+    },
+    "headline": {
+      "plagiarism_risk": 16.0,
+      "originality_score": 45.3,
+      "citation_quality": 19.6,
+      "humanization_score": 96,
+      "ai_writing_risk": 5
+    },
+    "evidence_summary": {
+      "citation_coverage": 27.3,
+      "near_duplicate_pairs": 0,
+      "open_source_matches": 36,
+      "possible_similarity_risk_matches": 0,
+      "researcher_voice_markers": 2,
+      "template_opener_count": 0,
+      "rq_traceback_score": null
+    },
+    "top_source_evidence": [
+      {
+        "title": "Building and development of an organizational competence for digital transformation in SMEs",
+        "url": "http://arxiv.org/abs/2406.01615v1",
+        "year": "2024",
+        "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+      },
+      {
+        "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+        "url": "http://arxiv.org/abs/2107.08351v2",
+        "year": "2021",
+        "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+      },
+      {
+        "title": "Classifying SMEs for Approaching Cybersecurity Competence and Awareness",
+        "url": "http://arxiv.org/abs/2110.05370v1",
+        "year": "2021",
+        "abstract": "Cybersecurity is increasingly a concern for small and medium-sized enterprises (SMEs), and there exist many awareness training programs and tools for them. The literature mainly studies SMEs as a unitary type of company and provides one-size-fits-all recommendations and solutions. However, SMEs are not homogeneous. They are diverse with different vulnerabilities, cybersecurity needs, and competenc"
+      },
+      {
+        "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+        "url": "http://arxiv.org/abs/1910.08604v3",
+        "year": "2019",
+        "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+      },
+      {
+        "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+        "url": "http://arxiv.org/abs/2309.07064v2",
+        "year": "2023",
+        "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+      },
+      {
+        "title": "Digital Transformation in Microfinance SMEs",
+        "url": "https://doi.org/10.1142/9789811272721_0008",
+        "year": 2023,
+        "abstract": ""
+      },
+      {
+        "title": "Digital Transformation in Logistics SMEs",
+        "url": "https://doi.org/10.1142/9789811272721_0007",
+        "year": 2023,
+        "abstract": ""
+      },
+      {
+        "title": "Digital Transformation in Healthcare SMEs",
+        "url": "https://doi.org/10.1142/9789811272721_0006",
+        "year": 2023,
+        "abstract": ""
+      }
+    ],
+    "recommended_next_actions": [
+      "Strengthen originality and contribution",
+      "Strengthen citation signal",
+      "Improve Whole Document (Pages 1\u201313)",
+      "Identify and draft required diagrams",
+      "Apply APA 7 checks",
+      "Maintain TOC, list of tables, and list of figures"
+    ],
+    "limitations": [
+      "This preflight does not check against all research papers.",
+      "Similarity and originality require configured local corpora or open research connectors.",
+      "Scores are derived only from the uploaded document text and loaded local skill rules.",
+      "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+      "AI-writing risk is a writing-pattern signal, not proof of authorship."
+    ]
+  }
+}

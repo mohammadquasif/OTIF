@@ -1,0 +1,298 @@
+{
+  "analysis_mode": "local_preflight",
+  "coverage": {
+    "local_document_only": true,
+    "open_research_sources_checked": [
+      "test_source"
+    ],
+    "local_corpus_checked": []
+  },
+  "limitations": [
+    "This preflight does not check against all research papers.",
+    "Similarity and originality require configured local corpora or open research connectors.",
+    "Scores are derived only from the uploaded document text and loaded local skill rules."
+  ],
+  "metrics": {
+    "word_count": 211,
+    "sentence_count": 16,
+    "unique_word_ratio": 0.654,
+    "avg_sentence_length": 13.2,
+    "citation_coverage": 11.1,
+    "citation_quality": 8.0,
+    "citation_sentence_count": 1,
+    "claim_sentence_count": 9,
+    "doi_count": 0,
+    "url_count": 0,
+    "references_present": false,
+    "paragraph_count": 6,
+    "near_duplicate_pairs": 0,
+    "internal_duplication_risk": 0,
+    "burstiness": 50.7,
+    "passive_voice_ratio": 12.5,
+    "template_opener_count": 0,
+    "researcher_voice_markers": 1,
+    "long_quote_words": 0,
+    "humanization_score": 89.2,
+    "ai_writing_risk": 10.8,
+    "originality_evidence_matrix": 30,
+    "originality_dimensions": {
+      "literature_gap": 10,
+      "applied_integration": 20,
+      "artefact_contribution": 0,
+      "methodological_boundary": 0,
+      "practical_implication": 0
+    },
+    "hedging_count": 1,
+    "hedging_density_per_1000": 4.7,
+    "hedging_risk": "healthy",
+    "rq_count": 0,
+    "rq_traceback_score": null,
+    "unanswered_rqs": [],
+    "norm_issues": [],
+    "norm_valid": true,
+    "is_imrad": true,
+    "missing_sections": []
+  },
+  "findings": [],
+  "scores": {
+    "plagiarism_risk": 19.6,
+    "originality_score": 47.0,
+    "originality_evidence_matrix": 30,
+    "citation_quality": 8.0,
+    "humanization_score": 89.2,
+    "ai_writing_risk": 10.8,
+    "ai_pattern_risk": 10.8,
+    "phrase_quality": 89.2,
+    "citation_signal": 8.0,
+    "structure_signal": 86.7,
+    "hedging_risk": "healthy",
+    "rq_traceback_score": null,
+    "overall_preflight": 66.7
+  },
+  "chapters": [
+    {
+      "id": "whole-document",
+      "title": "Whole Document",
+      "metrics": {
+        "word_count": 211,
+        "sentence_count": 16,
+        "unique_word_ratio": 0.654,
+        "avg_sentence_length": 13.2,
+        "citation_coverage": 11.1,
+        "citation_quality": 8.0,
+        "citation_sentence_count": 1,
+        "claim_sentence_count": 9,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 6,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 50.7,
+        "passive_voice_ratio": 12.5,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 1,
+        "long_quote_words": 0,
+        "humanization_score": 89.2,
+        "ai_writing_risk": 10.8,
+        "originality_evidence_matrix": 30,
+        "originality_dimensions": {
+          "literature_gap": 10,
+          "applied_integration": 20,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 1,
+        "hedging_density_per_1000": 4.7,
+        "hedging_risk": "healthy",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": []
+      },
+      "scores": {
+        "plagiarism_risk": 19.6,
+        "originality_score": 46.2,
+        "originality_evidence_matrix": 30,
+        "citation_quality": 8.0,
+        "humanization_score": 89.2,
+        "ai_writing_risk": 10.8,
+        "ai_pattern_risk": 10.8,
+        "phrase_quality": 89.2,
+        "citation_signal": 8.0,
+        "structure_signal": 86.7,
+        "hedging_risk": "healthy",
+        "rq_traceback_score": null,
+        "overall_preflight": 66.6
+      },
+      "findings": []
+    }
+  ],
+  "research_sources": {
+    "internet_checked": true,
+    "sources": [
+      {
+        "id": "test_source",
+        "name": "Deterministic Source",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://example.test/research",
+        "coverage": "deterministic test metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://example.test/docs",
+        "requires_key": false,
+        "configured": true
+      }
+    ],
+    "queries": [
+      "# Digital Transformation and SME Performance in India",
+      "digital transformation performance india survey",
+      "india survey firms skill evidence"
+    ],
+    "ai_detection": {
+      "ai_detection_score": 18,
+      "confidence": "low",
+      "signals": {
+        "perplexity_risk": 47.2,
+        "burstiness_risk": 7.0,
+        "template_opener_risk": 0,
+        "passive_voice_risk": 18.8,
+        "researcher_voice_reduction": 0,
+        "repetition_risk": 0,
+        "uniform_length_risk": 15.0
+      },
+      "verdict": "Low AI-generation probability (18%). Writing patterns are consistent with human academic authorship.",
+      "turnitin_ai_equivalent": "Likely human-authored (<25% \u2014 equivalent to Turnitin AI low signal)"
+    },
+    "turnitin_style_similarity": null,
+    "connectivity": {
+      "internet_reachable": true,
+      "reachable_count": 1,
+      "checked_count": 1,
+      "checked_at": "deterministic-test",
+      "checks": [],
+      "message": "Internet simulated for deterministic flow test."
+    }
+  },
+  "formatting_plan": {
+    "target": "APA 7",
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "export_formats": [
+      "docx",
+      "pdf"
+    ],
+    "design_themes": [
+      "classic_blue",
+      "mono_formal",
+      "emerald_academic",
+      "maroon_submission"
+    ]
+  },
+  "improvement_plan": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 47.0; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.",
+      "evidence": "Citation quality is 8.0; citation coverage is 11.1% across claim-like sentences. 0 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": []
+    },
+    {
+      "id": "whole-document-improvement",
+      "title": "Improve Whole Document (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Whole Document scores: AI risk 10.8, originality 46.2, citation 8.0, structure 86.7.",
+      "requires_ai": true,
+      "chapter_id": "whole-document",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "diagram-opportunities",
+      "title": "Identify and draft required diagrams",
+      "priority": "medium",
+      "action": "After approval, detect methodology/process/model sections and draft academic diagrams only where they clarify the argument.",
+      "evidence": "Diagram generation is optional and requires separate approval in the rewrite options.",
+      "requires_ai": true
+    },
+    {
+      "id": "target-format",
+      "title": "Apply APA 7 checks",
+      "priority": "medium",
+      "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+      "evidence": "Target format selected: APA 7.",
+      "requires_ai": false
+    },
+    {
+      "id": "front-matter-integrity",
+      "title": "Maintain TOC, list of tables, and list of figures",
+      "priority": "medium",
+      "action": "Preserve heading hierarchy, table captions, figure captions, page-aware front matter, and export-ready DOCX/PDF structure.",
+      "evidence": "Required for APA 7 output and final submission polish.",
+      "requires_ai": false
+    }
+  ],
+  "integrity_report": {
+    "title": "OTIF Academic Integrity Evidence Report",
+    "doc_type": "research_paper",
+    "target_format": "APA 7",
+    "grade": "needs_integrity_review",
+    "scope": {
+      "local_document_analysis": true,
+      "open_research_sources_checked": [
+        "Deterministic Source"
+      ],
+      "full_web_or_private_corpus_checked": false,
+      "ai_writing_score_is_risk_signal": true
+    },
+    "headline": {
+      "plagiarism_risk": 19.6,
+      "originality_score": 47.0,
+      "citation_quality": 8.0,
+      "humanization_score": 89.2,
+      "ai_writing_risk": 10.8
+    },
+    "evidence_summary": {
+      "citation_coverage": 11.1,
+      "near_duplicate_pairs": 0,
+      "open_source_matches": 0,
+      "possible_similarity_risk_matches": 0,
+      "researcher_voice_markers": 1,
+      "template_opener_count": 0,
+      "rq_traceback_score": null
+    },
+    "top_source_evidence": [],
+    "recommended_next_actions": [
+      "Strengthen originality and contribution",
+      "Strengthen citation signal",
+      "Improve Whole Document (Pages 1\u201313)",
+      "Identify and draft required diagrams",
+      "Apply APA 7 checks",
+      "Maintain TOC, list of tables, and list of figures"
+    ],
+    "limitations": [
+      "This preflight does not check against all research papers.",
+      "Similarity and originality require configured local corpora or open research connectors.",
+      "Scores are derived only from the uploaded document text and loaded local skill rules.",
+      "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+      "AI-writing risk is a writing-pattern signal, not proof of authorship."
+    ]
+  }
+}

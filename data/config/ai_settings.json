@@ -1,0 +1,19 @@
+{
+  "privacy_mode": "local_only",
+  "provider": "ollama",
+  "model_by_provider": {
+    "ollama": "qwen2.5:1.5b",
+    "deepseek": "deepseek-chat",
+    "openai": "gpt-4o",
+    "gemini": "gemini-pro"
+  },
+  "api_keys": {},
+  "ollama_base_url": "http://localhost:11434",
+  "behavior": {
+    "discipline": "general",
+    "writing_style": "formal",
+    "analysis_depth": "standard",
+    "rewrite_intensity": "moderate",
+    "context_writing_enabled": true
+  }
+}

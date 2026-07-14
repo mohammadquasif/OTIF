@@ -1,0 +1,37 @@
+{
+  "source_id": "pubmed",
+  "query": "# Test Paper",
+  "created_at": 1784015653.5299945,
+  "matches": [
+    {
+      "title": "Medium-adaptive wideband near-field antenna for microwave detection of internal cavities in plant stems.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443282/",
+      "year": "2026",
+      "abstract": "Scientific reports"
+    },
+    {
+      "title": "ANFIS-based prediction and optimization of tribological performance in graphene-boron carbide reinforced C355 aluminium alloy hybrid nanocomposites.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443256/",
+      "year": "2026",
+      "abstract": "Scientific reports"
+    },
+    {
+      "title": "Adaptive fractional order model predictive control of boost converters with grey wolf optimization tuning and recursive least squares identification.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443243/",
+      "year": "2026",
+      "abstract": "Scientific reports"
+    },
+    {
+      "title": "Treatment-specific CT Radiomics Models To Predict Response To Neoadjuvant Therapy And Explore Individualized Treatment Selection In Gastric Cancer.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443011/",
+      "year": "2026",
+      "abstract": "Academic radiology"
+    },
+    {
+      "title": "Microbiota-Circadian Desynchrony as a Mechanistic Interface for Xenobiotic-Induced Systemic Metabolic Fatigue.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42442631/",
+      "year": "2026",
+      "abstract": "Chemico-biological interactions"
+    }
+  ]
+}

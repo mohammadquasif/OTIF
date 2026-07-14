@@ -1,0 +1,92 @@
+{
+  "doc_id": "99fb7fbd-cce8-40a7-a5b3-10db803ba109",
+  "doc_type": "research_paper",
+  "norm": "apa7",
+  "approved_item_ids": [
+    "originality-claim-strength",
+    "citation-strength"
+  ],
+  "approved_items": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 46.2; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.",
+      "evidence": "Citation quality is 8.0; citation coverage is 11.1% across claim-like sentences. 0 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": []
+    }
+  ],
+  "active_provider": "ollama",
+  "active_model": "qwen2.5:1.5b",
+  "privacy_mode": "local_only",
+  "document_actions": {
+    "draw_diagrams": false,
+    "diagram_style": "academic",
+    "design_theme": "mono_formal",
+    "design_accent_hex": null,
+    "output_formats": [
+      "docx",
+      "pdf"
+    ],
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "target_format": "APA 7"
+  },
+  "rewrite_status": "rewrite_preview_ready",
+  "rewrite_preview": "### Digital Transformation and SME Performance in India\n\n#### Abstract\nThis study examines how digital transformation affects small- and medium-sized enterprises (SMEs) performance in India using survey and interview evidence.\n\n#### Introduction\nDigital transformation has become essential for SME competitiveness, but smaller firms often face financial, skill, and infrastructure constraints. The literature has largely focused on large enterprises rather than emerging-economy SMEs, creating a gap in contextual evidence of their specific challenges and opportunities.\n\n## Literature Review\nVial (2019) defines digital transformation as the process where digital technologies trigger strategic organizational responses. Resource-based theory posits that firms gain advantage when digital capabilities are valuable, rare, and difficult to imitate.\n\n## Methodology\nThe study utilizes a mixed-methods design. A survey was administered to SME owners and managers across Maharashtra, Tamil Nadu, and Gujarat. Semi-structured interviews were conducted to explore adoption barriers and identify specific challenges faced by SMEs in their respective regions.\n\n#### Results\nThe survey revealed that firms with higher digital maturity experienced stronger revenue growth and operational efficiency. Respondents cited digital skill shortages as a major barrier to adopting new technologies.\n\n## Discussion\nThe findings support the role of digital capability as an instrumental performance resource, while indicating that local infrastructure and skills significantly influence actual gains. The research highlights the importance of continuous skill development and implementation capabilities in achieving effective digital transformation outcomes.\n\n## Conclusion\nDigital transformation can enhance SME performance in India, provided firms address specific challenges such as adequate training and integration with existing systems. Success depends on tailored strategies for their unique contexts.\n\n#### References\nVial, G. (2019). Understanding digital transformation: A review and a research agenda. *Journal of Strategic Information Systems*, 28(2), 118-144.\n\n## Change Log\n### Original Text:\n**OLD:** The findings support the role of digital capability as an instrumental performance resource, while showing that local infrastructure and skills shape the actual gains.\n  \n**NEW:** The findings support the role of digital capability as a performance resource, while indicating that local infrastructure and skills significantly influence actual gains.\n\n### Original Text:\n**OLD:** Digital transformation can improve SME performance in India, but outcomes depend on skill development and implementation capability.\n\n**NEW:** Digital transformation can enhance SME performance in India, provided firms address specific challenges such as adequate training and integration with existing systems. Success depends on tailored strategies for their unique contexts.",
+  "rewrite_note": "Generated locally with Ollama model qwen2.5:1.5b. Citations deterministically locked and restored (0 references preserved).",
+  "diff": {
+    "deletions": [
+      "# Digital Transformation and SME Performance in India\n\n## Abstract\nThis study examines how digital transformation affects SME performance in India using survey and interview evidence.",
+      "## Introduction\nDigital transformation has become central to SME competitiveness, but smaller firms face financial, skill, and infrastructure constraints.",
+      "The literature has emphasized large enterprises more than emerging-economy SMEs, creating a gap in contextual evidence.",
+      "## Literature Review\nVial (2019) defines digital transformation as a process where digital technologies trigger strategic organizational responses.",
+      "Resource-based theory suggests that firms gain advantage when digital capabilities are valuable, rare, and difficult to imitate.",
+      "## Methodology\nThe study uses a mixed-methods design.",
+      "Semi-structured interviews were used to explore adoption barriers.",
+      "## Results\nThe survey indicated that firms with higher digital maturity reported stronger revenue growth and operational efficiency.",
+      "Many respondents identified digital skill shortages as a barrier.",
+      "## Discussion\nThe findings support the role of digital capability as a performance resource, while showing that local infrastructure and skills shape the actual gains.",
+      "## Conclusion\nDigital transformation can improve SME performance in India, but outcomes depend on skill development and implementation capability.",
+      "## References\nVial, G.",
+      "Journal of Strategic Information Systems, 28(2), 118-144."
+    ],
+    "insertions": [
+      "### Digital Transformation and SME Performance in India\n\n#### Abstract\nThis study examines how digital transformation affects small- and medium-sized enterprises (SMEs) performance in India using survey and interview evidence.",
+      "#### Introduction\nDigital transformation has become essential for SME competitiveness, but smaller firms often face financial, skill, and infrastructure constraints.",
+      "The literature has largely focused on large enterprises rather than emerging-economy SMEs, creating a gap in contextual evidence of their specific challenges and opportunities.",
+      "## Literature Review\nVial (2019) defines digital transformation as the process where digital technologies trigger strategic organizational responses.",
+      "Resource-based theory posits that firms gain advantage when digital capabilities are valuable, rare, and difficult to imitate.",
+      "## Methodology\nThe study utilizes a mixed-methods design.",
+      "Semi-structured interviews were conducted to explore adoption barriers and identify specific challenges faced by SMEs in their respective regions.",
+      "#### Results\nThe survey revealed that firms with higher digital maturity experienced stronger revenue growth and operational efficiency.",
+      "Respondents cited digital skill shortages as a major barrier to adopting new technologies.",
+      "## Discussion\nThe findings support the role of digital capability as an instrumental performance resource, while indicating that local infrastructure and skills significantly influence actual gains.",
+      "The research highlights the importance of continuous skill development and implementation capabilities in achieving effective digital transformation outcomes.",
+      "## Conclusion\nDigital transformation can enhance SME performance in India, provided firms address specific challenges such as adequate training and integration with existing systems.",
+      "Success depends on tailored strategies for their unique contexts.",
+      "#### References\nVial, G.",
+      "*Journal of Strategic Information Systems*, 28(2), 118-144.",
+      "## Change Log\n### Original Text:\n**OLD:** The findings support the role of digital capability as an instrumental performance resource, while showing that local infrastructure and skills shape the actual gains.",
+      "**NEW:** The findings support the role of digital capability as a performance resource, while indicating that local infrastructure and skills significantly influence actual gains.",
+      "### Original Text:\n**OLD:** Digital transformation can improve SME performance in India, but outcomes depend on skill development and implementation capability.",
+      "**NEW:** Digital transformation can enhance SME performance in India, provided firms address specific challenges such as adequate training and integration with existing systems.",
+      "Success depends on tailored strategies for their unique contexts."
+    ],
+    "deletion_count": 13,
+    "insertion_count": 20,
+    "original_sentences": 15,
+    "rewritten_sentences": 22
+  },
+  "next_step": "AI rewrite is allowed only for these approved items and must follow the active provider and privacy mode settings."
+}

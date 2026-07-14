@@ -1,0 +1,97 @@
+{
+  "skill_id": "indian-academic-journals",
+  "name": "Indian Academic Journals — UGC-CARE, Scopus, SCI Indexed",
+  "category": "research_quality",
+  "version": "1.0.0",
+  "description": "Validates citations and references against Indian academic publishing standards. Covers: UGC-CARE listed journals (Group I & II), Scopus-indexed Indian journals, SCI/SCIE indexed, Web of Science, and Indian citation formats. Ensures references are traceable and from legitimate sources — critical for UGC-compliant PhD submission.",
+  "ethical_boundary": "Do not fabricate citations from non-existent journals. Do not suggest citations from predatory journals. Only recommend real, verified journals from UGC-CARE, Scopus, or Web of Science lists.",
+  "trigger_phrases": ["ugc care", "scopus indexed", "indian journal", "sci journal", "ugc approved journal", "care list", "journal finder india"],
+  "rules": [
+    {
+      "rule_code": "IJNL-001",
+      "rule_name": "UGC-CARE Journal Verification",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Cross-reference cited journals against UGC-CARE Group I and Group II lists. Journals not in UGC-CARE, Scopus, or Web of Science are flagged for verification. Critical for UGC compliance.",
+      "confidence": 0.92
+    },
+    {
+      "rule_code": "IJNL-002",
+      "rule_name": "Predatory Journal Detection",
+      "rule_type": "detection",
+      "severity": "critical",
+      "description": "Flag journals known to be predatory: Omics, SCIgen, WASET, and other fake/predatory publishers. Verify ISSN, impact factor claims, and editorial board legitimacy.",
+      "confidence": 0.90
+    },
+    {
+      "rule_code": "IJNL-003",
+      "rule_name": "Indian Citation Format",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Indian theses commonly use APA 7th or numbered citation format. Verify consistency: all in-text citations match reference list, all DOIs accessible, URLs resolve.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "IJNL-004",
+      "rule_name": "Scopus Indexed Source Verification",
+      "rule_type": "detection",
+      "severity": "medium",
+      "description": "Cross-reference cited sources against Scopus index using ISSN/DOI. Flag sources claiming Scopus indexing without evidence.",
+      "confidence": 0.80
+    },
+    {
+      "rule_code": "IJNL-005",
+      "rule_name": "Indian Conference Proceedings",
+      "rule_type": "detection",
+      "severity": "low",
+      "description": "Verify conference proceedings citations: IEEE Xplore, Springer LNCS, ACM Digital Library. Indian conferences (INDIACom, ICACCI, etc.) must have verifiable proceedings.",
+      "confidence": 0.75
+    },
+    {
+      "rule_code": "IJNL-006",
+      "rule_name": "Hindi/Regional Language Source Handling",
+      "rule_type": "detection",
+      "severity": "low",
+      "description": "If citing non-English Indian language sources (Hindi, Tamil, Bengali, etc.), verify transliteration consistency and provide English translation in brackets.",
+      "confidence": 0.65
+    },
+    {
+      "rule_code": "IJNL-007",
+      "rule_name": "Thesis Repository Reference",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Indian PhD submissions must reference Shodhganga (INFLIBNET) for previous theses. Check if related Indian theses are cited from Shodhganga repository.",
+      "confidence": 0.78
+    },
+    {
+      "rule_code": "IJNL-008",
+      "rule_name": "DOAJ Open Access Journal Check",
+      "rule_type": "detection",
+      "severity": "low",
+      "description": "For open access journal citations, cross-reference against Directory of Open Access Journals (DOAJ). Flag journals claiming OA status without DOAJ listing.",
+      "confidence": 0.72
+    }
+  ],
+  "word_lists": {
+    "approved_journal_domains": [
+      "sciencedirect.com", "springer.com", "ieee.org", "acm.org",
+      "tandfonline.com", "sagepub.com", "wiley.com", "emerald.com",
+      "inderscience.com", "niscair.res.in", "ias.ac.in", "iisc.ac.in",
+      "nopr.niscair.res.in", "informaticsjournals.com"
+    ],
+    "predatory_journal_signals": [
+      "rapid publication guaranteed", "submit paper now",
+      "special issue - extended deadline", "indexed in google scholar only",
+      "impact factor unverified", "fake editorial board"
+    ],
+    "preferred_phrases": [
+      "UGC-CARE listed", "Scopus-indexed", "Web of Science",
+      "peer-reviewed journal", "Shodhganga", "INFLIBNET",
+      "UGC approved", "NAAC accredited"
+    ]
+  },
+  "scoring_thresholds": {
+    "citation_source_quality": { "min": 0, "max": 100, "label": "Percentage from verified sources" },
+    "predatory_risk": { "min": 0, "max": 100, "label": "Risk of citing predatory sources" }
+  }
+}

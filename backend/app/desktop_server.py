@@ -6,6 +6,9 @@ starts FastAPI on a desktop-only localhost port.
 import os
 import platform
 import tempfile
+import threading
+import time
+import webbrowser
 from pathlib import Path
 
 import uvicorn
@@ -82,12 +85,29 @@ def configure_desktop_environment() -> None:
         Path(os.environ[key]).mkdir(parents=True, exist_ok=True)
 
 
+def _open_browser_when_direct_run() -> None:
+    if os.environ.get("OTIF_LAUNCHED_BY_TAURI") == "1":
+        return
+    if os.environ.get("OTIF_NO_AUTO_OPEN") == "1":
+        return
+
+    url = f"http://127.0.0.1:{os.environ['PORT']}/app"
+
+    def opener() -> None:
+        time.sleep(1.2)
+        webbrowser.open(url)
+
+    threading.Thread(target=opener, daemon=True).start()
+
+
 def main() -> None:
     configure_desktop_environment()
     from app.config import get_settings
 
     get_settings.cache_clear()
     from app.main import app
+
+    _open_browser_when_direct_run()
     uvicorn.run(
         app,
         host=os.environ["HOST"],

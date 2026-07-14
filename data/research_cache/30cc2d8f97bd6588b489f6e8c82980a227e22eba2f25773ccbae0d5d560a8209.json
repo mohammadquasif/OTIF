@@ -1,0 +1,37 @@
+{
+  "source_id": "crossref",
+  "query": "Abstract",
+  "created_at": 1784015549.3818545,
+  "matches": [
+    {
+      "title": "Abstract",
+      "url": "https://doi.org/10.5040/9781350981478",
+      "year": 2018,
+      "abstract": ""
+    },
+    {
+      "title": "Abstract Esoterica",
+      "url": "https://doi.org/10.5040/9781350881518",
+      "year": 2022,
+      "abstract": ""
+    },
+    {
+      "title": "French translation of abstract: French translation of abstract",
+      "url": "https://doi.org/10.7717/peerj.7296/supp-7",
+      "year": null,
+      "abstract": ""
+    },
+    {
+      "title": "The Concrete\u00e2\u0080\u0093Abstract Distinction",
+      "url": "https://doi.org/10.1057/9780230378438.0009",
+      "year": null,
+      "abstract": ""
+    },
+    {
+      "title": "OVERALL PANEL PROPOSAL: SPEAKER 1 ABSTRACT: SPEAKER 2 ABSTRACT: SPEAKER 3 ABSTRACT: SPEAKER 4 ABSTRACT:",
+      "url": "https://doi.org/10.1016/j.schres.2010.02.170",
+      "year": 2010,
+      "abstract": ""
+    }
+  ]
+}

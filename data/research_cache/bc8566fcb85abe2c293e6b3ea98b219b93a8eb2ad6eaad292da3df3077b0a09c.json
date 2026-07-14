@@ -1,0 +1,37 @@
+{
+  "source_id": "europe_pmc",
+  "query": "Abstract",
+  "created_at": 1784015551.83508,
+  "matches": [
+    {
+      "title": "Treatment for Hyperosmolar Dehydration in Hospitalised Adults: Protocol for a Scoping Review of Current Evidence and Gaps.",
+      "url": "10.2196/87080",
+      "year": "2026",
+      "abstract": ""
+    },
+    {
+      "title": "Virtual community-based interventions for family caregivers of people with dementia: A scoping review protocol.",
+      "url": "10.1371/journal.pone.0347798",
+      "year": "2026",
+      "abstract": ""
+    },
+    {
+      "title": "Clinical outcomes, patient satisfaction and operational efficiency of AI-powered chatbots in medicine and healthcare: protocol for an AI-aided scoping review.",
+      "url": "10.1136/bmjopen-2025-113547",
+      "year": "2026",
+      "abstract": ""
+    },
+    {
+      "title": "Human Gaze Behaviors Track Abstract Stimulus Categories.",
+      "url": "10.1162/jocn.a.2591",
+      "year": "2026",
+      "abstract": ""
+    },
+    {
+      "title": "The impact of social interaction on abstract concepts.",
+      "url": "10.3758/s13423-026-02941-4",
+      "year": "2026",
+      "abstract": ""
+    }
+  ]
+}

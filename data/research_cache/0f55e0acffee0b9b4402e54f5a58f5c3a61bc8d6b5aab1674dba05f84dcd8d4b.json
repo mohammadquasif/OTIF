@@ -1,0 +1,37 @@
+{
+  "source_id": "arxiv",
+  "query": "# The Impact of Digital Transformation on SME Performance",
+  "created_at": 1784015943.8739254,
+  "matches": [
+    {
+      "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+      "url": "http://arxiv.org/abs/2107.08351v2",
+      "year": "2021",
+      "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+    },
+    {
+      "title": "Building and development of an organizational competence for digital transformation in SMEs",
+      "url": "http://arxiv.org/abs/2406.01615v1",
+      "year": "2024",
+      "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+    },
+    {
+      "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+      "url": "http://arxiv.org/abs/1910.08604v3",
+      "year": "2019",
+      "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+    },
+    {
+      "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+      "url": "http://arxiv.org/abs/2309.07064v2",
+      "year": "2023",
+      "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+    },
+    {
+      "title": "Performance of Genetic Algorithms in the Context of Software Model Refactoring",
+      "url": "http://arxiv.org/abs/2308.13875v1",
+      "year": "2023",
+      "abstract": "Software systems continuously evolve due to new functionalities, requirements, or maintenance activities. In the context of software evolution, software refactoring has gained a strategic relevance. The space of possible software refactoring is usually very large, as it is given by the combinations of different refactoring actions that can produce software system alternatives. Multi-objective algo"
+    }
+  ]
+}

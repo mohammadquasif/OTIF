@@ -1,0 +1,489 @@
+{
+  "version": "2026.07.04",
+  "sources": [
+    {
+      "name": "open-phrasebank",
+      "path": "scratch/open-phrasebank/phrasebanks/academic_phrasebank.md",
+      "note": "Bundled as a static offline resource for desktop use."
+    },
+    {
+      "name": "academic-phrases",
+      "path": "scratch/academic-phrases/academic-phrases.el",
+      "note": "Organised by paper section for Ref-N-Write style browsing."
+    }
+  ],
+  "sections": [
+    {
+      "id": "abstract",
+      "title": "Abstract",
+      "description": "Structuring concise summaries of research papers and theses.",
+      "category_ids": ["writing_abstracts"]
+    },
+    {
+      "id": "introduction_section",
+      "title": "Introduction",
+      "description": "Setting the scene, stating aims, outlining structure, and defining key terms.",
+      "category_ids": ["establishing_territory", "research_gaps", "research_aims", "introduction"]
+    },
+    {
+      "id": "literature_review_section",
+      "title": "Literature Review",
+      "description": "Reviewing previous work, comparing positions, identifying gaps, and being critical.",
+      "category_ids": ["literature_review", "referring_to_sources", "being_critical", "comparing_findings"]
+    },
+    {
+      "id": "methodology_section",
+      "title": "Methodology",
+      "description": "Describing design, data, methods, instruments, procedures, and rationale.",
+      "category_ids": ["methodology", "describing_methods"]
+    },
+    {
+      "id": "results_section",
+      "title": "Results",
+      "description": "Reporting findings, data patterns, statistical results, and qualitative themes.",
+      "category_ids": ["describing_results", "reporting_results"]
+    },
+    {
+      "id": "discussion_section",
+      "title": "Discussion",
+      "description": "Interpreting results, explaining findings, hedging, comparing with literature.",
+      "category_ids": ["discussing_findings", "explaining_findings", "hedging", "comparing_findings"]
+    },
+    {
+      "id": "conclusion_section",
+      "title": "Conclusion",
+      "description": "Summarising contributions, implications, limitations, and future work.",
+      "category_ids": ["conclusions", "criticality_and_caution"]
+    },
+    {
+      "id": "acknowledgements_section",
+      "title": "Acknowledgements",
+      "description": "Recognising contributions, funding, and support.",
+      "category_ids": ["acknowledgements"]
+    }
+  ],
+  "categories": [
+    {
+      "id": "introduction",
+      "title": "Introduction",
+      "description": "Establishing the field, importance, aim, and scope of a study.",
+      "phrases": [
+        "Recent developments in {field} have heightened the need for ...",
+        "Over the past decade, increasing attention has been paid to ...",
+        "A central issue in this area is the extent to which ...",
+        "This study addresses the question of how ...",
+        "The aim of this chapter is to examine ...",
+        "This research is situated within the broader debate on ...",
+        "Although previous studies have investigated ..., less attention has been given to ...",
+        "The present study contributes to this literature by ...",
+        "This chapter begins by outlining ..., before turning to ...",
+        "The following section provides an overview of ..."
+      ]
+    },
+    {
+      "id": "literature_review",
+      "title": "Literature Review",
+      "description": "Reviewing previous work, comparing positions, and identifying gaps.",
+      "phrases": [
+        "A considerable body of literature has examined ...",
+        "Previous research has established that ...",
+        "Several studies have reported a relationship between ...",
+        "Other researchers have argued that ...",
+        "This interpretation is supported by evidence from ...",
+        "However, these findings should be interpreted in light of ...",
+        "The existing literature reveals several important gaps.",
+        "Few studies have addressed the question of ...",
+        "Taken together, these studies suggest that ...",
+        "The evidence reviewed here points to ..."
+      ]
+    },
+    {
+      "id": "methodology",
+      "title": "Methodology",
+      "description": "Describing design, data, sampling, instruments, and analytic procedures.",
+      "phrases": [
+        "This study adopted a {qualitative/quantitative/mixed-methods} design to ...",
+        "The methodological approach was selected because ...",
+        "Data were collected through ...",
+        "The sample consisted of ...",
+        "Participants were selected using ...",
+        "The instrument was designed to capture ...",
+        "The analysis proceeded in three stages.",
+        "To ensure reliability, the study employed ...",
+        "Ethical approval was obtained prior to ...",
+        "Several measures were taken to reduce potential bias."
+      ]
+    },
+    {
+      "id": "describing_results",
+      "title": "Describing Results",
+      "description": "Reporting patterns, tables, figures, trends, and statistical or thematic findings.",
+      "phrases": [
+        "The results indicate that ...",
+        "As shown in Table {n}, ...",
+        "Figure {n} illustrates the relationship between ...",
+        "A notable pattern to emerge from the data is ...",
+        "The analysis revealed a significant difference between ...",
+        "There was no significant association between ...",
+        "The most frequently reported theme was ...",
+        "These findings suggest a trend toward ...",
+        "Compared with ..., the results show ...",
+        "Overall, the data demonstrate that ..."
+      ]
+    },
+    {
+      "id": "discussing_findings",
+      "title": "Discussing Findings",
+      "description": "Interpreting results, explaining implications, and relating findings to prior work.",
+      "phrases": [
+        "This finding is consistent with previous research showing that ...",
+        "One possible explanation for this result is ...",
+        "The results appear to support the view that ...",
+        "In contrast to earlier findings, this study found that ...",
+        "These findings extend previous work by demonstrating ...",
+        "The implications of this finding are significant for ...",
+        "This outcome may be explained by ...",
+        "Taken together, the findings indicate that ...",
+        "The present findings should be interpreted cautiously because ...",
+        "This result raises important questions about ..."
+      ]
+    },
+    {
+      "id": "criticality_and_caution",
+      "title": "Criticality & Caution",
+      "description": "Hedging claims, evaluating evidence, and acknowledging limitations.",
+      "phrases": [
+        "It is possible that ...",
+        "This may reflect ...",
+        "The evidence suggests, but does not conclusively demonstrate, that ...",
+        "This interpretation should be treated with caution.",
+        "A limitation of this approach is that ...",
+        "The study was limited by ...",
+        "While these findings are promising, they do not fully explain ...",
+        "Further work is required to establish whether ...",
+        "Alternative explanations cannot be ruled out.",
+        "The generalisability of these findings may be constrained by ..."
+      ]
+    },
+    {
+      "id": "conclusions",
+      "title": "Conclusions",
+      "description": "Summarising contributions, implications, and future research directions.",
+      "phrases": [
+        "This chapter has examined ...",
+        "The findings of this study indicate that ...",
+        "The main contribution of this research is ...",
+        "This study provides new insight into ...",
+        "The results have important implications for ...",
+        "Based on these findings, it can be concluded that ...",
+        "Future research should investigate ...",
+        "Further studies are needed to clarify ...",
+        "The evidence presented here supports the conclusion that ...",
+        "Overall, this research demonstrates the importance of ..."
+      ]
+    },
+    {
+      "id": "establishing_territory",
+      "title": "Establishing a Research Territory",
+      "description": "Setting the scene, claiming centrality, and presenting background information.",
+      "phrases": [
+        "In recent years, there has been growing interest in ...",
+        "The study of ... has become an important area of research.",
+        "A key issue in ... is the relationship between ...",
+        "The significance of ... has been underscored by recent developments in ...",
+        "For decades, researchers have sought to understand ...",
+        "... has been extensively studied in the context of ...",
+        "The concept of ... was first introduced by ...",
+        "It is now well established that ...",
+        "A growing body of evidence suggests that ...",
+        "The role of ... in ... has attracted considerable scholarly attention.",
+        "Research on ... has a long tradition dating back to ...",
+        "The field of ... has undergone considerable change in recent years.",
+        "Increasingly, ... is being recognised as a critical factor in ...",
+        "The past decade has seen a rapid rise in ...",
+        "A central problem in ... is the lack of consensus regarding ..."
+      ]
+    },
+    {
+      "id": "research_gaps",
+      "title": "Identifying Research Gaps",
+      "description": "Highlighting limitations in existing knowledge and justifying new research.",
+      "phrases": [
+        "However, little is known about ...",
+        "To date, no study has examined the relationship between ...",
+        "Previous work has focused primarily on ..., leaving ... unexplored.",
+        "There is a notable lack of research on ...",
+        "The existing literature fails to address the question of ...",
+        "While considerable research has been devoted to ..., less attention has been paid to ...",
+        "The mechanisms underlying ... remain poorly understood.",
+        "Relatively few studies have investigated ...",
+        "The evidence for ... is inconclusive and further investigation is warranted.",
+        "A significant gap in the literature concerns the role of ...",
+        "Despite the importance of ..., empirical research on this topic is limited.",
+        "Most studies in this area have been conducted in ..., and their findings may not apply to ...",
+        "The question of how ... remains largely unanswered.",
+        "Existing approaches to ... suffer from several limitations including ...",
+        "Further research is needed to clarify the extent to which ..."
+      ]
+    },
+    {
+      "id": "research_aims",
+      "title": "Stating Research Aims & Questions",
+      "description": "Formulating purpose statements, hypotheses, and research questions.",
+      "phrases": [
+        "The primary aim of this study is to investigate ...",
+        "This research seeks to address the following questions:",
+        "The objective of this study is to determine whether ...",
+        "This paper aims to contribute to the understanding of ...",
+        "The purpose of the present research is to examine ...",
+        "This study sets out to explore the relationship between ...",
+        "The following research questions guided this investigation:",
+        "In order to achieve this aim, the study focuses on three main objectives.",
+        "This research was designed to test the hypothesis that ...",
+        "The central thesis of this paper is that ...",
+        "This study attempts to shed light on ...",
+        "The main goal of this dissertation is to develop ...",
+        "A further objective of this study is to evaluate ...",
+        "Building on previous work, this research extends the analysis to ...",
+        "The scope of this study is limited to ..."
+      ]
+    },
+    {
+      "id": "referring_to_sources",
+      "title": "Referring to Sources",
+      "description": "Citing, quoting, paraphrasing, and synthesising previous work.",
+      "phrases": [
+        "As noted by ... (year), ...",
+        "According to ..., ...",
+        "Recent evidence suggests that ... (Author, year).",
+        "In a study conducted by ..., it was found that ...",
+        "Building on the work of ..., this study adopts ...",
+        "... has been defined as ... (Author, year).",
+        "The importance of ... was highlighted by ...",
+        "Drawing on the framework proposed by ..., this study ...",
+        "This view is supported by ... who argue that ...",
+        "... distinguishes between ... and ... (year).",
+        "The theory of ... was developed by ...",
+        "... provides a comprehensive review of ...",
+        "The most compelling evidence for ... comes from ...",
+        "Consistent with the findings of ..., the present study ...",
+        "These results are in line with those reported by ..."
+      ]
+    },
+    {
+      "id": "being_critical",
+      "title": "Being Critical",
+      "description": "Evaluating theories, questioning assumptions, and identifying weaknesses.",
+      "phrases": [
+        "One limitation of this approach is ...",
+        "This argument is problematic because ...",
+        "The study would have been more persuasive if ...",
+        "The evidence presented is insufficient to support the claim that ...",
+        "A weakness of this methodology is that it fails to account for ...",
+        "However, this interpretation overlooks the fact that ...",
+        "The findings of this study are subject to at least three limitations.",
+        "Critics have pointed out that ...",
+        "An important caveat is that ...",
+        "These results must be interpreted with caution because ...",
+        "The author's claim that ... is not fully supported by the data.",
+        "This line of reasoning is flawed in several respects.",
+        "While this explanation is plausible, alternative interpretations include ...",
+        "The research design does not allow us to draw causal inferences.",
+        "It remains unclear whether these findings can be generalised to ..."
+      ]
+    },
+    {
+      "id": "describing_methods",
+      "title": "Describing Methods",
+      "description": "Detailing research procedures, design choices, data analysis, and rationale.",
+      "phrases": [
+        "A mixed-methods approach was employed to capture both ... and ...",
+        "The study was conducted in three phases.",
+        "Participants were recruited through ...",
+        "Inclusion criteria required that participants ...",
+        "Data were analysed using thematic analysis following the procedure outlined by ...",
+        "The survey instrument comprised three sections measuring ...",
+        "Semi-structured interviews were conducted to explore ...",
+        "The experimental design consisted of a 2×2 factorial arrangement.",
+        "A purposive sampling strategy was adopted to ensure ...",
+        "All statistical analyses were performed using ...",
+        "The validity of the instrument was assessed through ...",
+        "Inter-rater reliability was calculated using Cohen's kappa.",
+        "Ethical clearance was obtained from the institutional review board.",
+        "Participants provided written informed consent prior to data collection.",
+        "To minimise potential confounds, the following controls were implemented:"
+      ]
+    },
+    {
+      "id": "reporting_results",
+      "title": "Reporting Results",
+      "description": "Presenting quantitative findings, qualitative themes, and data patterns.",
+      "phrases": [
+        "The descriptive statistics for all variables are presented in Table ...",
+        "A statistically significant difference was observed between ... (p < .05).",
+        "The correlation analysis revealed a strong positive relationship between ...",
+        "Multiple regression analysis indicated that ... was a significant predictor of ...",
+        "Thematic analysis of the interview data identified three overarching themes.",
+        "Participants consistently reported that ...",
+        "The mean score for ... was ... (SD = ...).",
+        "No significant effect was found for ...",
+        "Figure ... shows the distribution of scores across conditions.",
+        "The results confirmed the hypothesis that ...",
+        "Post-hoc comparisons using the Bonferroni correction indicated that ...",
+        "A content analysis of the open-ended responses revealed ...",
+        "The effect size was moderate (Cohen's d = ...).",
+        "These patterns were consistent across all participant groups.",
+        "The model accounted for ...% of the variance in ..."
+      ]
+    },
+    {
+      "id": "comparing_findings",
+      "title": "Comparing and Contrasting",
+      "description": "Relating current findings to previous literature, noting similarities and differences.",
+      "phrases": [
+        "This finding corroborates the results of ... who found that ...",
+        "The present results are consistent with previous work demonstrating that ...",
+        "In contrast to earlier studies, the current findings indicate ...",
+        "These results align with the theoretical predictions of ...",
+        "Unlike the study by ..., the present research found no evidence of ...",
+        "This discrepancy may be attributable to differences in ...",
+        "The results partially support the findings of ...",
+        "While ... reported ..., the current study found the opposite pattern.",
+        "This finding extends the work of ... by showing that ...",
+        "The magnitude of the effect observed here is comparable to that reported by ...",
+        "These results diverge from the consensus view in the literature.",
+        "A possible explanation for these conflicting results is ...",
+        "The present findings add to the growing evidence that ...",
+        "Taken together with previous research, these results suggest that ...",
+        "The pattern of results mirrors that observed in studies of ..."
+      ]
+    },
+    {
+      "id": "explaining_findings",
+      "title": "Explaining Findings",
+      "description": "Offering interpretations, causal explanations, and theoretical implications.",
+      "phrases": [
+        "This result may be explained by the fact that ...",
+        "One interpretation of these findings is that ...",
+        "It seems likely that ... accounts for this pattern of results.",
+        "A plausible mechanism underlying this effect is ...",
+        "These findings can be understood in light of the theory that ...",
+        "The observed relationship may be due to ...",
+        "This outcome is perhaps unsurprising given that ...",
+        "The findings reflect the influence of ... on ...",
+        "This pattern could be attributed to differences in ...",
+        "Taken as a whole, these results suggest that the primary driver of ... is ...",
+        "This interpretation is in keeping with the view that ...",
+        "The results may indicate that ... plays a more important role than previously thought.",
+        "One potential confounding factor is ...",
+        "The lack of a significant effect could be because ...",
+        "Future research using ... methodology could help clarify these findings."
+      ]
+    },
+    {
+      "id": "hedging",
+      "title": "Hedging & Caution",
+      "description": "Qualifying claims, expressing tentativeness, and acknowledging uncertainty.",
+      "phrases": [
+        "It appears that ...",
+        "This finding suggests the possibility that ...",
+        "The data seem to indicate that ...",
+        "This may imply that ...",
+        "These results are broadly consistent with the hypothesis.",
+        "The evidence tends to support the view that ...",
+        "It is likely that these findings underestimate the true extent of ...",
+        "These results should be interpreted with caution due to ...",
+        "The findings are suggestive rather than conclusive.",
+        "While the evidence points toward ..., this conclusion remains tentative.",
+        "It could be argued that ...",
+        "The results may partly reflect ...",
+        "There is some evidence to suggest that ...",
+        "This finding raises the possibility that ...",
+        "To some extent, these results challenge the assumption that ..."
+      ]
+    },
+    {
+      "id": "giving_examples",
+      "title": "Giving Examples",
+      "description": "Illustrating points with concrete instances and evidence.",
+      "phrases": [
+        "For example, ...",
+        "This is exemplified by the case of ...",
+        "A clear illustration of this is ...",
+        "To take a specific instance, ...",
+        "This can be seen in the case of ...",
+        "Such ... is/are particularly common in ...",
+        "One notable example is ...",
+        "This phenomenon is well illustrated by ...",
+        "Consider, for instance, the case of ...",
+        "This point can be demonstrated by reference to ...",
+        "As an illustration, ...",
+        "A pertinent example is ...",
+        "This is evident in the work of ... who ...",
+        "This pattern is exemplified in ...",
+        "To give a concrete example, ..."
+      ]
+    },
+    {
+      "id": "signalling_transition",
+      "title": "Signalling Transition",
+      "description": "Guiding the reader through the argument and connecting ideas.",
+      "phrases": [
+        "Having discussed ..., the following section turns to ...",
+        "Building on the previous analysis, this chapter now considers ...",
+        "Before proceeding further, it is necessary to ...",
+        "This point will be revisited in greater detail in section ...",
+        "The discussion so far has focused on ... The next section addresses ...",
+        "Turning now to the question of ...",
+        "As noted earlier, ...",
+        "In the following, I will argue that ...",
+        "With this framework in mind, we can now consider ...",
+        "The preceding analysis provides a foundation for ...",
+        "Let us now examine ... in more detail.",
+        "Shifting focus to ..., this chapter explores ...",
+        "To put this into perspective, it is helpful to consider ...",
+        "Having established that ..., the next logical question is ...",
+        "This leads us to the broader question of ..."
+      ]
+    },
+    {
+      "id": "writing_abstracts",
+      "title": "Writing Abstracts",
+      "description": "Structuring concise summaries of research papers and theses.",
+      "phrases": [
+        "This paper investigates the relationship between ...",
+        "The study employed a ... design with ... participants.",
+        "Results indicate that ...",
+        "These findings contribute to the understanding of ...",
+        "The implications of this research for ... are discussed.",
+        "This research addresses the question of ...",
+        "A novel approach to ... is proposed.",
+        "Drawing on data from ..., this study examines ...",
+        "The analysis reveals that ...",
+        "The paper concludes by suggesting directions for future research.",
+        "This article presents a systematic review of ...",
+        "Through an analysis of ..., we demonstrate that ...",
+        "The primary contribution of this work is ...",
+        "Contrary to expectations, the results show ...",
+        "This study bridges the gap between ... and ..."
+      ]
+    },
+    {
+      "id": "acknowledgements",
+      "title": "Acknowledgements",
+      "description": "Recognising contributions, funding, and support.",
+      "phrases": [
+        "I would like to express my sincere gratitude to ...",
+        "This work was supported by ...",
+        "The author wishes to thank ... for their valuable feedback.",
+        "Special thanks are due to ... for their assistance with ...",
+        "This research was funded by ... under grant number ...",
+        "I am grateful to the anonymous reviewers for their constructive comments.",
+        "The authors declare no competing interests.",
+        "We acknowledge the support of ... in facilitating data collection.",
+        "This study benefited from discussions with ...",
+        "The assistance of ... is gratefully acknowledged."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "source_id": "crossref",
+  "query": "# Test Paper",
+  "created_at": 1784015649.562753,
+  "matches": [
+    {
+      "title": "This is a test paper This is a test paper This is a test paper",
+      "url": "https://doi.org/10.55277/rhj.zgripewe.1",
+      "year": 2025,
+      "abstract": ""
+    },
+    {
+      "title": "This is a test paper This is a test paper This is a test paper",
+      "url": "https://doi.org/10.55277/researchhub.1avlpkil.1",
+      "year": 2025,
+      "abstract": ""
+    },
+    {
+      "title": "TEST PAPER TEST PAPER TEST",
+      "url": "https://doi.org/10.1364/ol.571076",
+      "year": 2025,
+      "abstract": ""
+    },
+    {
+      "title": "Test Method for Test for Stretch of Paper and Paper Products Under Tension",
+      "url": "https://doi.org/10.1520/d0987",
+      "year": null,
+      "abstract": ""
+    },
+    {
+      "title": "Test Conference Paper",
+      "url": "https://doi.org/10.5555/testconfpaperwebdeposit",
+      "year": 2019,
+      "abstract": ""
+    }
+  ]
+}

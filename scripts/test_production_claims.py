@@ -1,7 +1,8 @@
 """
 OTIF Production End-to-End Verification Test Script
-Tests all 5 key claims against the live running backend API on http://127.0.0.1:8000.
+Tests all 5 key claims against the live running backend API.
 """
+import os
 import sys
 import json
 import urllib.request
@@ -13,7 +14,7 @@ if hasattr(sys.stdout, 'reconfigure'):
     except Exception:
         pass
 
-API_BASE = "http://127.0.0.1:8000/api/v1"
+API_BASE = os.environ.get("OTIF_API_BASE", "http://127.0.0.1:18765/api/v1")
 
 def request(method, path, data=None):
     url = f"{API_BASE}{path}"
@@ -42,9 +43,9 @@ def run_tests():
     skills_list = skills_res.get("skills", [])
     total_rules = sum(s.get("rule_count", 0) for s in skills_list)
     print(f"   ACTIVE SKILLS LOADED: {len(skills_list)} skills ({total_rules} rules)")
-    assert len(skills_list) == 8, f"Expected 8 skills, got {len(skills_list)}"
+    assert len(skills_list) >= 8, f"Expected at least 8 skills, got {len(skills_list)}"
     assert total_rules >= 86, f"Expected at least 86 rules, got {total_rules}"
-    print("   [PASS] 8 skill seeds loaded (86 intelligence rules active)")
+    print("   [PASS] Skill seeds loaded (86+ intelligence rules active)")
 
     # CLAIM 1: 1:1 Project Workspace & SQLite Persistence
     print("\n[Claim 1] Testing 1:1 Project Workspace Creation...")
@@ -82,7 +83,7 @@ def run_tests():
     print("\n[Claim 4b] Testing Project-Scoped Skill Sync Log...")
     sync_res = request("POST", f"/projects/{project_id}/sync-skills")
     print(f"   SYNC RESULT: Synced={sync_res.get('synced_at')}, Count={sync_res.get('skill_count')}")
-    assert sync_res.get("skill_count") == 8, "Sync count mismatch"
+    assert sync_res.get("skill_count", 0) >= 8, "Sync count mismatch"
     print("   [PASS] Project sync appended to SQLite audit log")
 
     # CLAIM 1c: Cleanup / Delete Test Project
@@ -93,7 +94,7 @@ def run_tests():
     print("   [PASS] Project cleanly removed from local DB")
 
     print("\n" + "=" * 70)
-    print("[SUCCESS] ALL 5 PRODUCTION CLAIMS VERIFIED 100% OPERATIONAL & EVIDENCE-BACKED!")
+    print("[SUCCESS] ALL 5 PRODUCTION CLAIMS VERIFIED AGAINST THE CURRENT BACKEND")
     print("=" * 70)
 
 if __name__ == "__main__":

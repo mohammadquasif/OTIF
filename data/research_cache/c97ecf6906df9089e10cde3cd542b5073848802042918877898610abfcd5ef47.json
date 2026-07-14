@@ -1,0 +1,37 @@
+{
+  "source_id": "zenodo",
+  "query": "# Test Paper",
+  "created_at": 1784015659.39377,
+  "matches": [
+    {
+      "title": "Development of New Accelerated Aging Test for Comparison of the Quality of Different Insulating Papers Based on Cellulose",
+      "url": null,
+      "year": "2023",
+      "abstract": "<p>The aim of this study is to propose a test method for the determination of the quality of</p><p>transformer paper insulation. For this purpose, the oil/cellulose insulation systems were exposed to</p><p>various accelerated aging tests. The results of the aging experiments of normal Kraft and thermally</p><p>upgraded papers, two different types of transformer oil (mineral and natural ester), and"
+    },
+    {
+      "title": "u10313335/first-binder: Test v1",
+      "url": null,
+      "year": "2019",
+      "abstract": "<p>No description provided.</p>"
+    },
+    {
+      "title": "GNER",
+      "url": null,
+      "year": "2021",
+      "abstract": "<p>Chinese named entity recognition in the geoscience domain based on BERT</p>"
+    },
+    {
+      "title": "Test paper",
+      "url": null,
+      "year": "2022",
+      "abstract": "<p>In this paper</p>"
+    },
+    {
+      "title": "Geologic ontology",
+      "url": null,
+      "year": "2021",
+      "abstract": "<p>Geologic ontology</p>"
+    }
+  ]
+}

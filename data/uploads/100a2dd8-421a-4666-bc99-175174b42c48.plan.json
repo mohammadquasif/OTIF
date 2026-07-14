@@ -1,0 +1,1262 @@
+{
+  "analysis_mode": "local_preflight",
+  "coverage": {
+    "local_document_only": true,
+    "open_research_sources_checked": [
+      "arxiv",
+      "crossref",
+      "europe_pmc",
+      "pubmed",
+      "datacite",
+      "eric",
+      "osf_preprints",
+      "zenodo",
+      "doaj",
+      "base"
+    ],
+    "local_corpus_checked": []
+  },
+  "limitations": [
+    "This preflight does not check against all research papers.",
+    "Similarity and originality require configured local corpora or open research connectors.",
+    "Scores are derived only from the uploaded document text and loaded local skill rules."
+  ],
+  "metrics": {
+    "word_count": 104,
+    "sentence_count": 16,
+    "unique_word_ratio": 0.75,
+    "avg_sentence_length": 6.5,
+    "citation_coverage": 0.0,
+    "citation_quality": 10.0,
+    "citation_sentence_count": 0,
+    "claim_sentence_count": 3,
+    "doi_count": 0,
+    "url_count": 0,
+    "references_present": true,
+    "paragraph_count": 1,
+    "near_duplicate_pairs": 0,
+    "internal_duplication_risk": 0,
+    "burstiness": 60.1,
+    "passive_voice_ratio": 0.0,
+    "template_opener_count": 0,
+    "researcher_voice_markers": 1,
+    "long_quote_words": 0,
+    "humanization_score": 94.3,
+    "ai_writing_risk": 5.7,
+    "originality_evidence_matrix": 10,
+    "originality_dimensions": {
+      "literature_gap": 0,
+      "applied_integration": 0,
+      "artefact_contribution": 0,
+      "methodological_boundary": 10,
+      "practical_implication": 0
+    },
+    "hedging_count": 0,
+    "hedging_density_per_1000": 0.0,
+    "hedging_risk": "over_assertive",
+    "rq_count": 0,
+    "rq_traceback_score": null,
+    "unanswered_rqs": [],
+    "norm_issues": [],
+    "norm_valid": true,
+    "is_imrad": true,
+    "missing_sections": [
+      "discussion"
+    ]
+  },
+  "findings": [],
+  "scores": {
+    "plagiarism_risk": 22.0,
+    "originality_score": 39.7,
+    "originality_evidence_matrix": 10,
+    "citation_quality": 10.0,
+    "humanization_score": 94.3,
+    "ai_writing_risk": 5.7,
+    "ai_pattern_risk": 5.7,
+    "phrase_quality": 94.3,
+    "citation_signal": 10.0,
+    "structure_signal": 75.0,
+    "hedging_risk": "over_assertive",
+    "rq_traceback_score": null,
+    "overall_preflight": 65.2
+  },
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Abstract",
+      "metrics": {
+        "word_count": 16,
+        "sentence_count": 2,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 8.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 50.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 92.0,
+        "ai_writing_risk": 8.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 92.0,
+        "ai_writing_risk": 8.0,
+        "ai_pattern_risk": 8.0,
+        "phrase_quality": 92.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 55.4
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-2",
+      "title": "Introduction",
+      "metrics": {
+        "word_count": 15,
+        "sentence_count": 2,
+        "unique_word_ratio": 0.933,
+        "avg_sentence_length": 7.5,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 6.7,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.5,
+        "ai_writing_risk": 11.5,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 29.9,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.5,
+        "ai_writing_risk": 11.5,
+        "ai_pattern_risk": 11.5,
+        "phrase_quality": 88.5,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.2
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-3",
+      "title": "Methodology",
+      "metrics": {
+        "word_count": 13,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 13.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 1,
+        "long_quote_words": 0,
+        "humanization_score": 89.5,
+        "ai_writing_risk": 10.5,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 89.5,
+        "ai_writing_risk": 10.5,
+        "ai_pattern_risk": 10.5,
+        "phrase_quality": 89.5,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.6
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-4",
+      "title": "Results",
+      "metrics": {
+        "word_count": 10,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 10.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-5",
+      "title": "Conclusion",
+      "metrics": {
+        "word_count": 12,
+        "sentence_count": 2,
+        "unique_word_ratio": 0.917,
+        "avg_sentence_length": 6.0,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 10,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 10,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 35.8,
+        "originality_evidence_matrix": 10,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 55.0
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-6",
+      "title": "References",
+      "metrics": {
+        "word_count": 31,
+        "sentence_count": 8,
+        "unique_word_ratio": 0.871,
+        "avg_sentence_length": 3.9,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 1,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 63.8,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 93.1,
+        "ai_writing_risk": 6.9,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 29.5,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 93.1,
+        "ai_writing_risk": 6.9,
+        "ai_pattern_risk": 6.9,
+        "phrase_quality": 93.1,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 55.6
+      },
+      "findings": []
+    }
+  ],
+  "research_sources": {
+    "internet_checked": true,
+    "sources": [
+      {
+        "id": "arxiv",
+        "name": "arXiv",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Generalizing the Paige-Tarjan Algorithm by Abstract Interpretation",
+            "url": "http://arxiv.org/abs/cs/0612120v2",
+            "year": "2006",
+            "abstract": "  The Paige and Tarjan algorithm (PT) for computing the coarsest refinement of a state partition which is a bisimulation on some Kripke structure is well known. It is also well known in model checking that bisimulation is equivalent to strong preservation of CTL, or, equivalently, of Hennessy-Milner logic. Drawing on these observations, we analyze the basic steps of the PT algorithm from an abstra"
+          },
+          {
+            "title": "The Probabilistic Model Checker Storm (Extended Abstract)",
+            "url": "http://arxiv.org/abs/1610.08713v1",
+            "year": "2016",
+            "abstract": "We present a new probabilistic model checker Storm. Using state-of-the-art libraries, we aim for both high performance and versatility. This extended abstract gives a brief overview of the features of Storm."
+          },
+          {
+            "title": "Correctness Kernels of Abstract Interpretations",
+            "url": "http://arxiv.org/abs/0910.4748v3",
+            "year": "2009",
+            "abstract": "In abstract interpretation-based static analysis, approximation is encoded by abstract domains. They provide systematic guidelines for designing abstract semantic functions that approximate some concrete system behaviors under analysis. It may happen that an abstract domain contains redundant information for the specific purpose of approximating a given concrete semantic function. This paper intro"
+          },
+          {
+            "title": "Abstract factorials",
+            "url": "http://arxiv.org/abs/0705.4299v3",
+            "year": "2007",
+            "abstract": "A commutative semigroup of abstract factorials is defined in the context of the ring of integers. We study such factorials for their own sake, whether they are or are not connected to sets of integers. Given a subset X of the positive integers we construct a \"factorial set\" with which one may define a multitude of abstract factorials on X. We study the possible equality of consecutive factorials, "
+          },
+          {
+            "title": "Abstract Separation Systems",
+            "url": "http://arxiv.org/abs/1406.3797v6",
+            "year": "2014",
+            "abstract": "Abstract separation systems provide a simple general framework in which both tree-shape and high cohesion of many combinatorial structures can be expressed, and their duality proved. Applications range from tangle-type duality and tree structure theorems in graphs, matroids or CW-complexes to, potentially, image segmentation and cluster analysis.\n  This paper is intended as a concise common refere"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://export.arxiv.org/api/query",
+        "coverage": "preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://info.arxiv.org/help/api/index.html",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "crossref",
+        "name": "Crossref",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Abstract",
+            "url": "https://doi.org/10.5040/9781350981478",
+            "year": 2018,
+            "abstract": ""
+          },
+          {
+            "title": "Abstract Esoterica",
+            "url": "https://doi.org/10.5040/9781350881518",
+            "year": 2022,
+            "abstract": ""
+          },
+          {
+            "title": "French translation of abstract: French translation of abstract",
+            "url": "https://doi.org/10.7717/peerj.7296/supp-7",
+            "year": null,
+            "abstract": ""
+          },
+          {
+            "title": "The Concrete\u00e2\u0080\u0093Abstract Distinction",
+            "url": "https://doi.org/10.1057/9780230378438.0009",
+            "year": null,
+            "abstract": ""
+          },
+          {
+            "title": "OVERALL PANEL PROPOSAL: SPEAKER 1 ABSTRACT: SPEAKER 2 ABSTRACT: SPEAKER 3 ABSTRACT: SPEAKER 4 ABSTRACT:",
+            "url": "https://doi.org/10.1016/j.schres.2010.02.170",
+            "year": 2010,
+            "abstract": ""
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.crossref.org/works",
+        "coverage": "DOI metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "europe_pmc",
+        "name": "Europe PMC",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Treatment for Hyperosmolar Dehydration in Hospitalised Adults: Protocol for a Scoping Review of Current Evidence and Gaps.",
+            "url": "10.2196/87080",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "Virtual community-based interventions for family caregivers of people with dementia: A scoping review protocol.",
+            "url": "10.1371/journal.pone.0347798",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "Clinical outcomes, patient satisfaction and operational efficiency of AI-powered chatbots in medicine and healthcare: protocol for an AI-aided scoping review.",
+            "url": "10.1136/bmjopen-2025-113547",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "Human Gaze Behaviors Track Abstract Stimulus Categories.",
+            "url": "10.1162/jocn.a.2591",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "The impact of social interaction on abstract concepts.",
+            "url": "10.3758/s13423-026-02941-4",
+            "year": "2026",
+            "abstract": ""
+          }
+        ],
+        "cached": false,
+        "base_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+        "coverage": "biomedical papers",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "pubmed",
+        "name": "PubMed / NCBI",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Identifying multiple drivers of stratified deformation in soft deltaic deposits using integrated geosensing.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443327/",
+            "year": "2026",
+            "abstract": "Scientific reports"
+          },
+          {
+            "title": "[Application and insights of multimodal imaging in acupuncture treatment for female stress urinary incontinence].",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443094/",
+            "year": "2026",
+            "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+          },
+          {
+            "title": "[Different moxibustion therapies for primary dysmenorrhea: a network Meta-analysis].",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443093/",
+            "year": "2026",
+            "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+          },
+          {
+            "title": "[Discussion on diseases of six fu organs and acupoint indications in Huangdi Neijing].",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443092/",
+            "year": "2026",
+            "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+          },
+          {
+            "title": "[Discussion on \"better to lose the acupoint than to lose the meridian\"].",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443091/",
+            "year": "2026",
+            "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+        "coverage": "biomedical citations",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "datacite",
+        "name": "DataCite",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Integrated Green Heritage Rail Framework: Orchestrating Intra-District Rail Ecosystems and High-Speed Rail Convergence in Linear Geographic Manifolds",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.20674654",
+            "year": 2026,
+            "abstract": "Abstract\n\nThis paper introduces a multi-layered transportation architecture designed specifically for linear and high-density geographic structures, using Kerala, India, as a foundational case study. Traditional transportation models separate urban intra-city networks from inter-city high-speed systems, causing operational fragmentation and significant ecological and cultural disruption during inf"
+          },
+          {
+            "title": "Integrated Green Heritage Rail Framework: Orchestrating Intra-District Rail Ecosystems and High-Speed Rail Convergence in Linear Geographic Manifolds",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21193669",
+            "year": 2026,
+            "abstract": "Abstract\n\nThis paper introduces a multi-layered transportation architecture designed specifically for linear and high-density geographic structures, using Kerala, India, as a foundational case study. Traditional transportation models separate urban intra-city networks from inter-city high-speed systems, causing operational fragmentation and significant ecological and cultural disruption during inf"
+          },
+          {
+            "title": "Blinded by Envy, Protected by Identification: How Envy Affects Creative Evaluation",
+            "url": "https://www.repository.cam.ac.uk/handle/1810/404733",
+            "year": 2026,
+            "abstract": "ABSTRACT Though envy is a commonly experienced emotion in today's fast\u2010paced, competitive workplaces, its influence on how we judge others' outputs in terms of creativity remains largely unexplored. This paper investigates how different types of envy\u2013malicious and benign\u2013impact creative evaluations of ideas. Through three studies ( N = 1374) (two pre\u2010registered), we find that benign and malicious "
+          },
+          {
+            "title": "Potenzialanalyse zur Wasserstoffinfrastruktur an deutschen Flugh\u00e4fen : Studie",
+            "url": "https://oa.tib.eu/renate/handle/123456789/40547",
+            "year": 2026,
+            "abstract": "[no abstract available]"
+          },
+          {
+            "title": "Cybersecurity Challenges",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21352222",
+            "year": 2026,
+            "abstract": "Abstract:\n\nWith more people using the internet, cloud-based computers and services becoming more and more popular, and the number of connected devices connecting to these networks expanding at an accelerated rate, cybersecurity is now one of the biggest issues facing society. The volume and sophistication of attacks have increased exponentially due to the growing reliance on automated operations i"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.datacite.org/dois",
+        "coverage": "datasets and DOI records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://support.datacite.org/docs/api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "eric",
+        "name": "ERIC",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Teaching Abstract Concepts in Sociology.",
+            "url": "https://eric.ed.gov/?id=ED275602",
+            "year": 1986,
+            "abstract": "Students and instructors may be frustrated with students' lack of understanding of sociological concepts. We suggest that the difficulty of teaching and learning sociology is that sociological concepts and relationships require the use of abstract reasoning patterns. Many students are unaccustomed to using these abstract reasoning patterns. We use the Piagetian cognitive development theoretical ra"
+          },
+          {
+            "title": "Abstract Vocabulary Development: Embodied Theory and Practice",
+            "url": "https://eric.ed.gov/?id=EJ1388608",
+            "year": 2023,
+            "abstract": "This article reviews the embodied theoretical basis for the meaningful learning of abstract vocabulary and reviews selected educational programs that are theoretically based and have both success and promise for abstract vocabulary development. Abstract vocabulary is a mainstay of academic vocabulary, but its nature and educational development are not well understood. From the perspective of embod"
+          },
+          {
+            "title": "Does Mathematical Learning Occur in Going from Concrete to Abstract or in Going from Abstract to Concrete?",
+            "url": "https://eric.ed.gov/?id=EJ800607",
+            "year": 2006,
+            "abstract": "The notions of \"abstract \"and \"concrete\" are central to the conceptualization of mathematical knowing and learning. It is generally accepted that development goes from concrete toward the abstract; but dialectical theorists maintain just the opposite: development consists of an ascension from the abstract to the concrete. In this article, we reformulate the relationship of abstract and concrete co"
+          },
+          {
+            "title": "Concrete and Formal Piagetian Stages and Science Concept Attainment",
+            "url": "https://eric.ed.gov/?id=EJ185566",
+            "year": 1978,
+            "abstract": "Investigates the attainment of abstract and concrete concepts and the use of pseudoexamples to move concrete thinkers to abstract levels in secondary school chemistry classes. Findings reveal abstract students achieve significantly higher means on both concrete and abstract concept attainment and that pseudo examples have no effect on the ability of concrete students to move toward abstract thinki"
+          },
+          {
+            "title": "Content Differences for Abstract and Concrete Concepts",
+            "url": "https://eric.ed.gov/?id=EJ747056",
+            "year": 2005,
+            "abstract": "Concept properties are an integral part of theories of conceptual representation and processing. To date, little is known about conceptual properties of abstract concepts, such as idea. This experiment systematically compared the content of 18 abstract and 18 concrete concepts, using a feature generation task. Thirty-one participants listed characteristics of the concepts (i.e., item properties) o"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.ies.ed.gov/eric/",
+        "coverage": "education research",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://eric.ed.gov/?api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "osf_preprints",
+        "name": "OSF Preprints",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Multimodal Dynamics in Learning and Explaining Abstract and Concrete Concepts: A Triadic Interactive Task with Families",
+            "url": "https://osf.io/preprints/psyarxiv/hdjp3_v2/",
+            "year": "2026",
+            "abstract": "Studies have shown that learning abstract concepts (e.g., freedom compared to table) may be particularly challenging. To address concept learning, most studies use paradigms involving a single participant, such as lexical decision, match to sample, induction, and rating tasks. Here, we use an interactive task involving three family members\u2014mother, father, and a 5-year-old child\u2014and examine how con"
+          },
+          {
+            "title": "Multimodal Dynamics in Learning and Explaining Abstract and Concrete Concepts: A Triadic Interactive Task with Families",
+            "url": "https://osf.io/preprints/psyarxiv/hdjp3_v1/",
+            "year": "2026",
+            "abstract": "Studies have shown that learning abstract concepts (e.g., freedom compared to table) may be particularly challenging. To address concept learning, most studies use paradigms involving a single participant, such as lexical decision, match to sample, induction, and rating tasks. Here, we use an interactive task involving three family members\u2014mother, father, and a 5-year-old child\u2014and examine how con"
+          },
+          {
+            "title": "Abstract Risk and the Politics of the Criminal Law",
+            "url": "https://osf.io/preprints/lawarchive/7cvr9_v1/",
+            "year": "2026",
+            "abstract": "Much of the criminal law contains what theorists call \u201cabstract endangerment\u201d statutes \u2014 crimes that punish not actual, but hypothetical, creation of risk. Consider the case of underage alcohol possession: age does not necessarily imply immaturity, and possession does not necessarily lead to consumption. The crime is therefore doubly \u201cabstract\u201d: many violations will create no risk of harm at all b"
+          },
+          {
+            "title": "Deviations in Distributions Perception through Imprecision and Accounting for Uncertainty through Abstract Representations",
+            "url": "https://osf.io/preprints/psyarxiv/8uq75_v2/",
+            "year": "2026",
+            "abstract": "Perceiving the distributions of values we experience accurately is crucial for adaptive judgment and decision making. Previous research shows that people are quite adept at learning distribution information, so that many models of judgment and decision making assume that people accurately store it. However, a variety of deviations in distributions people report indicate that distributions are unli"
+          },
+          {
+            "title": "Initial indications of generative AI influence in linguistics research abstracts: Evidence from a large-scale lexical frequency analysis between 2018 and 2025",
+            "url": "https://osf.io/preprints/psyarxiv/6tj3h_v1/",
+            "year": "2026",
+            "abstract": "Generative AI and large language models (LLMs), such as ChatGPT, have transformed many working practices, including scientific writing. Previous large-scale studies have identified shifts in the use of certain stylistic markers, such as the word delve, in disciplines like biomedicine, engineering, and computer science, yet comparable evidence from the humanities remains scarce. Using lexical frequ"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.osf.io/v2/preprints/",
+        "coverage": "open preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.osf.io/v2/docs/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "zenodo",
+        "name": "Zenodo",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Modelling of the hydration and moisture transfer coupling effects on the microstructure properties of the concrete cover",
+            "url": null,
+            "year": "2012",
+            "abstract": "<p>In this research, a model of the couplings between hydration and moisture transfer within cementitious materials is proposed. Based on taking into account the microstructure properties and the moisture transfer properties due to hydration, the model describes the couplings between the moisture transfer at early-age owing to external drying and the internal water depletion by hydration. Furtherm"
+          },
+          {
+            "title": "PRISMAP Deliverable D10.4 - Report on ion source efficiency for a 11C PET ISOL beam",
+            "url": null,
+            "year": "2025",
+            "abstract": "<p>The goal of this research activity task was to identify potential solutions to establish radioactive ion beams in the form of C-11 in a clinical ion beam therapy accelerator complex. Previous studies [1],[2] provided prototypes of C-11 production targets and concepts for overall integration. A crucial component is the ion source to ionize that scarcely produced radioactive gas.<br>Three ion sou"
+          },
+          {
+            "title": "Nonlinear reaction norms in Drosophila mediopunctata: Connecting the dots towards the understanding of genotype-environmental interaction. In: Resumos 59o Congresso Brasileiro de Genetica, p. 203.",
+            "url": null,
+            "year": "2013",
+            "abstract": "Uploaded by Plazi for TaxoDros. We do not have abstracts."
+          },
+          {
+            "title": "Evolution in heterogeneous environments in natural populations of Drosophila mediopunctata: temporal and spatial variation may affect the distribution of genetic variance of morphological traits. In: Resumos 57o Congresso Brasileiro de Gene",
+            "url": null,
+            "year": "2011",
+            "abstract": "Uploaded by Plazi for TaxoDros. We do not have abstracts."
+          },
+          {
+            "title": "Analysis of the Effect of Implementation of Management Functions on Performance Achievements of Public Health Centers in Bengkulu Province",
+            "url": null,
+            "year": "2022",
+            "abstract": "<p><strong>Introduction</strong>: The PublicHealth Center (Puskesmas) is a health service facility that organizes the first level of Community Health Efforts and Individual Health Efforts by prioritizing promotive and preventive efforts and is a Regional Technical Implementation Unit (UPTD) of the District/City Health Office. In carrying out its functions, the Puskesmas implements the stages of th"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://zenodo.org/api/records",
+        "coverage": "research outputs and datasets",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "semantic_scholar",
+        "name": "Semantic Scholar",
+        "status": "unavailable",
+        "message": "Client error '429 ' for url 'https://api.semanticscholar.org/graph/v1/paper/search?query=Abstract&limit=5&fields=title%2Curl%2Cyear%2Cabstract'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTT",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.semanticscholar.org/graph/v1/paper/search",
+        "coverage": "literature graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.semanticscholar.org/api-docs/graph",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "openalex",
+        "name": "OpenAlex",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.openalex.org/works",
+        "coverage": "global scholarly graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://developers.openalex.org/",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "doaj",
+        "name": "DOAJ",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://doaj.org/api/search/articles",
+        "coverage": "open access journals",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "core",
+        "name": "CORE",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.core.ac.uk/v3/search/works",
+        "coverage": "open access repository records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "base",
+        "name": "BASE",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi",
+        "coverage": "repository metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      }
+    ],
+    "queries": [
+      "Abstract",
+      "digital transformation indian impacts psychology",
+      "impacts psychology abstract mixed methods"
+    ],
+    "ai_detection": {
+      "ai_detection_score": 16,
+      "confidence": "low",
+      "signals": {
+        "perplexity_risk": 55.6,
+        "burstiness_risk": 0,
+        "template_opener_risk": 0,
+        "passive_voice_risk": 0.0,
+        "researcher_voice_reduction": 0,
+        "repetition_risk": 0,
+        "uniform_length_risk": 0.0
+      },
+      "verdict": "Low AI-generation probability (16%). Writing patterns are consistent with human academic authorship.",
+      "turnitin_ai_equivalent": "Likely human-authored (<25% \u2014 equivalent to Turnitin AI low signal)"
+    },
+    "turnitin_style_similarity": null,
+    "connectivity": {
+      "internet_reachable": true,
+      "reachable_count": 6,
+      "checked_count": 6,
+      "sources": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Crossref responded with HTTP 200"
+        },
+        {
+          "id": "arxiv",
+          "name": "arXiv",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "arXiv responded with HTTP 200"
+        },
+        {
+          "id": "datacite",
+          "name": "DataCite",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "DataCite responded with HTTP 200"
+        },
+        {
+          "id": "europe_pmc",
+          "name": "Europe PMC",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Europe PMC responded with HTTP 200"
+        },
+        {
+          "id": "semantic_scholar",
+          "name": "Semantic Scholar",
+          "status": "reachable",
+          "status_code": 429,
+          "message": "Semantic Scholar responded with HTTP 429"
+        },
+        {
+          "id": "openalex",
+          "name": "OpenAlex",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "OpenAlex responded with HTTP 200"
+        }
+      ]
+    }
+  },
+  "formatting_plan": {
+    "target": "APA 7",
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "export_formats": [
+      "docx",
+      "pdf"
+    ],
+    "design_themes": [
+      "classic_blue",
+      "mono_formal",
+      "emerald_academic",
+      "maroon_submission"
+    ]
+  },
+  "improvement_plan": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 39.7; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.\n\nReal citation suggestions from open research sources:\n  \u2022 Generalizing the Paige-Tarjan Algorithm by Abstract Interpretation (2006) \u2014 via arXiv\n  \u2022 The Probabilistic Model Checker Storm (Extended Abstract) (2016) \u2014 via arXiv\n  \u2022 Correctness Kernels of Abstract Interpretations (2009) \u2014 via arXiv\n  \u2022 Abstract (2018) \u2014 via Crossref\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works.",
+      "evidence": "Citation quality is 10.0; citation coverage is 0.0% across claim-like sentences. 21 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": [
+        {
+          "title": "Generalizing the Paige-Tarjan Algorithm by Abstract Interpretation",
+          "year": "2006",
+          "url": "http://arxiv.org/abs/cs/0612120v2",
+          "source": "arXiv"
+        },
+        {
+          "title": "The Probabilistic Model Checker Storm (Extended Abstract)",
+          "year": "2016",
+          "url": "http://arxiv.org/abs/1610.08713v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "Correctness Kernels of Abstract Interpretations",
+          "year": "2009",
+          "url": "http://arxiv.org/abs/0910.4748v3",
+          "source": "arXiv"
+        },
+        {
+          "title": "Abstract",
+          "year": "2018",
+          "url": "https://doi.org/10.5040/9781350981478",
+          "source": "Crossref"
+        },
+        {
+          "title": "Abstract Esoterica",
+          "year": "2022",
+          "url": "https://doi.org/10.5040/9781350881518",
+          "source": "Crossref"
+        },
+        {
+          "title": "Treatment for Hyperosmolar Dehydration in Hospitalised Adults: Protocol for a Scoping Review of Current Evidence and Gaps.",
+          "year": "2026",
+          "url": "10.2196/87080",
+          "source": "Europe PMC"
+        }
+      ]
+    },
+    {
+      "id": "chapter-1-improvement",
+      "title": "Improve Abstract (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Abstract scores: AI risk 8.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-1",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-2-improvement",
+      "title": "Improve Introduction (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Introduction scores: AI risk 11.5, originality 29.9, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-2",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-3-improvement",
+      "title": "Improve Methodology (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Methodology scores: AI risk 10.5, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-3",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-4-improvement",
+      "title": "Improve Results (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Results scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-4",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-5-improvement",
+      "title": "Improve Conclusion (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Conclusion scores: AI risk 12.0, originality 35.8, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-5",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-6-improvement",
+      "title": "Improve References (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] References scores: AI risk 6.9, originality 29.5, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-6",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "diagram-opportunities",
+      "title": "Identify and draft required diagrams",
+      "priority": "medium",
+      "action": "After approval, detect methodology/process/model sections and draft academic diagrams only where they clarify the argument.",
+      "evidence": "Diagram generation is optional and requires separate approval in the rewrite options.",
+      "requires_ai": true
+    },
+    {
+      "id": "target-format",
+      "title": "Apply APA 7 checks",
+      "priority": "medium",
+      "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+      "evidence": "Target format selected: APA 7.",
+      "requires_ai": false
+    },
+    {
+      "id": "front-matter-integrity",
+      "title": "Maintain TOC, list of tables, and list of figures",
+      "priority": "medium",
+      "action": "Preserve heading hierarchy, table captions, figure captions, page-aware front matter, and export-ready DOCX/PDF structure.",
+      "evidence": "Required for APA 7 output and final submission polish.",
+      "requires_ai": false
+    }
+  ],
+  "integrity_report": {
+    "title": "OTIF Academic Integrity Evidence Report",
+    "doc_type": "research_paper",
+    "target_format": "APA 7",
+    "grade": "needs_integrity_review",
+    "scope": {
+      "local_document_analysis": true,
+      "open_research_sources_checked": [
+        "arXiv",
+        "Crossref",
+        "Europe PMC",
+        "PubMed / NCBI",
+        "DataCite",
+        "ERIC",
+        "OSF Preprints",
+        "Zenodo",
+        "DOAJ",
+        "BASE"
+      ],
+      "full_web_or_private_corpus_checked": false,
+      "ai_writing_score_is_risk_signal": true
+    },
+    "headline": {
+      "plagiarism_risk": 22.0,
+      "originality_score": 39.7,
+      "citation_quality": 10.0,
+      "humanization_score": 94.3,
+      "ai_writing_risk": 5.7
+    },
+    "evidence_summary": {
+      "citation_coverage": 0.0,
+      "near_duplicate_pairs": 0,
+      "open_source_matches": 40,
+      "possible_similarity_risk_matches": 0,
+      "researcher_voice_markers": 1,
+      "template_opener_count": 0,
+      "rq_traceback_score": null
+    },
+    "top_source_evidence": [
+      {
+        "title": "Generalizing the Paige-Tarjan Algorithm by Abstract Interpretation",
+        "url": "http://arxiv.org/abs/cs/0612120v2",
+        "year": "2006",
+        "abstract": "  The Paige and Tarjan algorithm (PT) for computing the coarsest refinement of a state partition which is a bisimulation on some Kripke structure is well known. It is also well known in model checking that bisimulation is equivalent to strong preservation of CTL, or, equivalently, of Hennessy-Milner logic. Drawing on these observations, we analyze the basic steps of the PT algorithm from an abstra"
+      },
+      {
+        "title": "The Probabilistic Model Checker Storm (Extended Abstract)",
+        "url": "http://arxiv.org/abs/1610.08713v1",
+        "year": "2016",
+        "abstract": "We present a new probabilistic model checker Storm. Using state-of-the-art libraries, we aim for both high performance and versatility. This extended abstract gives a brief overview of the features of Storm."
+      },
+      {
+        "title": "Correctness Kernels of Abstract Interpretations",
+        "url": "http://arxiv.org/abs/0910.4748v3",
+        "year": "2009",
+        "abstract": "In abstract interpretation-based static analysis, approximation is encoded by abstract domains. They provide systematic guidelines for designing abstract semantic functions that approximate some concrete system behaviors under analysis. It may happen that an abstract domain contains redundant information for the specific purpose of approximating a given concrete semantic function. This paper intro"
+      },
+      {
+        "title": "Abstract factorials",
+        "url": "http://arxiv.org/abs/0705.4299v3",
+        "year": "2007",
+        "abstract": "A commutative semigroup of abstract factorials is defined in the context of the ring of integers. We study such factorials for their own sake, whether they are or are not connected to sets of integers. Given a subset X of the positive integers we construct a \"factorial set\" with which one may define a multitude of abstract factorials on X. We study the possible equality of consecutive factorials, "
+      },
+      {
+        "title": "Abstract Separation Systems",
+        "url": "http://arxiv.org/abs/1406.3797v6",
+        "year": "2014",
+        "abstract": "Abstract separation systems provide a simple general framework in which both tree-shape and high cohesion of many combinatorial structures can be expressed, and their duality proved. Applications range from tangle-type duality and tree structure theorems in graphs, matroids or CW-complexes to, potentially, image segmentation and cluster analysis.\n  This paper is intended as a concise common refere"
+      },
+      {
+        "title": "Abstract",
+        "url": "https://doi.org/10.5040/9781350981478",
+        "year": 2018,
+        "abstract": ""
+      },
+      {
+        "title": "Abstract Esoterica",
+        "url": "https://doi.org/10.5040/9781350881518",
+        "year": 2022,
+        "abstract": ""
+      },
+      {
+        "title": "French translation of abstract: French translation of abstract",
+        "url": "https://doi.org/10.7717/peerj.7296/supp-7",
+        "year": null,
+        "abstract": ""
+      }
+    ],
+    "recommended_next_actions": [
+      "Strengthen originality and contribution",
+      "Strengthen citation signal",
+      "Improve Abstract (Pages 1\u201313)",
+      "Improve Introduction (Pages 1\u201313)",
+      "Improve Methodology (Pages 1\u201313)",
+      "Improve Results (Pages 1\u201313)"
+    ],
+    "limitations": [
+      "This preflight does not check against all research papers.",
+      "Similarity and originality require configured local corpora or open research connectors.",
+      "Scores are derived only from the uploaded document text and loaded local skill rules.",
+      "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+      "AI-writing risk is a writing-pattern signal, not proof of authorship."
+    ]
+  }
+}

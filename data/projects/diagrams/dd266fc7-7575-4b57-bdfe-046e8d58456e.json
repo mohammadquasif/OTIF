@@ -1,0 +1,13 @@
+{
+  "diagram_id": "dd266fc7-7575-4b57-bdfe-046e8d58456e",
+  "doc_id": "test-doc-production-123",
+  "project_id": "1a49ab03-c162-420e-a165-fa0ba5620ba6",
+  "design_theme": "emerald_academic",
+  "diagram_style": "method_flow",
+  "framework_name": "",
+  "figure_number": "1.1",
+  "caption": "Figure 1.1: Proposed Framework (Source: Author's Own Design)",
+  "mermaid_source": "flowchart LR\n\n    Method_Flow__Data_collection_via[\"Method Flow: Data collection via CrossRef API -> Preflight ga\"]\n",
+  "themed_source": "%%{init: {\"theme\": \"base\", \"themeVariables\": {\"primaryColor\": \"#065f46\", \"primaryTextColor\": \"#ffffff\", \"primaryBorderColor\": \"#047857\", \"lineColor\": \"#10b981\", \"secondaryColor\": \"#d1fae5\", \"tertiaryColor\": \"#ecfdf5\", \"background\": \"#f0fdf4\", \"mainBkg\": \"#a7f3d0\", \"nodeBorder\": \"#065f46\", \"clusterBkg\": \"#ecfdf5\", \"titleColor\": \"#064e3b\", \"edgeLabelBackground\": \"#f0fdf4\", \"fontFamily\": \"Inter, sans-serif\", \"fontSize\": \"14px\"}}}%%\nflowchart LR\n\n    Method_Flow__Data_collection_via[\"Method Flow: Data collection via CrossRef API -> Preflight ga\"]\n",
+  "approved": false
+}

@@ -1,0 +1,28 @@
+#!/bin/sh
+# ── OTIF pre-commit guard ──────────────────────────────────────
+# Copy this file to .git/hooks/pre-commit and make it executable:
+#   cp .githooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Or set globally: git config core.hooksPath .githooks
+#
+# Only the authorised committer may create commits in this repo.
+ALLOWED_EMAIL="quasif92@gmail.com"
+ALLOWED_NAME="Mohammad Quasif"
+
+CURRENT_EMAIL=$(git config user.email)
+CURRENT_NAME=$(git config user.name)
+
+if [ "$CURRENT_EMAIL" != "$ALLOWED_EMAIL" ] || [ "$CURRENT_NAME" != "$ALLOWED_NAME" ]; then
+  echo ""
+  echo "  ╔══════════════════════════════════════════════════════╗"
+  echo "  ║  OTIF commit blocked — unauthorised committer        ║"
+  echo "  ║                                                      ║"
+  echo "  ║  Required  : $ALLOWED_NAME <$ALLOWED_EMAIL>"
+  echo "  ║  Configured: $CURRENT_NAME <$CURRENT_EMAIL>"
+  echo "  ║                                                      ║"
+  echo "  ║  Run:  git config user.name  \"$ALLOWED_NAME\"         ║"
+  echo "  ║        git config user.email \"$ALLOWED_EMAIL\"        ║"
+  echo "  ╚══════════════════════════════════════════════════════╝"
+  echo ""
+  exit 1
+fi
+exit 0

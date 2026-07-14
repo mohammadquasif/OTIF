@@ -1,0 +1,37 @@
+{
+  "source_id": "europe_pmc",
+  "query": "# Digital Transformation in Indian SMEs",
+  "created_at": 1784017401.4582362,
+  "matches": [
+    {
+      "title": "Integrated ERP lean model for quality enhancement and operational excellence in SME based automotive mould manufacturing.",
+      "url": "10.1038/s41598-025-18619-1",
+      "year": "2025",
+      "abstract": ""
+    },
+    {
+      "title": "Strategic Thinking and Entrepreneurial Orientation as Drivers of Adaptive Resilience in Global Manufacturing SMEs: A Narrative Review of Dynamic Capabilities and Cross-Context Variations.",
+      "url": "10.12688/f1000research.178316.1",
+      "year": "2026",
+      "abstract": ""
+    },
+    {
+      "title": "A systematic literature review on the use of multicriteria decision making methods for small and medium-sized enterprises innovation assessment.",
+      "url": "10.3389/frai.2025.1605756",
+      "year": "2025",
+      "abstract": ""
+    },
+    {
+      "title": "Exploring the operational performance of Indian smes: an integrated PLS-SEM and NCA approach.",
+      "url": "10.1038/s41598-025-26806-3",
+      "year": "2025",
+      "abstract": ""
+    },
+    {
+      "title": "Analysing Lean 4.0 adoption factors towards manufacturing sustainability in SMEs: A hybrid ANN-Fuzzy ISM framework.",
+      "url": "10.1038/s41598-025-01076-1",
+      "year": "2025",
+      "abstract": ""
+    }
+  ]
+}

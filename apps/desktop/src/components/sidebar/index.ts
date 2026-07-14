@@ -1,0 +1,1 @@
+export { AcademicSidebar } from './AcademicSidebar';

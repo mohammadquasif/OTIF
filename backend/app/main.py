@@ -63,7 +63,7 @@ async def lifespan(app: FastAPI):
     providers = settings.available_providers
     logger.info(f"🤖 Available AI providers: {', '.join(providers)}")
 
-    logger.info(f"✅ OTIF ready — http://{settings.HOST}:{settings.PORT}")
+    logger.info(f"✅ OTIF ready — http://{settings.HOST}:{settings.PORT}/app/")
     logger.info("=" * 60)
 
     yield  # Application runs here
@@ -121,7 +121,7 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 
 # ── Routes ────────────────────────────────────────────────────────
-from app.api.v1 import ai, analysis, documents, health, projects, skills
+from app.api.v1 import ai, analysis, documents, health, projects, skills, writing_assistant
 from app.api.v1 import diagrams as diagrams_router
 
 app.include_router(health.router, prefix="/api/v1", tags=["Health"])
@@ -131,6 +131,7 @@ app.include_router(documents.router, prefix="/api/v1/documents", tags=["Document
 app.include_router(analysis.router, prefix="/api/v1/analysis", tags=["Analysis"])
 app.include_router(projects.router, prefix="/api/v1/projects", tags=["Projects"])
 app.include_router(diagrams_router.router, prefix="/api/v1/diagrams", tags=["Diagrams"])
+app.include_router(writing_assistant.router, prefix="/api/v1/writing-assistant", tags=["Writing Assistant"])
 
 
 @app.get("/docs", include_in_schema=False)
@@ -163,8 +164,6 @@ def _frontend_dist_dir() -> Path | None:
 
 frontend_dist = _frontend_dist_dir()
 if frontend_dist:
-    from fastapi.responses import RedirectResponse
-    
     @app.get("/app", include_in_schema=False)
     async def desktop_browser_fallback_no_slash():
         return RedirectResponse(url="/app/")
@@ -176,10 +175,19 @@ if frontend_dist:
             return FileResponse(requested)
         return FileResponse(frontend_dist / "index.html")
 
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        for icon_path in (frontend_dist / "favicon.ico", frontend_dist / "favicon.svg"):
+            if icon_path.exists():
+                return FileResponse(icon_path)
+        return RedirectResponse(url="/app/")
+
 
 # ── Root ──────────────────────────────────────────────────────────
 @app.get("/", include_in_schema=False)
 async def root():
+    if frontend_dist:
+        return RedirectResponse(url="/app/")
     return {
         "app": "OTIF — OpenThesis Integrity Fabric",
         "version": settings.APP_VERSION,

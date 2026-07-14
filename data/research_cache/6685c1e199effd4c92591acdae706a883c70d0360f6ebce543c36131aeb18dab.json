@@ -1,0 +1,37 @@
+{
+  "source_id": "arxiv",
+  "query": "# Test Paper",
+  "created_at": 1784015648.3028638,
+  "matches": [
+    {
+      "title": "This paper has been withdrawn",
+      "url": "http://arxiv.org/abs/cond-mat/0309395v2",
+      "year": "2003",
+      "abstract": "  This paper has been withdrawn"
+    },
+    {
+      "title": "A simple way to speedup Gauss Elimination",
+      "url": "http://arxiv.org/abs/1101.4081v3",
+      "year": "2011",
+      "abstract": "This article looks at a simple modification to speedup the conventional Gauss Elimination. The proposed modification speeds up the conventional Gauss Elimination by a factor of nearly 9/7 (in the asymptotic limit)."
+    },
+    {
+      "title": "Study Paper on Test Case generation for GUI Based Testing",
+      "url": "http://arxiv.org/abs/1202.4527v1",
+      "year": "2012",
+      "abstract": "With the advent of WWW and outburst in technology and software development, testing the software became a major concern. Due to the importance of the testing phase in a software development life cycle, testing has been divided into graphical user interface (GUI) based testing, logical testing, integration testing, etc.GUI Testing has become very important as it provides more sophisticated way to i"
+    },
+    {
+      "title": "Goal-Oriented Mutation Testing with Focal Methods",
+      "url": "http://arxiv.org/abs/1807.10953v2",
+      "year": "2018",
+      "abstract": "Mutation testing is the state-of-the-art technique for assessing the fault-detection capacity of a test suite. Unfortunately, mutation testing consumes enormous computing resources because it runs the whole test suite for each and every injected mutant. In this paper we explore fine-grained traceability links at method level (named focal methods), to reduce the execution time of mutation testing a"
+    },
+    {
+      "title": "Testing Autonomous Systems with Believed Equivalence Refinement",
+      "url": "http://arxiv.org/abs/2103.04578v3",
+      "year": "2021",
+      "abstract": "Continuous engineering of autonomous driving functions commonly requires deploying vehicles in road testing to obtain inputs that cause problematic decisions. Although the discovery leads to producing an improved system, it also challenges the foundation of testing using equivalence classes and the associated relative test coverage criterion. In this paper, we propose believed equivalence, where t"
+    }
+  ]
+}

@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from app.config import settings
 from app.core.secret_store import protect_secret, restrict_secret_file, unprotect_secret
 
-ProviderId = Literal["ollama", "deepseek", "gemini", "openai"]
+ProviderId = Literal["ollama", "deepseek", "gemini", "openai", "claude"]
 PrivacyMode = Literal["local_only", "selected_paragraph", "selected_chapter", "cloud_allowed"]
 
 
@@ -31,12 +31,22 @@ class ProviderOption(BaseModel):
     notes: str
 
 
+class AIBehavior(BaseModel):
+    """Controls how the AI reasons and generates text during analysis and rewrite."""
+    discipline: str = "general"          # general | stem | humanities | business | law | medicine | social_sciences | education
+    writing_style: str = "formal"        # formal | technical | argumentative | analytical | descriptive | critical
+    analysis_depth: str = "standard"     # quick | standard | deep
+    rewrite_intensity: str = "moderate"  # light | moderate | thorough
+    context_writing_enabled: bool = False
+
+
 class AISettings(BaseModel):
     privacy_mode: PrivacyMode = "local_only"
     provider: ProviderId = "ollama"
     model_by_provider: dict[str, str] = Field(default_factory=dict)
     api_keys: dict[str, str] = Field(default_factory=dict)
     ollama_base_url: str | None = None
+    behavior: AIBehavior = Field(default_factory=AIBehavior)
 
 
 class ConnectionResult(BaseModel):
@@ -71,6 +81,11 @@ MODEL_OPTIONS: dict[ProviderId, list[ModelOption]] = {
         ModelOption(id="gpt-5.4", label="GPT-5.4", use_case="strong general academic work"),
         ModelOption(id="o4-mini", label="o4-mini", use_case="reasoning-heavy checks"),
     ],
+    "claude": [
+        ModelOption(id="claude-3-5-sonnet-latest", label="Claude Sonnet", use_case="high-quality academic rewriting"),
+        ModelOption(id="claude-3-5-haiku-latest", label="Claude Haiku", use_case="fast lower-cost review"),
+        ModelOption(id="claude-3-opus-latest", label="Claude Opus", use_case="deep academic reasoning"),
+    ],
 }
 
 
@@ -101,11 +116,13 @@ def _env_defaults() -> AISettings:
             "deepseek": settings.DEEPSEEK_DEFAULT_MODEL,
             "gemini": settings.GEMINI_DEFAULT_MODEL,
             "openai": settings.OPENAI_DEFAULT_MODEL,
+            "claude": settings.CLAUDE_DEFAULT_MODEL,
         },
         api_keys={
             "deepseek": settings.DEEPSEEK_API_KEY,
             "gemini": settings.GEMINI_API_KEY,
             "openai": settings.OPENAI_API_KEY,
+            "claude": settings.CLAUDE_API_KEY,
         },
         ollama_base_url=settings.OLLAMA_BASE_URL,
     )
@@ -193,6 +210,15 @@ def provider_options() -> list[ProviderOption]:
             models=MODEL_OPTIONS["openai"],
             notes="High-quality academic review and reasoning models.",
         ),
+        ProviderOption(
+            id="claude",
+            name="Anthropic Claude",
+            mode="cloud",
+            configured=bool(api_keys.get("claude")),
+            default_model=config.model_by_provider.get("claude", settings.CLAUDE_DEFAULT_MODEL),
+            models=MODEL_OPTIONS["claude"],
+            notes="Strong long-form academic editing and review via Anthropic.",
+        ),
     ]
 
 
@@ -236,6 +262,14 @@ async def test_provider_connection(provider: ProviderId) -> ConnectionResult:
                     "https://generativelanguage.googleapis.com/v1beta/models",
                     params={"key": key},
                 )
+            elif provider == "claude":
+                response = await client.get(
+                    "https://api.anthropic.com/v1/models",
+                    headers={
+                        "x-api-key": key,
+                        "anthropic-version": "2023-06-01",
+                    },
+                )
             else:
                 response = await client.get(
                     "https://api.openai.com/v1/models",
@@ -273,5 +307,6 @@ def status_payload() -> dict:
             "gemini": "https://ai.google.dev/gemini-api/docs/models",
             "deepseek": "https://api-docs.deepseek.com/quick_start/pricing",
             "ollama": "https://github.com/ollama/ollama/blob/main/docs/api.md",
+            "claude": "https://docs.anthropic.com/en/docs/about-claude/models",
         },
     }

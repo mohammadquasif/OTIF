@@ -1,0 +1,112 @@
+{
+  "skill_id": "academic-design",
+  "name": "Academic Document Design & Formatting",
+  "category": "formatting",
+  "version": "1.0.0",
+  "description": "Applies academic design themes, color palettes, typography rules, heading styles, and professional formatting to thesis, research papers, and journal articles. Ensures consistent academic presentation across all chapters.",
+  "ethical_boundary": "Do not modify content, claims, citations, or data. Only apply formatting and design rules. Respect the author's chosen style and institution requirements.",
+  "trigger_phrases": ["apply design", "format thesis", "design theme", "academic formatting", "apply style", "format document"],
+  "rules": [
+    {
+      "rule_code": "DES-001",
+      "rule_name": "Heading Hierarchy Enforcement",
+      "rule_type": "format",
+      "severity": "high",
+      "description": "Ensure heading levels follow consistent hierarchy: H1 (chapter titles), H2 (major sections), H3 (subsections), H4 (sub-subsections). No skipped levels.",
+      "confidence": 0.95
+    },
+    {
+      "rule_code": "DES-002",
+      "rule_name": "Academic Font Consistency",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Body text should use serif fonts (Georgia, Times New Roman) at 11-12pt. Headings may use sans-serif (Arial, Helvetica). Monospace for code/technical content.",
+      "confidence": 0.90
+    },
+    {
+      "rule_code": "DES-003",
+      "rule_name": "Color Palette Application",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Apply the selected color theme consistently: accent color for headings, muted background for tables/figures, neutral for body text. Available themes: Classic Blue (#1F4E79), Emerald Academic (#0F766E), Mono Formal (#111827), Maroon Submission (#7F1D1D), Royal Purple (#5B21B6).",
+      "confidence": 0.92
+    },
+    {
+      "rule_code": "DES-004",
+      "rule_name": "Line Spacing & Margins",
+      "rule_type": "format",
+      "severity": "high",
+      "description": "Body text: 1.5 or double line spacing. Margins: 1 inch (2.54cm) all sides for thesis, 1 inch for research papers. Block quotes: indented 0.5 inch, single-spaced.",
+      "confidence": 0.88
+    },
+    {
+      "rule_code": "DES-005",
+      "rule_name": "Table & Figure Formatting",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Tables: numbered sequentially, title above, notes below. Figures: numbered sequentially, caption below. Both: centered, clear labels, consistent styling.",
+      "confidence": 0.87
+    },
+    {
+      "rule_code": "DES-006",
+      "rule_name": "Page Numbering Rules",
+      "rule_type": "format",
+      "severity": "high",
+      "description": "Front matter (TOC, LOT, LOF, Abstract): roman numerals (i, ii, iii...). Main body: arabic numerals starting from 1. Landscape pages: number placement consistent with portrait.",
+      "confidence": 0.93
+    },
+    {
+      "rule_code": "DES-007",
+      "rule_name": "Citation Style Consistency",
+      "rule_type": "format",
+      "severity": "critical",
+      "description": "All in-text citations and reference list entries must follow the chosen style (APA 7, Harvard, IEEE, UGC thesis format, etc.) consistently. No mixing of styles.",
+      "confidence": 0.96
+    },
+    {
+      "rule_code": "DES-008",
+      "rule_name": "TOC/LOT/LOF Generation",
+      "rule_type": "format",
+      "severity": "critical",
+      "description": "Auto-generate Table of Contents, List of Tables, and List of Figures with accurate page numbers. Update on every export.",
+      "confidence": 0.94
+    },
+    {
+      "rule_code": "DES-009",
+      "rule_name": "Smart Diagram Placement",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Auto-detect chapters that benefit from diagrams (methodology, framework, process descriptions). Do NOT add diagrams to Abstract, Introduction, Conclusion, or Acknowledgements. Insert diagrams near their first reference in the text.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "DES-010",
+      "rule_name": "Chapter Title Styling",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Chapter titles: bold, 16-18pt, accent color. Section headings: bold, 14pt. Subsection: bold-italic, 12pt. Consistent spacing before/after each heading level.",
+      "confidence": 0.89
+    }
+  ],
+  "word_lists": [],
+  "prompts": {
+    "design_check": {
+      "prompt_type": "design_check",
+      "template": "Review the following academic chapter for formatting consistency. Check: heading hierarchy, font usage, spacing, table/figure formatting, and citation style. Return a JSON object with 'issues' (array of formatting problems found) and 'score' (0-100 formatting quality). Do NOT modify content, only assess formatting.",
+      "model_hint": null,
+      "max_tokens": 1000,
+      "temperature": 0.1
+    }
+  },
+  "thresholds": [
+    {
+      "metric_name": "formatting_quality",
+      "excellent_min": 85,
+      "good_min": 70,
+      "fair_min": 55,
+      "poor_min": 40,
+      "critical_below": 40,
+      "target_value": 90
+    }
+  ]
+}

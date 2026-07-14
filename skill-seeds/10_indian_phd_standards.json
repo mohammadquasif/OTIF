@@ -1,0 +1,113 @@
+{
+  "skill_id": "indian-phd-standards",
+  "name": "Indian PhD Standards — UGC, AICTE, IIT Guidelines",
+  "category": "formatting",
+  "version": "1.0.0",
+  "description": "Enforces Indian doctoral thesis formatting standards per UGC Minimum Standards 2022, AICTE Doctoral Guidelines, and IIT senate norms. Covers: thesis structure, chapter requirements, word count thresholds, pre-submission seminar, plagiarism below 10%, publication requirements, and certificate/declaration pages.",
+  "ethical_boundary": "UGC mandates maximum 10% similarity (excluding bibliography/quotes). This skill helps researchers meet that standard through proper citation and paraphrasing — never through deceptive spinning or citation masking.",
+  "trigger_phrases": ["ugc thesis", "indian phd", "aicte format", "iit thesis", "phd india", "doctoral thesis india", "ugc regulation 2022"],
+  "rules": [
+    {
+      "rule_code": "IPHD-001",
+      "rule_name": "UGC Minimum Standards Thesis Structure",
+      "rule_type": "format",
+      "severity": "critical",
+      "description": "Thesis must contain: Title Page, Declaration, Certificate, Acknowledgement, Abstract, Table of Contents, List of Figures, List of Tables, List of Abbreviations, Chapters 1-6+, References/Bibliography, Appendices, List of Publications. All mandatory sections must be present.",
+      "thresholds_note": "Mandatory for UGC-compliant submission",
+      "confidence": 0.95
+    },
+    {
+      "rule_code": "IPHD-002",
+      "rule_name": "UGC Plagiarism Threshold",
+      "rule_type": "score",
+      "severity": "critical",
+      "description": "Maximum 10% similarity allowed per UGC (Promotion of Academic Integrity and Prevention of Plagiarism in Higher Educational Institutions) Regulations, 2018. Levels: 0-10% = Clear, 10-40% = Revision Required, >40% = Debarred.",
+      "thresholds_note": "0-10% = Clear, 10-40% = Resubmit, >40% = Rejected",
+      "confidence": 0.98
+    },
+    {
+      "rule_code": "IPHD-003",
+      "rule_name": "Pre-Submission Seminar Requirement",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "Check if document references a pre-submission seminar/defense. UGC requires one pre-submission seminar before final submission. Flag if missing from timeline or certificate section.",
+      "confidence": 0.75
+    },
+    {
+      "rule_code": "IPHD-004",
+      "rule_name": "Publication Requirement Check",
+      "rule_type": "detection",
+      "severity": "high",
+      "description": "UGC requires minimum 1 publication in peer-reviewed journal and 2 conference presentations. Check if resume/CV section reflects this.",
+      "confidence": 0.70
+    },
+    {
+      "rule_code": "IPHD-005",
+      "rule_name": "Researcher Declaration Statement",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Declaration must state: 'I hereby declare that the work presented in this thesis is my own original research work...' Additional statement required for AI-assisted tools used.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "IPHD-006",
+      "rule_name": "Supervisor Certificate Format",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "Certificate must attest originality, candidate's personal work, and fitness for submission. Must be signed by supervisor and head of department.",
+      "confidence": 0.85
+    },
+    {
+      "rule_code": "IPHD-007",
+      "rule_name": "AICTE Format Guidelines",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "AICTE doctoral format: Times New Roman 12pt, double spacing, 1.5 inch left margin (binding), 1 inch other margins. Chapter numbering: 1, 1.1, 1.1.1. Figures numbered chapter-wise (Fig 1.1, Fig 2.1).",
+      "confidence": 0.82
+    },
+    {
+      "rule_code": "IPHD-008",
+      "rule_name": "IIT Thesis Standards",
+      "rule_type": "format",
+      "severity": "medium",
+      "description": "IITs typically require: A4 paper, 1.5 spacing, 12pt, minimum 120 pages, separate nomenclature list, synopsis (5-10 pages) before main content, publications categorized as Journal/Conference/Book Chapter.",
+      "confidence": 0.80
+    },
+    {
+      "rule_code": "IPHD-009",
+      "rule_name": "Chapter Count Requirement",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "Indian PhD thesis typically requires 6-8 chapters: Intro, Lit Review, Methodology, Results/Analysis (1-3 chapters), Discussion, Conclusion. Flag if essential chapters are missing.",
+      "thresholds_note": "Minimum 6 chapters expected",
+      "confidence": 0.78
+    },
+    {
+      "rule_code": "IPHD-010",
+      "rule_name": "Word Count Compliance",
+      "rule_type": "score",
+      "severity": "medium",
+      "description": "UGC minimum 80,000 words for PhD thesis. Check document word count and flag if significantly below threshold.",
+      "thresholds_note": "80,000+ = Compliant, 60,000-79,999 = Borderline, <60,000 = Non-compliant",
+      "confidence": 0.88
+    }
+  ],
+  "word_lists": {
+    "banned": [
+      "copy-pasted", "spinbot", "article rewriter", "essay mill",
+      "pay for thesis", "ghost writer", "buy dissertation"
+    ],
+    "preferred": [
+      "original research", "empirical investigation", "doctoral study",
+      "scholarly contribution", "rigorous methodology", "peer-reviewed",
+      "UGC-compliant", "ethical research practice"
+    ]
+  },
+  "scoring_thresholds": {
+    "ugc_similarity_clear": { "min": 0, "max": 10, "label": "Clear for Submission" },
+    "ugc_similarity_borderline": { "min": 10, "max": 40, "label": "Revision Required" },
+    "ugc_similarity_rejected": { "min": 40, "max": 100, "label": "Debarred/Rejected" },
+    "thesis_structure_complete": { "min": 85, "max": 100, "label": "Complete" },
+    "thesis_structure_incomplete": { "min": 0, "max": 84, "label": "Missing Sections" }
+  }
+}

@@ -1,0 +1,1224 @@
+{
+  "analysis_mode": "local_preflight",
+  "coverage": {
+    "local_document_only": true,
+    "open_research_sources_checked": [
+      "arxiv",
+      "crossref",
+      "europe_pmc",
+      "pubmed",
+      "datacite",
+      "eric",
+      "osf_preprints",
+      "zenodo",
+      "doaj",
+      "base"
+    ],
+    "local_corpus_checked": []
+  },
+  "limitations": [
+    "This preflight does not check against all research papers.",
+    "Similarity and originality require configured local corpora or open research connectors.",
+    "Scores are derived only from the uploaded document text and loaded local skill rules."
+  ],
+  "metrics": {
+    "word_count": 70,
+    "sentence_count": 9,
+    "unique_word_ratio": 0.771,
+    "avg_sentence_length": 7.8,
+    "citation_coverage": 0.0,
+    "citation_quality": 10.0,
+    "citation_sentence_count": 0,
+    "claim_sentence_count": 3,
+    "doi_count": 0,
+    "url_count": 0,
+    "references_present": true,
+    "paragraph_count": 0,
+    "near_duplicate_pairs": 0,
+    "internal_duplication_risk": 0,
+    "burstiness": 50.3,
+    "passive_voice_ratio": 0.0,
+    "template_opener_count": 0,
+    "researcher_voice_markers": 1,
+    "long_quote_words": 0,
+    "humanization_score": 93.5,
+    "ai_writing_risk": 6.5,
+    "originality_evidence_matrix": 0,
+    "originality_dimensions": {
+      "literature_gap": 0,
+      "applied_integration": 0,
+      "artefact_contribution": 0,
+      "methodological_boundary": 0,
+      "practical_implication": 0
+    },
+    "hedging_count": 0,
+    "hedging_density_per_1000": 0.0,
+    "hedging_risk": "over_assertive",
+    "rq_count": 0,
+    "rq_traceback_score": null,
+    "unanswered_rqs": [],
+    "norm_issues": [],
+    "norm_valid": true,
+    "is_imrad": true,
+    "missing_sections": [
+      "discussion"
+    ]
+  },
+  "findings": [],
+  "scores": {
+    "plagiarism_risk": 22.0,
+    "originality_score": 33.9,
+    "originality_evidence_matrix": 0,
+    "citation_quality": 10.0,
+    "humanization_score": 93.5,
+    "ai_writing_risk": 6.5,
+    "ai_pattern_risk": 6.5,
+    "phrase_quality": 93.5,
+    "citation_signal": 10.0,
+    "structure_signal": 75.0,
+    "hedging_risk": "over_assertive",
+    "rq_traceback_score": null,
+    "overall_preflight": 64.0
+  },
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Abstract",
+      "metrics": {
+        "word_count": 12,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 12.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-2",
+      "title": "Introduction",
+      "metrics": {
+        "word_count": 7,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 7.0,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-3",
+      "title": "Methodology",
+      "metrics": {
+        "word_count": 11,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 11.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 1,
+        "long_quote_words": 0,
+        "humanization_score": 89.5,
+        "ai_writing_risk": 10.5,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 89.5,
+        "ai_writing_risk": 10.5,
+        "ai_pattern_risk": 10.5,
+        "phrase_quality": 89.5,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.6
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-4",
+      "title": "Results",
+      "metrics": {
+        "word_count": 9,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 9.0,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-5",
+      "title": "Conclusion",
+      "metrics": {
+        "word_count": 6,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 6.0,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-6",
+      "title": "References",
+      "metrics": {
+        "word_count": 17,
+        "sentence_count": 4,
+        "unique_word_ratio": 0.824,
+        "avg_sentence_length": 4.2,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 50.9,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 92.1,
+        "ai_writing_risk": 7.9,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 29.1,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 92.1,
+        "ai_writing_risk": 7.9,
+        "ai_pattern_risk": 7.9,
+        "phrase_quality": 92.1,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 55.2
+      },
+      "findings": []
+    }
+  ],
+  "research_sources": {
+    "internet_checked": true,
+    "sources": [
+      {
+        "id": "arxiv",
+        "name": "arXiv",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "This paper has been withdrawn",
+            "url": "http://arxiv.org/abs/cond-mat/0309395v2",
+            "year": "2003",
+            "abstract": "  This paper has been withdrawn"
+          },
+          {
+            "title": "A simple way to speedup Gauss Elimination",
+            "url": "http://arxiv.org/abs/1101.4081v3",
+            "year": "2011",
+            "abstract": "This article looks at a simple modification to speedup the conventional Gauss Elimination. The proposed modification speeds up the conventional Gauss Elimination by a factor of nearly 9/7 (in the asymptotic limit)."
+          },
+          {
+            "title": "Study Paper on Test Case generation for GUI Based Testing",
+            "url": "http://arxiv.org/abs/1202.4527v1",
+            "year": "2012",
+            "abstract": "With the advent of WWW and outburst in technology and software development, testing the software became a major concern. Due to the importance of the testing phase in a software development life cycle, testing has been divided into graphical user interface (GUI) based testing, logical testing, integration testing, etc.GUI Testing has become very important as it provides more sophisticated way to i"
+          },
+          {
+            "title": "Goal-Oriented Mutation Testing with Focal Methods",
+            "url": "http://arxiv.org/abs/1807.10953v2",
+            "year": "2018",
+            "abstract": "Mutation testing is the state-of-the-art technique for assessing the fault-detection capacity of a test suite. Unfortunately, mutation testing consumes enormous computing resources because it runs the whole test suite for each and every injected mutant. In this paper we explore fine-grained traceability links at method level (named focal methods), to reduce the execution time of mutation testing a"
+          },
+          {
+            "title": "Testing Autonomous Systems with Believed Equivalence Refinement",
+            "url": "http://arxiv.org/abs/2103.04578v3",
+            "year": "2021",
+            "abstract": "Continuous engineering of autonomous driving functions commonly requires deploying vehicles in road testing to obtain inputs that cause problematic decisions. Although the discovery leads to producing an improved system, it also challenges the foundation of testing using equivalence classes and the associated relative test coverage criterion. In this paper, we propose believed equivalence, where t"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://export.arxiv.org/api/query",
+        "coverage": "preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://info.arxiv.org/help/api/index.html",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "crossref",
+        "name": "Crossref",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "This is a test paper This is a test paper This is a test paper",
+            "url": "https://doi.org/10.55277/rhj.zgripewe.1",
+            "year": 2025,
+            "abstract": ""
+          },
+          {
+            "title": "This is a test paper This is a test paper This is a test paper",
+            "url": "https://doi.org/10.55277/researchhub.1avlpkil.1",
+            "year": 2025,
+            "abstract": ""
+          },
+          {
+            "title": "TEST PAPER TEST PAPER TEST",
+            "url": "https://doi.org/10.1364/ol.571076",
+            "year": 2025,
+            "abstract": ""
+          },
+          {
+            "title": "Test Method for Test for Stretch of Paper and Paper Products Under Tension",
+            "url": "https://doi.org/10.1520/d0987",
+            "year": null,
+            "abstract": ""
+          },
+          {
+            "title": "Test Conference Paper",
+            "url": "https://doi.org/10.5555/testconfpaperwebdeposit",
+            "year": 2019,
+            "abstract": ""
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.crossref.org/works",
+        "coverage": "DOI metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "europe_pmc",
+        "name": "Europe PMC",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "This is a test paper, please ignore it.",
+            "url": "10.20944/preprints202409.1602.v1",
+            "year": "2024",
+            "abstract": ""
+          },
+          {
+            "title": "Fast visualization of multiple trace antibiotics by modified Eu/Tb MOF test paper.",
+            "url": "10.1016/j.talanta.2025.128649",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "A DIE responsive fluorescent probe for phthalate and its application in test paper and hydrogel detection platforms.",
+            "url": "10.1016/j.saa.2025.126403",
+            "year": "2025",
+            "abstract": ""
+          },
+          {
+            "title": "Credentials of chromone based probe as colorimetric sensor for the detection of Cu&lt;sup&gt;2+&lt;/sup&gt; ion: design of test paper kit and potential anticancer activity.",
+            "url": "10.1016/j.saa.2025.126638",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "A smartphone-assisted test paper fluorescence sensing platform for visual detection of \u03b1-Ketoglutaric acid based on Metal-Organic frameworks.",
+            "url": "10.1016/j.saa.2024.125222",
+            "year": "2025",
+            "abstract": ""
+          }
+        ],
+        "cached": false,
+        "base_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+        "coverage": "biomedical papers",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "pubmed",
+        "name": "PubMed / NCBI",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Medium-adaptive wideband near-field antenna for microwave detection of internal cavities in plant stems.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443282/",
+            "year": "2026",
+            "abstract": "Scientific reports"
+          },
+          {
+            "title": "ANFIS-based prediction and optimization of tribological performance in graphene-boron carbide reinforced C355 aluminium alloy hybrid nanocomposites.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443256/",
+            "year": "2026",
+            "abstract": "Scientific reports"
+          },
+          {
+            "title": "Adaptive fractional order model predictive control of boost converters with grey wolf optimization tuning and recursive least squares identification.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443243/",
+            "year": "2026",
+            "abstract": "Scientific reports"
+          },
+          {
+            "title": "Treatment-specific CT Radiomics Models To Predict Response To Neoadjuvant Therapy And Explore Individualized Treatment Selection In Gastric Cancer.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42443011/",
+            "year": "2026",
+            "abstract": "Academic radiology"
+          },
+          {
+            "title": "Microbiota-Circadian Desynchrony as a Mechanistic Interface for Xenobiotic-Induced Systemic Metabolic Fatigue.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/42442631/",
+            "year": "2026",
+            "abstract": "Chemico-biological interactions"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+        "coverage": "biomedical citations",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "datacite",
+        "name": "DataCite",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "CA1-simplification: Code, run logs and figures for \"Screens Reject, Only Mechanism Confirms\" (v2)",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21265445",
+            "year": 2026,
+            "abstract": "The scientific conclusion is unchanged and reproduced to the last digit on two machines:\n\nT_cycle = 16.8 + 0.760 \u00b7 tau_GABA    (ms)\n\nslope +0.760 \u00b1 0.113 | R\u00b2 = 0.884 | p = 0.0005\n\n\nThe 320-neuron network has emergent PING gamma. The 80-neuron network does not (p = 0.75). Network size, not reduction, is the switch. Criterion fixed in advance, seeds never previously used.\n\nWhat changed is that the "
+          },
+          {
+            "title": "CA1-simplification: Code, run logs and figures for \"Screens Reject, Only Mechanism Confirms\" (v2)",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.21351830",
+            "year": 2026,
+            "abstract": "The scientific conclusion is unchanged and reproduced to the last digit on two machines:\n\nT_cycle = 16.8 + 0.760 \u00b7 tau_GABA    (ms)\n\nslope +0.760 \u00b1 0.113 | R\u00b2 = 0.884 | p = 0.0005\n\n\nThe 320-neuron network has emergent PING gamma. The 80-neuron network does not (p = 0.75). Network size, not reduction, is the switch. Criterion fixed in advance, seeds never previously used.\n\nWhat changed is that the "
+          },
+          {
+            "title": "Capital Inflows, Current Accounts and Investment Cycle in Italy: 1861-1913",
+            "url": "https://iris.unimore.it/handle/11380/1190582",
+            "year": 2014,
+            "abstract": "By relying on a new dataset, this paper presents an econometric strategy to test the Fenoaltea?s thesis with regard to both the genesis of current account fluctuations and of the investment cycle. We perform a Granger causality test that shows that the persistent current account deficits in the years from unification from WW1 were generated by variations in capital inflows, as pointed by Fenoaltea"
+          },
+          {
+            "title": "Lagged diffusivity method for the solution of nonlinear diffusion convection problems with finite differences",
+            "url": "https://iris.unimore.it/handle/11380/741064",
+            "year": 2011,
+            "abstract": "This paper concerns with the analysis of an iterative procedure for the solution of a nonlinear nonstationary diffusion convection equation in a two dimensional bounded domain supplemented by Dirichlet boundary conditions. This procedure, denoted Lagged Diffusivity method, computes the solution by lagging the diffusion term. A model problem is considered and a finite difference discretization for "
+          },
+          {
+            "title": "Goodness of Fit Test For Wrapped Normal Distribution",
+            "url": "https://aisberg.unibg.it//handle/10446/146891",
+            "year": 2019,
+            "abstract": "One of the main difficulties in any statistical method is whether the data could have actually been drawn from that fitted distribution or not. To extend in circular data, it is necessary to consider nature feature of this data. The Wrapped Normal and Von Mises are two most important and famous distributions in circular. Based on the auther?s knowledge, there is no Goodness-of-Fit test for Wrapped"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.datacite.org/dois",
+        "coverage": "datasets and DOI records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://support.datacite.org/docs/api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "eric",
+        "name": "ERIC",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "The Examination of Online and Paper-Pencil Test Scores of Students Engaged in Online Learning",
+            "url": "https://eric.ed.gov/?id=EJ1410082",
+            "year": 2023,
+            "abstract": "In this study, online test scores and paper-pencil test scores of students studying through online learning were examined. Causal-comparative research was used to determine the distribution of students' test scores and to examine the relationship between them. The participants of the research are freshman students studying in 12 faculties and 8 colleges of a state university in T\u00fcrkiye. The distri"
+          },
+          {
+            "title": "Evaluating Computer-Based and Paper-Based Versions of an English-Language Listening Test",
+            "url": "https://eric.ed.gov/?id=EJ843654",
+            "year": 2006,
+            "abstract": "This paper describes an English language listening test intended as computer-based testing material for secondary school students in Hong Kong, where considerable attention is being invested in online and computer-based testing. As well as providing a school-based testing facility, the study aims to contribute to the knowledge base regarding the efficacy and reliability of computer-based testing. "
+          },
+          {
+            "title": "A New Approach to Test the Useability of a Science Question Paper in Terms of Time Allotment.",
+            "url": "https://eric.ed.gov/?id=EJ588563",
+            "year": 1999,
+            "abstract": "Finds that the time required to attempt all the test items of each question paper in a four-paper sample was inversely proportional to the percentage of students who attempted all the test items of that paper. Extrapolates results to give guidelines for determining the feasibility of newly-developed exam papers. (WRM)"
+          },
+          {
+            "title": "Are Online and Paper Tests Comparable? Evidence from Statewide K-12 Tests",
+            "url": "https://eric.ed.gov/?id=ED647304",
+            "year": 2024,
+            "abstract": "We investigate two research questions using a recent statewide transition from paper to computer-based testing: first, the extent to which test mode effects found in prior studies can be eliminated in large-scale administration; and second, the degree to which online and paper assessments offer different information about underlying student ability. In contrast to the first test transition in Mass"
+          },
+          {
+            "title": "Are Online and Paper Tests Comparable? Evidence from Statewide K-12 Tests",
+            "url": "https://eric.ed.gov/?id=EJ1413437",
+            "year": 2024,
+            "abstract": "We investigate two research questions using a recent statewide transition from paper to computer-based testing: first, the extent to which test mode effects found in prior studies can be eliminated; and second, the degree to which online and paper assessments offer different information about underlying student ability. We first find very small mode effects for a more recent transition in Massachu"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://api.ies.ed.gov/eric/",
+        "coverage": "education research",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://eric.ed.gov/?api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "osf_preprints",
+        "name": "OSF Preprints",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.osf.io/v2/preprints/",
+        "coverage": "open preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.osf.io/v2/docs/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "zenodo",
+        "name": "Zenodo",
+        "status": "checked",
+        "message": "5 public result(s)",
+        "matches": [
+          {
+            "title": "Development of New Accelerated Aging Test for Comparison of the Quality of Different Insulating Papers Based on Cellulose",
+            "url": null,
+            "year": "2023",
+            "abstract": "<p>The aim of this study is to propose a test method for the determination of the quality of</p><p>transformer paper insulation. For this purpose, the oil/cellulose insulation systems were exposed to</p><p>various accelerated aging tests. The results of the aging experiments of normal Kraft and thermally</p><p>upgraded papers, two different types of transformer oil (mineral and natural ester), and"
+          },
+          {
+            "title": "u10313335/first-binder: Test v1",
+            "url": null,
+            "year": "2019",
+            "abstract": "<p>No description provided.</p>"
+          },
+          {
+            "title": "GNER",
+            "url": null,
+            "year": "2021",
+            "abstract": "<p>Chinese named entity recognition in the geoscience domain based on BERT</p>"
+          },
+          {
+            "title": "Test paper",
+            "url": null,
+            "year": "2022",
+            "abstract": "<p>In this paper</p>"
+          },
+          {
+            "title": "Geologic ontology",
+            "url": null,
+            "year": "2021",
+            "abstract": "<p>Geologic ontology</p>"
+          }
+        ],
+        "cached": false,
+        "base_url": "https://zenodo.org/api/records",
+        "coverage": "research outputs and datasets",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "semantic_scholar",
+        "name": "Semantic Scholar",
+        "status": "unavailable",
+        "message": "Client error '429 ' for url 'https://api.semanticscholar.org/graph/v1/paper/search?query=%23+Test+Paper&limit=5&fields=title%2Curl%2Cyear%2Cabstract'\nFor more information check: https://developer.mozilla.org/en-US/docs/W",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.semanticscholar.org/graph/v1/paper/search",
+        "coverage": "literature graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.semanticscholar.org/api-docs/graph",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "openalex",
+        "name": "OpenAlex",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.openalex.org/works",
+        "coverage": "global scholarly graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://developers.openalex.org/",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "doaj",
+        "name": "DOAJ",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://doaj.org/api/search/articles",
+        "coverage": "open access journals",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "core",
+        "name": "CORE",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.core.ac.uk/v3/search/works",
+        "coverage": "open access repository records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "base",
+        "name": "BASE",
+        "status": "checked",
+        "message": "0 public result(s)",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi",
+        "coverage": "repository metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      }
+    ],
+    "queries": [
+      "# Test Paper",
+      "digital transformation psychology abstract indian",
+      "abstract indian introduction important business"
+    ],
+    "ai_detection": {
+      "ai_detection_score": 0,
+      "confidence": "low",
+      "signals": {},
+      "verdict": "Insufficient text for reliable AI detection (need > 80 words).",
+      "turnitin_ai_equivalent": "N/A"
+    },
+    "turnitin_style_similarity": null,
+    "connectivity": {
+      "internet_reachable": true,
+      "reachable_count": 6,
+      "checked_count": 6,
+      "sources": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Crossref responded with HTTP 200"
+        },
+        {
+          "id": "arxiv",
+          "name": "arXiv",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "arXiv responded with HTTP 200"
+        },
+        {
+          "id": "datacite",
+          "name": "DataCite",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "DataCite responded with HTTP 200"
+        },
+        {
+          "id": "europe_pmc",
+          "name": "Europe PMC",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Europe PMC responded with HTTP 200"
+        },
+        {
+          "id": "semantic_scholar",
+          "name": "Semantic Scholar",
+          "status": "reachable",
+          "status_code": 429,
+          "message": "Semantic Scholar responded with HTTP 429"
+        },
+        {
+          "id": "openalex",
+          "name": "OpenAlex",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "OpenAlex responded with HTTP 200"
+        }
+      ]
+    }
+  },
+  "formatting_plan": {
+    "target": "APA 7",
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "export_formats": [
+      "docx",
+      "pdf"
+    ],
+    "design_themes": [
+      "classic_blue",
+      "mono_formal",
+      "emerald_academic",
+      "maroon_submission"
+    ]
+  },
+  "improvement_plan": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 33.9; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.\n\nReal citation suggestions from open research sources:\n  \u2022 This paper has been withdrawn (2003) \u2014 via arXiv\n  \u2022 A simple way to speedup Gauss Elimination (2011) \u2014 via arXiv\n  \u2022 Study Paper on Test Case generation for GUI Based Testing (2012) \u2014 via arXiv\n  \u2022 This is a test paper This is a test paper This is a test paper (2025) \u2014 via Crossref\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works.",
+      "evidence": "Citation quality is 10.0; citation coverage is 0.0% across claim-like sentences. 19 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": [
+        {
+          "title": "This paper has been withdrawn",
+          "year": "2003",
+          "url": "http://arxiv.org/abs/cond-mat/0309395v2",
+          "source": "arXiv"
+        },
+        {
+          "title": "A simple way to speedup Gauss Elimination",
+          "year": "2011",
+          "url": "http://arxiv.org/abs/1101.4081v3",
+          "source": "arXiv"
+        },
+        {
+          "title": "Study Paper on Test Case generation for GUI Based Testing",
+          "year": "2012",
+          "url": "http://arxiv.org/abs/1202.4527v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "This is a test paper This is a test paper This is a test paper",
+          "year": "2025",
+          "url": "https://doi.org/10.55277/rhj.zgripewe.1",
+          "source": "Crossref"
+        },
+        {
+          "title": "TEST PAPER TEST PAPER TEST",
+          "year": "2025",
+          "url": "https://doi.org/10.1364/ol.571076",
+          "source": "Crossref"
+        },
+        {
+          "title": "This is a test paper, please ignore it.",
+          "year": "2024",
+          "url": "10.20944/preprints202409.1602.v1",
+          "source": "Europe PMC"
+        }
+      ]
+    },
+    {
+      "id": "chapter-1-improvement",
+      "title": "Improve Abstract (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Abstract scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-1",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-2-improvement",
+      "title": "Improve Introduction (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Introduction scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-2",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-3-improvement",
+      "title": "Improve Methodology (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Methodology scores: AI risk 10.5, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-3",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-4-improvement",
+      "title": "Improve Results (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Results scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-4",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-5-improvement",
+      "title": "Improve Conclusion (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Conclusion scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-5",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-6-improvement",
+      "title": "Improve References (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] References scores: AI risk 7.9, originality 29.1, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-6",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "diagram-opportunities",
+      "title": "Identify and draft required diagrams",
+      "priority": "medium",
+      "action": "After approval, detect methodology/process/model sections and draft academic diagrams only where they clarify the argument.",
+      "evidence": "Diagram generation is optional and requires separate approval in the rewrite options.",
+      "requires_ai": true
+    },
+    {
+      "id": "target-format",
+      "title": "Apply APA 7 checks",
+      "priority": "medium",
+      "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+      "evidence": "Target format selected: APA 7.",
+      "requires_ai": false
+    },
+    {
+      "id": "front-matter-integrity",
+      "title": "Maintain TOC, list of tables, and list of figures",
+      "priority": "medium",
+      "action": "Preserve heading hierarchy, table captions, figure captions, page-aware front matter, and export-ready DOCX/PDF structure.",
+      "evidence": "Required for APA 7 output and final submission polish.",
+      "requires_ai": false
+    }
+  ],
+  "integrity_report": {
+    "title": "OTIF Academic Integrity Evidence Report",
+    "doc_type": "research_paper",
+    "target_format": "APA 7",
+    "grade": "needs_integrity_review",
+    "scope": {
+      "local_document_analysis": true,
+      "open_research_sources_checked": [
+        "arXiv",
+        "Crossref",
+        "Europe PMC",
+        "PubMed / NCBI",
+        "DataCite",
+        "ERIC",
+        "OSF Preprints",
+        "Zenodo",
+        "DOAJ",
+        "BASE"
+      ],
+      "full_web_or_private_corpus_checked": false,
+      "ai_writing_score_is_risk_signal": true
+    },
+    "headline": {
+      "plagiarism_risk": 22.0,
+      "originality_score": 33.9,
+      "citation_quality": 10.0,
+      "humanization_score": 93.5,
+      "ai_writing_risk": 6.5
+    },
+    "evidence_summary": {
+      "citation_coverage": 0.0,
+      "near_duplicate_pairs": 0,
+      "open_source_matches": 35,
+      "possible_similarity_risk_matches": 0,
+      "researcher_voice_markers": 1,
+      "template_opener_count": 0,
+      "rq_traceback_score": null
+    },
+    "top_source_evidence": [
+      {
+        "title": "This paper has been withdrawn",
+        "url": "http://arxiv.org/abs/cond-mat/0309395v2",
+        "year": "2003",
+        "abstract": "  This paper has been withdrawn"
+      },
+      {
+        "title": "A simple way to speedup Gauss Elimination",
+        "url": "http://arxiv.org/abs/1101.4081v3",
+        "year": "2011",
+        "abstract": "This article looks at a simple modification to speedup the conventional Gauss Elimination. The proposed modification speeds up the conventional Gauss Elimination by a factor of nearly 9/7 (in the asymptotic limit)."
+      },
+      {
+        "title": "Study Paper on Test Case generation for GUI Based Testing",
+        "url": "http://arxiv.org/abs/1202.4527v1",
+        "year": "2012",
+        "abstract": "With the advent of WWW and outburst in technology and software development, testing the software became a major concern. Due to the importance of the testing phase in a software development life cycle, testing has been divided into graphical user interface (GUI) based testing, logical testing, integration testing, etc.GUI Testing has become very important as it provides more sophisticated way to i"
+      },
+      {
+        "title": "Goal-Oriented Mutation Testing with Focal Methods",
+        "url": "http://arxiv.org/abs/1807.10953v2",
+        "year": "2018",
+        "abstract": "Mutation testing is the state-of-the-art technique for assessing the fault-detection capacity of a test suite. Unfortunately, mutation testing consumes enormous computing resources because it runs the whole test suite for each and every injected mutant. In this paper we explore fine-grained traceability links at method level (named focal methods), to reduce the execution time of mutation testing a"
+      },
+      {
+        "title": "Testing Autonomous Systems with Believed Equivalence Refinement",
+        "url": "http://arxiv.org/abs/2103.04578v3",
+        "year": "2021",
+        "abstract": "Continuous engineering of autonomous driving functions commonly requires deploying vehicles in road testing to obtain inputs that cause problematic decisions. Although the discovery leads to producing an improved system, it also challenges the foundation of testing using equivalence classes and the associated relative test coverage criterion. In this paper, we propose believed equivalence, where t"
+      },
+      {
+        "title": "This is a test paper This is a test paper This is a test paper",
+        "url": "https://doi.org/10.55277/rhj.zgripewe.1",
+        "year": 2025,
+        "abstract": ""
+      },
+      {
+        "title": "This is a test paper This is a test paper This is a test paper",
+        "url": "https://doi.org/10.55277/researchhub.1avlpkil.1",
+        "year": 2025,
+        "abstract": ""
+      },
+      {
+        "title": "TEST PAPER TEST PAPER TEST",
+        "url": "https://doi.org/10.1364/ol.571076",
+        "year": 2025,
+        "abstract": ""
+      }
+    ],
+    "recommended_next_actions": [
+      "Strengthen originality and contribution",
+      "Strengthen citation signal",
+      "Improve Abstract (Pages 1\u201313)",
+      "Improve Introduction (Pages 1\u201313)",
+      "Improve Methodology (Pages 1\u201313)",
+      "Improve Results (Pages 1\u201313)"
+    ],
+    "limitations": [
+      "This preflight does not check against all research papers.",
+      "Similarity and originality require configured local corpora or open research connectors.",
+      "Scores are derived only from the uploaded document text and loaded local skill rules.",
+      "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+      "AI-writing risk is a writing-pattern signal, not proof of authorship."
+    ]
+  }
+}

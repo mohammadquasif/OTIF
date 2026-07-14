@@ -67,6 +67,9 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str = ""
     GEMINI_DEFAULT_MODEL: str = "gemini-3-pro"
 
+    CLAUDE_API_KEY: str = ""
+    CLAUDE_DEFAULT_MODEL: str = "claude-3-5-sonnet-latest"
+
     # ── Research APIs ─────────────────────────────────────────
     OPENALEX_EMAIL: str = ""
     OPENALEX_API_KEY: str = ""
@@ -133,6 +136,10 @@ class Settings(BaseSettings):
         return bool(self.GEMINI_API_KEY)
 
     @property
+    def has_claude(self) -> bool:
+        return bool(self.CLAUDE_API_KEY)
+
+    @property
     def available_providers(self) -> list[str]:
         providers = ["ollama"]  # Always available
         if self.has_deepseek:
@@ -141,6 +148,8 @@ class Settings(BaseSettings):
             providers.append("openai")
         if self.has_gemini:
             providers.append("gemini")
+        if self.has_claude:
+            providers.append("claude")
         return providers
 
 

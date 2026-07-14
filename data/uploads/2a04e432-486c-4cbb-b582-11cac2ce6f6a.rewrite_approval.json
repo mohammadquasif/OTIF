@@ -1,0 +1,50 @@
+{
+  "doc_id": "2a04e432-486c-4cbb-b582-11cac2ce6f6a",
+  "doc_type": "research_paper",
+  "norm": "apa7",
+  "approved_item_ids": [
+    "originality-claim-strength",
+    "citation-strength"
+  ],
+  "approved_items": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 46.2; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.",
+      "evidence": "Citation quality is 8.0; citation coverage is 11.1% across claim-like sentences. 0 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": []
+    }
+  ],
+  "active_provider": "ollama",
+  "active_model": "qwen2.5:1.5b",
+  "privacy_mode": "local_only",
+  "document_actions": {
+    "draw_diagrams": false,
+    "diagram_style": "academic",
+    "design_theme": "mono_formal",
+    "design_accent_hex": null,
+    "output_formats": [
+      "docx",
+      "pdf"
+    ],
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "target_format": "APA 7"
+  },
+  "rewrite_status": "approval_recorded_ai_unavailable",
+  "rewrite_preview": null,
+  "rewrite_note": "Approval saved, but rewrite engine unavailable: ",
+  "diff": null,
+  "next_step": "AI rewrite is allowed only for these approved items and must follow the active provider and privacy mode settings."
+}

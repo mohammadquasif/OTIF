@@ -1,0 +1,37 @@
+{
+  "source_id": "pubmed",
+  "query": "Abstract",
+  "created_at": 1784015554.6311278,
+  "matches": [
+    {
+      "title": "Identifying multiple drivers of stratified deformation in soft deltaic deposits using integrated geosensing.",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443327/",
+      "year": "2026",
+      "abstract": "Scientific reports"
+    },
+    {
+      "title": "[Application and insights of multimodal imaging in acupuncture treatment for female stress urinary incontinence].",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443094/",
+      "year": "2026",
+      "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+    },
+    {
+      "title": "[Different moxibustion therapies for primary dysmenorrhea: a network Meta-analysis].",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443093/",
+      "year": "2026",
+      "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+    },
+    {
+      "title": "[Discussion on diseases of six fu organs and acupoint indications in Huangdi Neijing].",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443092/",
+      "year": "2026",
+      "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+    },
+    {
+      "title": "[Discussion on \"better to lose the acupoint than to lose the meridian\"].",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/42443091/",
+      "year": "2026",
+      "abstract": "Zhongguo zhen jiu = Chinese acupuncture & moxibustion"
+    }
+  ]
+}

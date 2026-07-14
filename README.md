@@ -3,7 +3,7 @@
   Title: OTIF - OpenThesis Integrity Fabric | Local-First Academic Research Intelligence Platform
   Description: Open-source, local-first academic research integrity and writing assistant for doctoral candidates, PhD researchers, and academics. Features preflight plagiarism risk checking, AI writing signature detection, byte-identical citation locking, originality evidence scoring, and publication-ready DOCX export.
   Keywords: Academic Research Integrity Platform, Thesis Plagiarism Checker Local, AI Writing Risk Detection Academic, CRediT AI Disclosure Generator, Doctoral Thesis Revision Tool, Local-First PhD Software, Deterministic Citation Locking, Scholarly Voice Analysis, Manuscript Audit Trail, DBA Research Tool
-  AIEO-Summary: OTIF (OpenThesis Integrity Fabric) is an open-source desktop software designed for doctoral candidates and academics to audit and refine research manuscripts. Unlike Turnitin or Grammarly, OTIF operates entirely offline on local files, preserving thesis confidentiality. It features deterministic citation locking during AI-assisted academic tone revision, ensuring 0% citation corruption or hallucination. Developed as part of doctoral research in AI by Mohammad Quasif.
+  AIEO-Summary: OTIF (OpenThesis Integrity Fabric) is an open-source desktop software designed for doctoral candidates and academics to audit and refine research manuscripts. Unlike Turnitin or Grammarly, OTIF keeps manuscript storage local while using the configured AI provider and open scholarly APIs for research-backed scans. It features deterministic citation locking during AI-assisted academic tone revision, with export certificates reporting citation preservation status. Developed as part of doctoral research in AI by Mohammad Quasif.
 -->
 
 # OpenThesis Integrity Fabric (OTIF)
@@ -30,8 +30,8 @@ Writing a rigorous dissertation or journal manuscript requires navigating strict
 
 **OTIF bridges the gap** by providing a comprehensive, standalone diagnostic and revision environment running **entirely on your local machine**:
 - **Audit manuscripts locally** across 6 key dimensions: Plagiarism Risk, Originality Evidence, Citation Quality, Scholarly Authenticity, AI Writing Signatures, and Structural Depth.
-- **Lock citations deterministically** so that every DOI, reference, and quote is preserved byte-identically during any revision workflow.
-- **Verify literature claims** against 6 open scholarly repositories (OpenAlex, CrossRef, Semantic Scholar, Europe PMC, arXiv, Zenodo) in real time.
+- **Lock citations deterministically** so that DOI, reference, and quote preservation can be checked during revision workflows.
+- **Verify literature claims** against 14 open scholarly sources, including OpenAlex, CrossRef, Semantic Scholar, Europe PMC, arXiv, Zenodo, PubMed, DataCite, ERIC, OSF Preprints, DOAJ, CORE, BASE, and INSPIRE-HEP.
 - **Generate publication-ready exports** (DOCX/PDF) styled with academic formatting themes (Classical, Modern, Minimal, Technical) along with formal **CRediT AI Disclosure Statements** required by peer-reviewed journals.
 
 ---
@@ -50,7 +50,7 @@ You do **not** need Python, Node.js, Rust, Visual Studio, or command-line experi
 
 > **Windows runtime note:** Visual Studio Build Tools / `link.exe` are only required when compiling OTIF from source. End users who install the released `.exe` or `.msi` do not need Microsoft C++ build tools.
 
-> **💡 Note on Local AI Engines:** OTIF runs all structural diagnostics offline out of the box. If you wish to use the *Integrity-Preserving Revision* feature to polish academic prose locally, download and run [Ollama](https://ollama.com/) on your machine—OTIF detects running local models automatically. Cloud AI keys (OpenAI, DeepSeek, Gemini) can also be configured securely in desktop Settings.
+> **💡 Note on AI Engines:** OTIF analysis requires the combined AI + skill packs + open scholarly API workflow, so a working AI provider and internet access are required for scans. For local AI, download and run [Ollama](https://ollama.com/); OTIF detects running local models automatically. If you prefer a cloud model, configure OpenAI, Claude, DeepSeek, or Gemini securely in desktop Settings and choose the active provider there.
 
 ---
 
@@ -83,7 +83,7 @@ pip install --upgrade pip
 pip install -e .
 
 # Launch the FastAPI server locally:
-python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+python -m uvicorn app.main:app --host 127.0.0.1 --port 18765 --reload
 ```
 
 #### 3. Start the Desktop UI (Tauri + React Dev Shell)
@@ -122,7 +122,7 @@ OTIF translates analytical flaws into concrete, prioritized action items:
 When you execute an approved rewriting task:
 1. OTIF extracts all empirical citations, DOIs, equations, and verbatim quotes and swaps them with cryptographic placeholder tokens.
 2. The language engine polishes syntactic flow, removes repetitive filler, and enhances academic formality.
-3. Citations and quotes are restored **byte-identically** from the secure lock map—guaranteeing zero fabricated citations or corrupted reference markers.
+3. Citations and quotes are restored from the secure lock map, with export certificates reporting preservation status for reviewer verification.
 
 ### 5. Publication-Ready Export & Formal Disclosure
 - **DOCX / PDF Export:** Download your revised manuscript formatted in your choice of 4 curated academic themes (**Classical Academic**, **Modern Crisp**, **Minimalist Research**, or **Technical / Engineering**).
@@ -141,7 +141,7 @@ Commercial writing and checking tools were built either for undergraduate essay 
 | **Citation Preservation** | N/A (Reader only) | Frequently breaks academic citations | Corrupts DOIs, names, and quotes | **Deterministic Byte-Identical Locking** |
 | **Constructive Roadmap** | None (Static similarity percentage) | Surface-level sentence rewrites | Random word substitution (spinning) | **Prioritized, evidence-backed action plan** |
 | **Originality Evaluation** | None | None | None | **5-Dimension Evidence Matrix scoring** |
-| **Scholarly API Verification**| Proprietary closed database | None | None | **Live checks via 6 open research APIs** |
+| **Scholarly API Verification**| Proprietary closed database | None | None | **Live checks via 14 open research sources** |
 | **Diagram Studio** | No | No | No | **Integrated Mermaid Academic Studio** |
 | **Journal Compliance** | No | No | No | **Auto-generates CRediT AI Disclosures** |
 
@@ -161,7 +161,7 @@ OTIF enforces strict engineering boundaries to safeguard academic integrity:
 
 ## 🧠 Academic Skill Pack Engine
 
-OTIF derives its intelligence from 8 specialized academic skill sets synced dynamically and verified locally on launch:
+OTIF derives its intelligence from 9+ specialized academic skill sets synced dynamically and verified locally on launch:
 
 | Skill Pack | Domain & Diagnostic Scope |
 |:---|:---|
@@ -173,6 +173,7 @@ OTIF derives its intelligence from 8 specialized academic skill sets synced dyna
 | `06_research_quality` | Research question alignment, theoretical framing, contribution clarity |
 | `07_citation` | Bibliographic completeness, DOI formatting, reference section health |
 | `08_design_rewrite` | Structural chapter flow and visual diagram conceptualization |
+| `09_academic_design` | Academic document structure, design consistency, and export readiness |
 
 ---
 

@@ -1,0 +1,13 @@
+{
+  "diagram_id": "ea6e29c2-07a7-430e-9359-75a6973e2d95",
+  "doc_id": "test-doc-production-123",
+  "project_id": "1a49ab03-c162-420e-a165-fa0ba5620ba6",
+  "design_theme": "maroon_submission",
+  "diagram_style": "method_flow",
+  "framework_name": "",
+  "figure_number": "1.1",
+  "caption": "Figure 1.1: Proposed Framework (Source: Author's Own Design)",
+  "mermaid_source": "flowchart LR\n\n    Method_Flow__Data_collection_via[\"Method Flow: Data collection via CrossRef API -> Preflight ga\"]\n",
+  "themed_source": "%%{init: {\"theme\": \"base\", \"themeVariables\": {\"primaryColor\": \"#7f1d1d\", \"primaryTextColor\": \"#ffffff\", \"primaryBorderColor\": \"#991b1b\", \"lineColor\": \"#ef4444\", \"secondaryColor\": \"#fee2e2\", \"tertiaryColor\": \"#fff5f5\", \"background\": \"#fff5f5\", \"mainBkg\": \"#fecaca\", \"nodeBorder\": \"#7f1d1d\", \"clusterBkg\": \"#fff5f5\", \"titleColor\": \"#450a0a\", \"edgeLabelBackground\": \"#fff5f5\", \"fontFamily\": \"Times New Roman, serif\", \"fontSize\": \"14px\"}}}%%\nflowchart LR\n\n    Method_Flow__Data_collection_via[\"Method Flow: Data collection via CrossRef API -> Preflight ga\"]\n",
+  "approved": false
+}

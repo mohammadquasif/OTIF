@@ -1,0 +1,13 @@
+{
+  "diagram_id": "4d93c247-2660-4720-bbd5-f23cb0def4c5",
+  "doc_id": "test-doc-production-123",
+  "project_id": "1a49ab03-c162-420e-a165-fa0ba5620ba6",
+  "design_theme": "mono_formal",
+  "diagram_style": "method_flow",
+  "framework_name": "",
+  "figure_number": "1.1",
+  "caption": "Figure 1.1: Proposed Framework (Source: Author's Own Design)",
+  "mermaid_source": "flowchart LR\n\n    Method_Flow__Data_collection_via[\"Method Flow: Data collection via CrossRef API -> Preflight ga\"]\n",
+  "themed_source": "%%{init: {\"theme\": \"base\", \"themeVariables\": {\"primaryColor\": \"#1f2937\", \"primaryTextColor\": \"#ffffff\", \"primaryBorderColor\": \"#374151\", \"lineColor\": \"#6b7280\", \"secondaryColor\": \"#f3f4f6\", \"tertiaryColor\": \"#f9fafb\", \"background\": \"#ffffff\", \"mainBkg\": \"#e5e7eb\", \"nodeBorder\": \"#374151\", \"clusterBkg\": \"#f3f4f6\", \"titleColor\": \"#111827\", \"edgeLabelBackground\": \"#f9fafb\", \"fontFamily\": \"Georgia, serif\", \"fontSize\": \"14px\"}}}%%\nflowchart LR\n\n    Method_Flow__Data_collection_via[\"Method Flow: Data collection via CrossRef API -> Preflight ga\"]\n",
+  "approved": false
+}

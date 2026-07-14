@@ -1,0 +1,862 @@
+{
+  "analysis_mode": "local_preflight",
+  "coverage": {
+    "local_document_only": true,
+    "open_research_sources_checked": [
+      "arxiv",
+      "crossref",
+      "europe_pmc",
+      "pubmed",
+      "datacite",
+      "eric",
+      "osf_preprints",
+      "zenodo",
+      "semantic_scholar",
+      "doaj",
+      "base",
+      "inspire_hep"
+    ],
+    "local_corpus_checked": []
+  },
+  "limitations": [
+    "This preflight does not check against all research papers.",
+    "Similarity and originality require configured local corpora or open research connectors.",
+    "Scores are derived only from the uploaded document text and loaded local skill rules."
+  ],
+  "metrics": {
+    "word_count": 426,
+    "sentence_count": 33,
+    "unique_word_ratio": 0.556,
+    "avg_sentence_length": 12.9,
+    "citation_coverage": 14.3,
+    "citation_quality": 10.3,
+    "citation_sentence_count": 3,
+    "claim_sentence_count": 21,
+    "doi_count": 0,
+    "url_count": 0,
+    "references_present": false,
+    "paragraph_count": 11,
+    "near_duplicate_pairs": 0,
+    "internal_duplication_risk": 0,
+    "burstiness": 58.3,
+    "passive_voice_ratio": 0.0,
+    "template_opener_count": 1,
+    "researcher_voice_markers": 3,
+    "long_quote_words": 0,
+    "humanization_score": 91.8,
+    "ai_writing_risk": 11.8,
+    "originality_evidence_matrix": 50,
+    "originality_dimensions": {
+      "literature_gap": 10,
+      "applied_integration": 20,
+      "artefact_contribution": 10,
+      "methodological_boundary": 10,
+      "practical_implication": 0
+    },
+    "hedging_count": 1,
+    "hedging_density_per_1000": 2.3,
+    "hedging_risk": "over_assertive",
+    "rq_count": 0,
+    "rq_traceback_score": null,
+    "unanswered_rqs": [],
+    "norm_issues": [],
+    "norm_valid": true,
+    "is_imrad": true,
+    "missing_sections": [
+      "discussion"
+    ]
+  },
+  "findings": [
+    {
+      "word": "it is important to note that",
+      "replacement": "state the point directly",
+      "severity": "high",
+      "count": 1
+    },
+    {
+      "word": "furthermore",
+      "replacement": "the more important issue is",
+      "severity": "low",
+      "count": 1
+    }
+  ],
+  "scores": {
+    "plagiarism_risk": 19.7,
+    "originality_score": 61.8,
+    "originality_evidence_matrix": 50,
+    "citation_quality": 10.3,
+    "humanization_score": 91.8,
+    "ai_writing_risk": 11.8,
+    "ai_pattern_risk": 11.8,
+    "phrase_quality": 91.0,
+    "citation_signal": 10.3,
+    "structure_signal": 74.6,
+    "hedging_risk": "over_assertive",
+    "rq_traceback_score": null,
+    "overall_preflight": 67.8
+  },
+  "chapters": [
+    {
+      "id": "whole-document",
+      "title": "Whole Document",
+      "metrics": {
+        "word_count": 426,
+        "sentence_count": 33,
+        "unique_word_ratio": 0.556,
+        "avg_sentence_length": 12.9,
+        "citation_coverage": 14.3,
+        "citation_quality": 10.3,
+        "citation_sentence_count": 3,
+        "claim_sentence_count": 21,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 11,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 58.3,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 1,
+        "researcher_voice_markers": 3,
+        "long_quote_words": 0,
+        "humanization_score": 91.8,
+        "ai_writing_risk": 11.8,
+        "originality_evidence_matrix": 50,
+        "originality_dimensions": {
+          "literature_gap": 10,
+          "applied_integration": 20,
+          "artefact_contribution": 10,
+          "methodological_boundary": 10,
+          "practical_implication": 0
+        },
+        "hedging_count": 1,
+        "hedging_density_per_1000": 2.3,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 19.7,
+        "originality_score": 57.0,
+        "originality_evidence_matrix": 50,
+        "citation_quality": 10.3,
+        "humanization_score": 91.8,
+        "ai_writing_risk": 11.8,
+        "ai_pattern_risk": 11.8,
+        "phrase_quality": 91.0,
+        "citation_signal": 10.3,
+        "structure_signal": 69.4,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 66.2
+      },
+      "findings": [
+        {
+          "word": "it is important to note that",
+          "replacement": "state the point directly",
+          "severity": "high",
+          "count": 1
+        },
+        {
+          "word": "furthermore",
+          "replacement": "the more important issue is",
+          "severity": "low",
+          "count": 1
+        }
+      ]
+    }
+  ],
+  "research_sources": {
+    "internet_checked": true,
+    "sources": [
+      {
+        "id": "arxiv",
+        "name": "arXiv",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "Perspective Chapter: MOOCs in India: Evolution, Innovation, Impact, and Roadmap",
+            "url": "http://arxiv.org/abs/2501.14780v1",
+            "year": "2025",
+            "abstract": "With the largest population of the world and one of the highest enrolments in higher education, India needs efficient and effective means to educate its learners. India started focusing on open and digital education in 1980's and its efforts were escalated in 2009 through the NMEICT program of the Government of India. A study by the Government and FICCI in 2014 noted that India cannot meet its edu"
+          },
+          {
+            "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+            "url": "http://arxiv.org/abs/2107.08351v2",
+            "year": "2021",
+            "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+          },
+          {
+            "title": "Building and development of an organizational competence for digital transformation in SMEs",
+            "url": "http://arxiv.org/abs/2406.01615v1",
+            "year": "2024",
+            "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+          },
+          {
+            "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+            "url": "http://arxiv.org/abs/1910.08604v3",
+            "year": "2019",
+            "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+          },
+          {
+            "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+            "url": "http://arxiv.org/abs/2309.07064v2",
+            "year": "2023",
+            "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+          }
+        ],
+        "cached": true,
+        "base_url": "https://export.arxiv.org/api/query",
+        "coverage": "preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://info.arxiv.org/help/api/index.html",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "crossref",
+        "name": "Crossref",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "The Role of Digital Transformation in Enhancing SME Performance and Competitiveness in India",
+            "url": "https://doi.org/10.21203/rs.3.rs-9990986/v1",
+            "year": null,
+            "abstract": "<title>Abstract</title> <p> This study investigates the relationship between digital transformation and economic outcomes for small and medium-sized enterprises (SMEs) in India, focusing on the mediating roles of operational performance, innovation capability, and market competitiveness. The study aims to align itself with the Sustainable Development Goal (SDG) 9 and, in particular, target 3, whic"
+          },
+          {
+            "title": "Digital transformation to enhance Indonesian SME performance: Exploring the impact of market competition and digital strategy",
+            "url": "https://doi.org/10.21511/ppm.22(2).2024.09",
+            "year": 2024,
+            "abstract": "<jats:p>In the current era, the challenges faced by SMEs in Indonesia are becoming increasingly complex. Previously, the primary challenge for SMEs has been to enhance performance. However, with the emergence of information technology, SMEs are now required to compete fiercely. SMEs in Indonesia are still in the process of digital transformation to improve their business strategies, thus limiting "
+          },
+          {
+            "title": "The Impact of Digital Transformation on the Innovation Performance of SME through Employees\u2019 Digital Capabilities: The Moderating Effect of Digital Transformation",
+            "url": "https://doi.org/10.32479/irmm.22807",
+            "year": 2026,
+            "abstract": "<jats:p>In the digital age, small and medium-sized enterprises (SMEs) face significant challenges and opportunities in adopting digital transformation (DT) to enhance their innovation performance. This study investigates the critical role of employee digital capabilities and digital transformational leadership (DTL) in driving innovation within SMEs. By leveraging a theoretical framework that inte"
+          },
+          {
+            "title": "Digital transformation",
+            "url": "https://doi.org/10.18356/9789211073522c003",
+            "year": 2025,
+            "abstract": ""
+          },
+          {
+            "title": "Enabling a digital transformation",
+            "url": "https://doi.org/10.18356/9789211073522c006",
+            "year": 2025,
+            "abstract": ""
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.crossref.org/works",
+        "coverage": "DOI metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "europe_pmc",
+        "name": "Europe PMC",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "Integrated ERP lean model for quality enhancement and operational excellence in SME based automotive mould manufacturing.",
+            "url": "10.1038/s41598-025-18619-1",
+            "year": "2025",
+            "abstract": ""
+          },
+          {
+            "title": "Strategic Thinking and Entrepreneurial Orientation as Drivers of Adaptive Resilience in Global Manufacturing SMEs: A Narrative Review of Dynamic Capabilities and Cross-Context Variations.",
+            "url": "10.12688/f1000research.178316.1",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "The impact of digital intelligence technologies on innovation performance: Evidence from specialized, refined, differential and innovative enterprises.",
+            "url": "10.1371/journal.pone.0339567",
+            "year": "2026",
+            "abstract": ""
+          },
+          {
+            "title": "Artificial Intelligence Adoption as a Driver of Innovation and Competitiveness in SMEs: A Bibliometric and Systematic Review.",
+            "url": "10.12688/f1000research.171494.1",
+            "year": "2025",
+            "abstract": ""
+          },
+          {
+            "title": "What\u00a0Are\u00a0the\u00a0Key\u00a0Determinants\u00a0of\u00a0Sustainable\u00a0Organizational\u00a0Performance? A PRISMA-Based\u00a0Systematic\u00a0Review.",
+            "url": "10.12688/f1000research.168678.1",
+            "year": "2025",
+            "abstract": ""
+          }
+        ],
+        "cached": true,
+        "base_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+        "coverage": "biomedical papers",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "pubmed",
+        "name": "PubMed / NCBI",
+        "status": "checked",
+        "message": "1 cached public result(s)",
+        "matches": [
+          {
+            "title": "Global, regional, and national burden of stroke and its risk factors, 1990-2021: a systematic analysis for the Global Burden of Disease Study 2021.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/39304265/",
+            "year": "2024",
+            "abstract": "The Lancet. Neurology"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+        "coverage": "biomedical citations",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "datacite",
+        "name": "DataCite",
+        "status": "checked",
+        "message": "4 cached public result(s)",
+        "matches": [
+          {
+            "title": "Ledger-Anchored Validation Receipts (LAVR): Minimal Cryptographic Proof of Enforcement",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.18359198",
+            "year": 2026,
+            "abstract": "Abstract\n\nExisting accountability mechanisms based on audit logs, blockchains, and distributed ledgers\n\nattempt to prove compliance by recording what happened\u2014transactions, identities, timestamps,\n\nor state transitions. While tamper-resistant, these approaches inherently generate behavioural traces\n\nthat conflict with data-minimisation requirements and enable correlation, profiling, and surveillan"
+          },
+          {
+            "title": "Ledger-Anchored Validation Receipts (LAVR): Minimal Cryptographic Proof of Enforcement",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.18359199",
+            "year": 2026,
+            "abstract": "Abstract\n\nExisting accountability mechanisms based on audit logs, blockchains, and distributed ledgers\n\nattempt to prove compliance by recording what happened\u2014transactions, identities, timestamps,\n\nor state transitions. While tamper-resistant, these approaches inherently generate behavioural traces\n\nthat conflict with data-minimisation requirements and enable correlation, profiling, and surveillan"
+          },
+          {
+            "title": "The Great Job Migration \"The Impact of Offshoring on the U.S. Workforce and Society\"",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.17355624",
+            "year": 2022,
+            "abstract": "The Great Job Migration: \u201cThe Impact of Offshoring on the U.S. Workforce and Society\u201dThe Great Job Migration\u201cThe Impact of Offshoring on the U.S. Workforce and Society\u201d\n\nRamy Ayoub\n\nNew York, 2022\n\nAbstract\n\n\u00a0\n\nFrom 2000 to 2022, the United States underwent one of the most destabilizing economic transformations in its modern history, as millions of jobs were exported overseas under the banner of g"
+          },
+          {
+            "title": "The Great Job Migration \"The Impact of Offshoring on the U.S. Workforce and Society\"",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.17355623",
+            "year": 2022,
+            "abstract": "The Great Job Migration: \u201cThe Impact of Offshoring on the U.S. Workforce and Society\u201dThe Great Job Migration\u201cThe Impact of Offshoring on the U.S. Workforce and Society\u201d\n\nRamy Ayoub\n\nNew York, 2022\n\nAbstract\n\n\u00a0\n\nFrom 2000 to 2022, the United States underwent one of the most destabilizing economic transformations in its modern history, as millions of jobs were exported overseas under the banner of g"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.datacite.org/dois",
+        "coverage": "datasets and DOI records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://support.datacite.org/docs/api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "eric",
+        "name": "ERIC",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "Impact of Digital Transformation on Academicians&apos; Well-Being: A Study with the Moderating Role of Public and Private Universities in India",
+            "url": "https://eric.ed.gov/?id=EJ1388396",
+            "year": 2022,
+            "abstract": "This research is identifying and compares the impact of digital transformation on academicians' well-being in public and private Indian universities. To initiate the research, one exogenous construct namely 'virtual transformation in higher education,' and two endogenous constructs called 'workplace well-being' and 'psychological well-being' of academicians have been identified. The data has colle"
+          },
+          {
+            "title": "Identification of Constraints to Implementation of Entrepreneurship Digitalization Training: The Case of Batik SMEs in Indonesia",
+            "url": "https://eric.ed.gov/?id=ED652402",
+            "year": 2023,
+            "abstract": "The digital world in the creative industry has provided new opportunities for entrepreneurs to utilize and exploit products and services in a more transparent and widespread manner. Products and services can grow exponentially and be offered to all users and communities throughout the world without time and space limitations. Creative SMEs, especially batik SMEs, are currently required to keep abr"
+          },
+          {
+            "title": "The Impact of Digital Transformation on Firm Performance: Evidence from Technology-Driven Business Management Practices",
+            "url": "https://eric.ed.gov/?id=EJ1507335",
+            "year": 2026,
+            "abstract": "This study investigates the impact of digital transformation on firm performance using panel data from 5120 firm-year observations between 2014 and 2024. Results show that digital transformation significantly enhances firm performance both directly and indirectly, with technology-driven business management practices playing a significant mediating role in this relationship. IT capability, human ca"
+          },
+          {
+            "title": "The Impact of Digital Transformation on Achieving Outstanding Performance in Educational Administration",
+            "url": "https://eric.ed.gov/?id=EJ1452357",
+            "year": 2024,
+            "abstract": "Purpose: The present study aims to analyze the impact of digital transformation on achieving outstanding performance in educational administration, improving and developing electronic services and facilitating beneficiaries' access to services. Design/methodology/approach: This study applied descriptive/analytical quantitative and qualitative methodologies to a sample of 206 employees from an educ"
+          },
+          {
+            "title": "A Study on the Influencing Factors of Digital Transformation in Education Using Structural Equation Modeling and Artificial Neural Networks",
+            "url": "https://eric.ed.gov/?id=EJ1501587",
+            "year": 2025,
+            "abstract": "The paper aims to investigate the factors influencing the acceptance of digital transformation in education. By integrating the UTAUT2 model, a theoretical model of digital transformation acceptance in education is constructed. Using data from universities in Shanghai, which is a pilot city for digital transformation in education, the study employs PLS-SEM and SEM-ANN methods to empirically analyz"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.ies.ed.gov/eric/",
+        "coverage": "education research",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://eric.ed.gov/?api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "osf_preprints",
+        "name": "OSF Preprints",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://api.osf.io/v2/preprints/",
+        "coverage": "open preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.osf.io/v2/docs/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "zenodo",
+        "name": "Zenodo",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "Digital Transformation in Business: Opportunities and Challenges for SMEs in Indonesia",
+            "url": null,
+            "year": "2026",
+            "abstract": "<p>This dataset contains primary data from a survey of 454 SME owners and managers in the Jabodetabek region (Jakarta, Bogor, Depok, Tangerang, Bekasi), Indonesia. This study aims to empirically examine the impact of digital transformation on SME performance using the Partial Least Squares Structural Equation Modeling (PLS-SEM) method. The data highlights the phenomenon of the &ldquo;digital matur"
+          },
+          {
+            "title": "Artificial Intelligence Adoption and SMES Performance in Southwest, Nigeria: A Moderating Role of Management Support",
+            "url": null,
+            "year": "2025",
+            "abstract": "<p>In an era of rapid digital transformation, Artificial Intelligence (AI) has emerged as a strategic enabler of efficiency, competitiveness, and innovation for Small and Medium-sized Enterprises (SMEs). Despite research on the adoption of AI, scanty studies isolate the moderating role of Management Support for the adoption of AI on the performance of business within Nigerian SME a gap the study s"
+          },
+          {
+            "title": "INTERACTION OF ENTREPRENEURIAL ORIENTATION, MARKET ORIENTATION, AND INNOVATION CAPABILITY ON THE FINANCIAL PERFORMANCE OF SMES IN QUEZON PROVINCE: A PLS-SEM APPROACH",
+            "url": null,
+            "year": "2025",
+            "abstract": "<p><span>This study investigated the interaction of entrepreneurial orientation (EO), market orientation (MO), and innovation capability (IC) on the financial performance of small and medium-sized enterprises (SMEs) in Quezon Province, Philippines, using a Partial Least Squares Structural Equation Modeling (PLS-SEM) approach. The research aimed to provide a comprehensive profile of SMEs in the reg"
+          },
+          {
+            "title": "KEY FACTORS OF COMPETITIVENESS IN SMES:  EVALUATION OF INNOVATION AND DIGITALIZATION  STRATEGIES",
+            "url": null,
+            "year": "2024",
+            "abstract": ""
+          },
+          {
+            "title": "THE ROLE OF DIGITIZATION IN SMALL AND MEDIUM SEIZED ENTERPRISEZ",
+            "url": null,
+            "year": "2025",
+            "abstract": "<h2><em><span lang=\"EN-US\">This study examines the transformative impact of digitization on small and medium-sized enterprises (SMEs) and analyzes how digital technologies reshape business operations, customer relationships, and competitive positioning. The research investigates the multifaceted role of digital transformation in enhancing operational efficiency, market reach, and innovation capabi"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://zenodo.org/api/records",
+        "coverage": "research outputs and datasets",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "semantic_scholar",
+        "name": "Semantic Scholar",
+        "status": "checked",
+        "message": "1 cached public result(s)",
+        "matches": [
+          {
+            "title": "Euclid. I. Overview of the Euclid mission",
+            "url": "https://doi.org/10.1051/0004-6361/202450810",
+            "year": "2024",
+            "abstract": "The current standard model of cosmology successfully describes a variety of measurements, but the nature of its main ingredients, dark matter and dark energy, remains unknown. is a medium-class mission in the Cosmic Vision 2015--2025 programme of the European Space Agency (ESA) that will provide high-resolution optical imaging, as well as near-infrared imaging and spectroscopy, over about 14\\,000\\"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.semanticscholar.org/graph/v1/paper/search",
+        "coverage": "literature graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.semanticscholar.org/api-docs/graph",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "openalex",
+        "name": "OpenAlex",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.openalex.org/works",
+        "coverage": "global scholarly graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://developers.openalex.org/",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "doaj",
+        "name": "DOAJ",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://doaj.org/api/search/articles",
+        "coverage": "open access journals",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "core",
+        "name": "CORE",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.core.ac.uk/v3/search/works",
+        "coverage": "open access repository records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "base",
+        "name": "BASE",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi",
+        "coverage": "repository metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "inspire_hep",
+        "name": "INSPIRE-HEP",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://inspirehep.net/api",
+        "coverage": "high-energy physics, astrophysics, particle physics",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://github.com/inspirehep/rest-api-doc",
+        "requires_key": false,
+        "configured": true
+      }
+    ],
+    "queries": [
+      "# The Impact of Digital Transformation on SME Performance in India",
+      "digital transformation performance india qualitative",
+      "india qualitative survey business economies"
+    ],
+    "ai_detection": {
+      "ai_detection_score": 13,
+      "confidence": "low",
+      "signals": {
+        "perplexity_risk": 41.0,
+        "burstiness_risk": 0,
+        "template_opener_risk": 8,
+        "passive_voice_risk": 0.0,
+        "researcher_voice_reduction": 0,
+        "repetition_risk": 0,
+        "uniform_length_risk": 7.3
+      },
+      "verdict": "Low AI-generation probability (13%). Writing patterns are consistent with human academic authorship.",
+      "turnitin_ai_equivalent": "Likely human-authored (<25% \u2014 equivalent to Turnitin AI low signal)"
+    },
+    "turnitin_style_similarity": null,
+    "connectivity": {
+      "internet_reachable": true,
+      "reachable_count": 6,
+      "checked_count": 6,
+      "sources": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Crossref responded with HTTP 200"
+        },
+        {
+          "id": "arxiv",
+          "name": "arXiv",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "arXiv responded with HTTP 200"
+        },
+        {
+          "id": "datacite",
+          "name": "DataCite",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "DataCite responded with HTTP 200"
+        },
+        {
+          "id": "europe_pmc",
+          "name": "Europe PMC",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "Europe PMC responded with HTTP 200"
+        },
+        {
+          "id": "semantic_scholar",
+          "name": "Semantic Scholar",
+          "status": "reachable",
+          "status_code": 429,
+          "message": "Semantic Scholar responded with HTTP 429"
+        },
+        {
+          "id": "openalex",
+          "name": "OpenAlex",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "OpenAlex responded with HTTP 200"
+        }
+      ]
+    }
+  },
+  "formatting_plan": {
+    "target": "APA 7",
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "export_formats": [
+      "docx",
+      "pdf"
+    ],
+    "design_themes": [
+      "classic_blue",
+      "mono_formal",
+      "emerald_academic",
+      "maroon_submission"
+    ]
+  },
+  "improvement_plan": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "medium",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 61.8; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "flagged-phrases",
+      "title": "Replace flagged phrases",
+      "priority": "high",
+      "action": "Review each flagged phrase and rewrite only where the replacement improves clarity or originality.",
+      "evidence": "Flagged phrase hits include: it is important to note that, furthermore.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.\n\nReal citation suggestions from open research sources:\n  \u2022 Perspective Chapter: MOOCs in India: Evolution, Innovation, Impact, and Roadmap (2025) \u2014 via arXiv\n  \u2022 A Novel Approach to Analyze Fashion Digital Archive from Humanities (2021) \u2014 via arXiv\n  \u2022 Building and development of an organizational competence for digital transformation in SMEs (2024) \u2014 via arXiv\n  \u2022 Digital transformation to enhance Indonesian SME performance: Exploring the impact of market competition and digital strategy (2024) \u2014 via Crossref\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works.",
+      "evidence": "Citation quality is 10.3; citation coverage is 14.3% across claim-like sentences. 18 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": [
+        {
+          "title": "Perspective Chapter: MOOCs in India: Evolution, Innovation, Impact, and Roadmap",
+          "year": "2025",
+          "url": "http://arxiv.org/abs/2501.14780v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+          "year": "2021",
+          "url": "http://arxiv.org/abs/2107.08351v2",
+          "source": "arXiv"
+        },
+        {
+          "title": "Building and development of an organizational competence for digital transformation in SMEs",
+          "year": "2024",
+          "url": "http://arxiv.org/abs/2406.01615v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "Digital transformation to enhance Indonesian SME performance: Exploring the impact of market competition and digital strategy",
+          "year": "2024",
+          "url": "https://doi.org/10.21511/ppm.22(2).2024.09",
+          "source": "Crossref"
+        },
+        {
+          "title": "The Impact of Digital Transformation on the Innovation Performance of SME through Employees\u2019 Digital Capabilities: The Moderating Effect of Digital Transformation",
+          "year": "2026",
+          "url": "https://doi.org/10.32479/irmm.22807",
+          "source": "Crossref"
+        },
+        {
+          "title": "Integrated ERP lean model for quality enhancement and operational excellence in SME based automotive mould manufacturing.",
+          "year": "2025",
+          "url": "10.1038/s41598-025-18619-1",
+          "source": "Europe PMC"
+        }
+      ]
+    },
+    {
+      "id": "whole-document-improvement",
+      "title": "Improve Whole Document (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Whole Document scores: AI risk 11.8, originality 57.0, citation 10.3, structure 69.4.",
+      "requires_ai": true,
+      "chapter_id": "whole-document",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "diagram-opportunities",
+      "title": "Identify and draft required diagrams",
+      "priority": "medium",
+      "action": "After approval, detect methodology/process/model sections and draft academic diagrams only where they clarify the argument.",
+      "evidence": "Diagram generation is optional and requires separate approval in the rewrite options.",
+      "requires_ai": true
+    },
+    {
+      "id": "target-format",
+      "title": "Apply APA 7 checks",
+      "priority": "medium",
+      "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+      "evidence": "Target format selected: APA 7.",
+      "requires_ai": false
+    },
+    {
+      "id": "front-matter-integrity",
+      "title": "Maintain TOC, list of tables, and list of figures",
+      "priority": "medium",
+      "action": "Preserve heading hierarchy, table captions, figure captions, page-aware front matter, and export-ready DOCX/PDF structure.",
+      "evidence": "Required for APA 7 output and final submission polish.",
+      "requires_ai": false
+    }
+  ],
+  "integrity_report": {
+    "title": "OTIF Academic Integrity Evidence Report",
+    "doc_type": "research_paper",
+    "target_format": "APA 7",
+    "grade": "needs_integrity_review",
+    "scope": {
+      "local_document_analysis": true,
+      "open_research_sources_checked": [
+        "arXiv",
+        "Crossref",
+        "Europe PMC",
+        "PubMed / NCBI",
+        "DataCite",
+        "ERIC",
+        "OSF Preprints",
+        "Zenodo",
+        "Semantic Scholar",
+        "DOAJ",
+        "BASE",
+        "INSPIRE-HEP"
+      ],
+      "full_web_or_private_corpus_checked": false,
+      "ai_writing_score_is_risk_signal": true
+    },
+    "headline": {
+      "plagiarism_risk": 19.7,
+      "originality_score": 61.8,
+      "citation_quality": 10.3,
+      "humanization_score": 91.8,
+      "ai_writing_risk": 11.8
+    },
+    "evidence_summary": {
+      "citation_coverage": 14.3,
+      "near_duplicate_pairs": 0,
+      "open_source_matches": 31,
+      "possible_similarity_risk_matches": 0,
+      "researcher_voice_markers": 3,
+      "template_opener_count": 1,
+      "rq_traceback_score": null
+    },
+    "top_source_evidence": [
+      {
+        "title": "Perspective Chapter: MOOCs in India: Evolution, Innovation, Impact, and Roadmap",
+        "url": "http://arxiv.org/abs/2501.14780v1",
+        "year": "2025",
+        "abstract": "With the largest population of the world and one of the highest enrolments in higher education, India needs efficient and effective means to educate its learners. India started focusing on open and digital education in 1980's and its efforts were escalated in 2009 through the NMEICT program of the Government of India. A study by the Government and FICCI in 2014 noted that India cannot meet its edu"
+      },
+      {
+        "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+        "url": "http://arxiv.org/abs/2107.08351v2",
+        "year": "2021",
+        "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+      },
+      {
+        "title": "Building and development of an organizational competence for digital transformation in SMEs",
+        "url": "http://arxiv.org/abs/2406.01615v1",
+        "year": "2024",
+        "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+      },
+      {
+        "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+        "url": "http://arxiv.org/abs/1910.08604v3",
+        "year": "2019",
+        "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+      },
+      {
+        "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+        "url": "http://arxiv.org/abs/2309.07064v2",
+        "year": "2023",
+        "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+      },
+      {
+        "title": "The Role of Digital Transformation in Enhancing SME Performance and Competitiveness in India",
+        "url": "https://doi.org/10.21203/rs.3.rs-9990986/v1",
+        "year": null,
+        "abstract": "<title>Abstract</title> <p> This study investigates the relationship between digital transformation and economic outcomes for small and medium-sized enterprises (SMEs) in India, focusing on the mediating roles of operational performance, innovation capability, and market competitiveness. The study aims to align itself with the Sustainable Development Goal (SDG) 9 and, in particular, target 3, whic"
+      },
+      {
+        "title": "Digital transformation to enhance Indonesian SME performance: Exploring the impact of market competition and digital strategy",
+        "url": "https://doi.org/10.21511/ppm.22(2).2024.09",
+        "year": 2024,
+        "abstract": "<jats:p>In the current era, the challenges faced by SMEs in Indonesia are becoming increasingly complex. Previously, the primary challenge for SMEs has been to enhance performance. However, with the emergence of information technology, SMEs are now required to compete fiercely. SMEs in Indonesia are still in the process of digital transformation to improve their business strategies, thus limiting "
+      },
+      {
+        "title": "The Impact of Digital Transformation on the Innovation Performance of SME through Employees\u2019 Digital Capabilities: The Moderating Effect of Digital Transformation",
+        "url": "https://doi.org/10.32479/irmm.22807",
+        "year": 2026,
+        "abstract": "<jats:p>In the digital age, small and medium-sized enterprises (SMEs) face significant challenges and opportunities in adopting digital transformation (DT) to enhance their innovation performance. This study investigates the critical role of employee digital capabilities and digital transformational leadership (DTL) in driving innovation within SMEs. By leveraging a theoretical framework that inte"
+      }
+    ],
+    "recommended_next_actions": [
+      "Strengthen originality and contribution",
+      "Replace flagged phrases",
+      "Strengthen citation signal",
+      "Improve Whole Document (Pages 1\u201313)",
+      "Identify and draft required diagrams",
+      "Apply APA 7 checks"
+    ],
+    "limitations": [
+      "This preflight does not check against all research papers.",
+      "Similarity and originality require configured local corpora or open research connectors.",
+      "Scores are derived only from the uploaded document text and loaded local skill rules.",
+      "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+      "AI-writing risk is a writing-pattern signal, not proof of authorship."
+    ]
+  }
+}

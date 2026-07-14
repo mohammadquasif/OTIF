@@ -1,0 +1,133 @@
+{
+  "doc_id": "6b7a88b7-2ec0-46e7-8698-1ca358aa9b50",
+  "doc_type": "research_paper",
+  "norm": "apa7",
+  "approved_item_ids": [
+    "originality-claim-strength",
+    "citation-strength",
+    "whole-document-improvement"
+  ],
+  "approved_items": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 50.9; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.\n\nReal citation suggestions from open research sources:\n  \u2022 A Novel Approach to Analyze Fashion Digital Archive from Humanities (2021) \u2014 via arXiv\n  \u2022 Building and development of an organizational competence for digital transformation in SMEs (2024) \u2014 via arXiv\n  \u2022 Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society (2019) \u2014 via arXiv\n  \u2022 Digital transformation (2025) \u2014 via Crossref\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works.",
+      "evidence": "Citation quality is 7.2; citation coverage is 10.0% across claim-like sentences. 17 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": [
+        {
+          "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+          "year": "2021",
+          "url": "http://arxiv.org/abs/2107.08351v2",
+          "source": "arXiv"
+        },
+        {
+          "title": "Building and development of an organizational competence for digital transformation in SMEs",
+          "year": "2024",
+          "url": "http://arxiv.org/abs/2406.01615v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+          "year": "2019",
+          "url": "http://arxiv.org/abs/1910.08604v3",
+          "source": "arXiv"
+        },
+        {
+          "title": "Digital transformation",
+          "year": "2025",
+          "url": "https://doi.org/10.18356/9789211073522c003",
+          "source": "Crossref"
+        },
+        {
+          "title": "Enabling a digital transformation",
+          "year": "2025",
+          "url": "https://doi.org/10.18356/9789211073522c006",
+          "source": "Crossref"
+        },
+        {
+          "title": "The Role of Digital Transformation in Enhancing SME Performance and Competitiveness in India",
+          "year": "2026",
+          "url": "10.21203/rs.3.rs-9990986/v1",
+          "source": "Europe PMC"
+        }
+      ]
+    },
+    {
+      "id": "whole-document-improvement",
+      "title": "Improve Whole Document (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Whole Document scores: AI risk 10.8, originality 46.1, citation 7.2, structure 86.7.",
+      "requires_ai": true,
+      "chapter_id": "whole-document",
+      "page_range": "1\u201313"
+    }
+  ],
+  "active_provider": "ollama",
+  "active_model": "qwen2.5:1.5b",
+  "privacy_mode": "local_only",
+  "document_actions": {
+    "draw_diagrams": false,
+    "diagram_style": "academic",
+    "design_theme": "mono_formal",
+    "design_accent_hex": null,
+    "output_formats": [
+      "docx",
+      "pdf"
+    ],
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "target_format": "APA 7"
+  },
+  "rewrite_status": "rewrite_preview_ready",
+  "rewrite_preview": "## Digital Transformation and SME Performance in India\n\n### Abstract\nThis study explores how digital transformation impacts small and medium-sized enterprises (SMEs) performance in India. It employs survey and interview evidence from manufacturing and service firms across Maharashtra, Tamil Nadu, and Gujarat.\n\n### Introduction\nDigital transformation has become a central strategy for SME competitiveness, despite financial constraints faced by smaller firms. The literature often focuses on large enterprises more than emerging-economy SMEs, creating a gap in contextual evidence specific to India\u2019s context.\n\n### Literature Review\nVial (2019) defines digital transformation as the process where digital technologies trigger strategic organizational responses. Resource-based theory posits that firms benefit when they have digital capabilities that are valuable, rare, and difficult to imitate.\n\n### Methodology\nThe study employs a mixed-methods design. A survey was administered to SME owners and managers across Maharashtra, Tamil Nadu, and Gujarat. Semi-structured interviews explored adoption barriers.\n\n### Results\nSurvey respondents with higher digital maturity reported stronger revenue growth and operational efficiency. Many respondents cited digital skill shortages as a barrier.\n\n### Discussion\nThe findings support the role of digital capability as a performance resource, highlighting that local infrastructure and skills shape the actual gains.\n\n### Conclusion\nDigital transformation can enhance SME performance in India, but outcomes depend on skill development and implementation capability.\n\n### References\nVial, G. (2019). Understanding digital transformation: A review and a research agenda. Journal of Strategic Information Systems, 28(2), 118-144.",
+  "rewrite_note": "Generated locally with Ollama model qwen2.5:1.5b. Citations deterministically locked and restored (0 references preserved).",
+  "diff": {
+    "deletions": [
+      "# Digital Transformation and SME Performance in India\n\n## Abstract\nThis study examines how digital transformation affects SME performance in India.",
+      "It uses survey and interview evidence from manufacturing and service firms.",
+      "## Introduction\nDigital transformation has become central to SME competitiveness, but smaller firms face financial, skill, and infrastructure constraints.",
+      "The literature has emphasized large enterprises more than emerging-economy SMEs, creating a gap in contextual evidence.",
+      "## Literature Review\nVial (2019) defines digital transformation as a process where digital technologies trigger strategic organizational responses.",
+      "Resource-based theory suggests that firms gain advantage when digital capabilities are valuable, rare, and difficult to imitate.",
+      "## Methodology\nThe study uses a mixed-methods design.",
+      "Semi-structured interviews were used to explore adoption barriers.",
+      "## Results\nThe survey indicated that firms with higher digital maturity reported stronger revenue growth and operational efficiency.",
+      "Many respondents identified digital skill shortages as a barrier.",
+      "## Discussion\nThe findings support the role of digital capability as a performance resource, while showing that local infrastructure and skills shape the actual gains.",
+      "## Conclusion\nDigital transformation can improve SME performance in India, but outcomes depend on skill development and implementation capability.",
+      "## References\nVial, G."
+    ],
+    "insertions": [
+      "## Digital Transformation and SME Performance in India\n\n### Abstract\nThis study explores how digital transformation impacts small and medium-sized enterprises (SMEs) performance in India.",
+      "It employs survey and interview evidence from manufacturing and service firms across Maharashtra, Tamil Nadu, and Gujarat.",
+      "### Introduction\nDigital transformation has become a central strategy for SME competitiveness, despite financial constraints faced by smaller firms.",
+      "The literature often focuses on large enterprises more than emerging-economy SMEs, creating a gap in contextual evidence specific to India\u2019s context.",
+      "### Literature Review\nVial (2019) defines digital transformation as the process where digital technologies trigger strategic organizational responses.",
+      "Resource-based theory posits that firms benefit when they have digital capabilities that are valuable, rare, and difficult to imitate.",
+      "### Methodology\nThe study employs a mixed-methods design.",
+      "Semi-structured interviews explored adoption barriers.",
+      "### Results\nSurvey respondents with higher digital maturity reported stronger revenue growth and operational efficiency.",
+      "Many respondents cited digital skill shortages as a barrier.",
+      "### Discussion\nThe findings support the role of digital capability as a performance resource, highlighting that local infrastructure and skills shape the actual gains.",
+      "### Conclusion\nDigital transformation can enhance SME performance in India, but outcomes depend on skill development and implementation capability.",
+      "### References\nVial, G."
+    ],
+    "deletion_count": 13,
+    "insertion_count": 13,
+    "original_sentences": 16,
+    "rewritten_sentences": 16
+  },
+  "next_step": "AI rewrite is allowed only for these approved items and must follow the active provider and privacy mode settings."
+}

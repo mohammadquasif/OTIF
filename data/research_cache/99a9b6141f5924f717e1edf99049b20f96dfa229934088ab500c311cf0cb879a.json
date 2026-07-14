@@ -1,0 +1,37 @@
+{
+  "source_id": "arxiv",
+  "query": "Abstract",
+  "created_at": 1784015547.074892,
+  "matches": [
+    {
+      "title": "Generalizing the Paige-Tarjan Algorithm by Abstract Interpretation",
+      "url": "http://arxiv.org/abs/cs/0612120v2",
+      "year": "2006",
+      "abstract": "  The Paige and Tarjan algorithm (PT) for computing the coarsest refinement of a state partition which is a bisimulation on some Kripke structure is well known. It is also well known in model checking that bisimulation is equivalent to strong preservation of CTL, or, equivalently, of Hennessy-Milner logic. Drawing on these observations, we analyze the basic steps of the PT algorithm from an abstra"
+    },
+    {
+      "title": "The Probabilistic Model Checker Storm (Extended Abstract)",
+      "url": "http://arxiv.org/abs/1610.08713v1",
+      "year": "2016",
+      "abstract": "We present a new probabilistic model checker Storm. Using state-of-the-art libraries, we aim for both high performance and versatility. This extended abstract gives a brief overview of the features of Storm."
+    },
+    {
+      "title": "Correctness Kernels of Abstract Interpretations",
+      "url": "http://arxiv.org/abs/0910.4748v3",
+      "year": "2009",
+      "abstract": "In abstract interpretation-based static analysis, approximation is encoded by abstract domains. They provide systematic guidelines for designing abstract semantic functions that approximate some concrete system behaviors under analysis. It may happen that an abstract domain contains redundant information for the specific purpose of approximating a given concrete semantic function. This paper intro"
+    },
+    {
+      "title": "Abstract factorials",
+      "url": "http://arxiv.org/abs/0705.4299v3",
+      "year": "2007",
+      "abstract": "A commutative semigroup of abstract factorials is defined in the context of the ring of integers. We study such factorials for their own sake, whether they are or are not connected to sets of integers. Given a subset X of the positive integers we construct a \"factorial set\" with which one may define a multitude of abstract factorials on X. We study the possible equality of consecutive factorials, "
+    },
+    {
+      "title": "Abstract Separation Systems",
+      "url": "http://arxiv.org/abs/1406.3797v6",
+      "year": "2014",
+      "abstract": "Abstract separation systems provide a simple general framework in which both tree-shape and high cohesion of many combinatorial structures can be expressed, and their duality proved. Applications range from tangle-type duality and tree structure theorems in graphs, matroids or CW-complexes to, potentially, image segmentation and cluster analysis.\n  This paper is intended as a concise common refere"
+    }
+  ]
+}

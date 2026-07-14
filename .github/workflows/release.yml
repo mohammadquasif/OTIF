@@ -37,17 +37,6 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build Python Backend Sidecar
-        run: |
-          python -m venv backend\.venv
-          backend\.venv\Scripts\python.exe -m pip install --upgrade pip
-          backend\.venv\Scripts\python.exe -m pip install backend\. pyinstaller
-          powershell -ExecutionPolicy Bypass -File scripts\build_backend_sidecar.ps1
-          $binaryDir = "apps\desktop\src-tauri\binaries"
-          $source = Join-Path $binaryDir "otif-backend.exe"
-          if (-not (Test-Path -LiteralPath $source)) { throw "Expected Windows sidecar missing: $source" }
-          Get-ChildItem -LiteralPath $binaryDir | Format-Table Name,Length
-
       - name: Install frontend UI dependencies
         run: |
           cd apps/desktop
@@ -62,6 +51,22 @@ jobs:
           $json = Get-Content $confPath -Raw | ConvertFrom-Json
           $json.version = $ver
           $json | ConvertTo-Json -Depth 20 | Set-Content $confPath -Encoding utf8
+
+      - name: Build desktop frontend for sidecar fallback
+        run: |
+          cd apps/desktop
+          npm run build
+
+      - name: Build Python Backend Sidecar
+        run: |
+          python -m venv backend\.venv
+          backend\.venv\Scripts\python.exe -m pip install --upgrade pip
+          backend\.venv\Scripts\python.exe -m pip install backend\. pyinstaller
+          powershell -ExecutionPolicy Bypass -File scripts\build_backend_sidecar.ps1
+          $binaryDir = "apps\desktop\src-tauri\binaries"
+          $source = Join-Path $binaryDir "otif-backend.exe"
+          if (-not (Test-Path -LiteralPath $source)) { throw "Expected Windows sidecar missing: $source" }
+          Get-ChildItem -LiteralPath $binaryDir | Format-Table Name,Length
 
       - name: Fetch locked Rust dependencies
         run: |

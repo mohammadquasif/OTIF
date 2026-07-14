@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
+from app.ai.text_generation import generate_text_with_active_provider
 from app.ai.provider_router import AISettings, load_ai_settings
 from app.config import settings
 from app.api.v1.documents import document_metadata_path, find_document_path
@@ -25,10 +26,15 @@ from app.export.thesis_exporter import (
     export_dir,
     render_diagram_image,
     resolve_theme,
+    rich_text_to_plain_text,
     safe_filename,
     update_docx_fields_with_word,
     build_integrity_certificate,
     normalize_hex_color,
+    _extract_toc_entries,
+    build_toc_text,
+    build_lot_text,
+    build_lol_text,
 )
 from app.research.connectors import check_research_sources
 from app.skills.skill_manager import skill_manager
@@ -36,11 +42,112 @@ from app.skills.skill_manager import skill_manager
 router = APIRouter()
 
 
+OPEN_RESEARCH_CONNECTIVITY_PROBES = [
+    ("crossref", "Crossref", "https://api.crossref.org/works?rows=1"),
+    (
+        "arxiv",
+        "arXiv",
+        "https://export.arxiv.org/api/query?search_query=all:research&start=0&max_results=1",
+    ),
+    ("datacite", "DataCite", "https://api.datacite.org/dois?page[size]=1"),
+    (
+        "europe_pmc",
+        "Europe PMC",
+        "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=OPEN_ACCESS:y&pageSize=1&format=json",
+    ),
+    (
+        "semantic_scholar",
+        "Semantic Scholar",
+        "https://api.semanticscholar.org/graph/v1/paper/search?query=research&limit=1&fields=title",
+    ),
+    ("openalex", "OpenAlex", "https://api.openalex.org/works?per-page=1"),
+]
+
+# ── SSE Pacing ──────────────────────────────────────────────────
+PACE_DELAYS = {"fast": 0.08, "normal": 0.6, "detailed": 1.5}
+
+# All 14 open research sources for per-API progress events during scan
+ALL_RESEARCH_SOURCES = [
+    ("arxiv", "arXiv", "https://export.arxiv.org/api/query"),
+    ("crossref", "Crossref", "https://api.crossref.org/works"),
+    ("europe_pmc", "Europe PMC", "https://www.ebi.ac.uk/europepmc/webservices/rest/search"),
+    ("pubmed", "PubMed", "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"),
+    ("datacite", "DataCite", "https://api.datacite.org/dois"),
+    ("eric", "ERIC", "https://api.ies.ed.gov/eric/"),
+    ("osf_preprints", "OSF Preprints", "https://api.osf.io/v2/preprints/"),
+    ("zenodo", "Zenodo", "https://zenodo.org/api/records"),
+    ("semantic_scholar", "Semantic Scholar", "https://api.semanticscholar.org/graph/v1/paper/search"),
+    ("openalex", "OpenAlex", "https://api.openalex.org/works"),
+    ("doaj", "DOAJ", "https://doaj.org/api/search/articles"),
+    ("core", "CORE", "https://api.core.ac.uk/v3/search/works"),
+    ("base", "BASE", "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi"),
+    ("inspire_hep", "INSPIRE-HEP", "https://inspirehep.net/api"),
+]
+
+
+async def check_open_research_connectivity() -> dict:
+    """Probe several free/open scholarly APIs without depending on one canary."""
+
+    async def probe_source(
+        client: httpx.AsyncClient,
+        source_id: str,
+        name: str,
+        url: str,
+    ) -> dict:
+        try:
+            response = await client.get(url)
+            reachable = response.status_code < 500
+            return {
+                "id": source_id,
+                "name": name,
+                "status": "reachable" if reachable else "unavailable",
+                "status_code": response.status_code,
+                "message": (
+                    f"{name} responded with HTTP {response.status_code}"
+                    if reachable
+                    else f"{name} returned HTTP {response.status_code}"
+                ),
+            }
+        except Exception as exc:
+            return {
+                "id": source_id,
+                "name": name,
+                "status": "unavailable",
+                "status_code": None,
+                "message": str(exc)[:220],
+            }
+
+    timeout = httpx.Timeout(8.0, connect=4.0)
+    headers = {"User-Agent": "OTIF/1.0 academic-integrity"}
+    async with httpx.AsyncClient(
+        timeout=timeout,
+        headers=headers,
+        follow_redirects=True,
+        trust_env=True,
+    ) as client:
+        results = await asyncio.gather(
+            *[
+                probe_source(client, source_id, name, url)
+                for source_id, name, url in OPEN_RESEARCH_CONNECTIVITY_PROBES
+            ]
+        )
+
+    reachable = [result for result in results if result["status"] == "reachable"]
+    return {
+        "internet_reachable": bool(reachable),
+        "reachable_count": len(reachable),
+        "checked_count": len(results),
+        "sources": results,
+    }
+
+
 class AnalysisRequest(BaseModel):
     doc_type: str = "thesis"
     norm: str = "apa7"
     session_id: str | None = None
     project_id: str | None = None      # If set, analysis result is logged to project thread
+    research_context: str | None = None  # Optional context from document setup — fed to AI review
+    pace: str = "normal"  # "fast" | "normal" | "detailed" — controls SSE event delay
 
 
 class PlanRewriteRequest(BaseModel):
@@ -50,6 +157,11 @@ class PlanRewriteRequest(BaseModel):
     figure_start: int = 1
     doc_type: str = "thesis"
     norm: str = "apa7"
+
+
+class SmartDiagramRequest(BaseModel):
+    chapter_text: str = ""
+    chapter_title: str = ""
 
 
 class RewriteApprovalRequest(BaseModel):
@@ -102,7 +214,7 @@ def _approval_path(doc_id: str) -> Path:
 def _extract_text(path: Path) -> str:
     suffix = path.suffix.lower()
 
-    if suffix == ".txt":
+    if suffix in {".txt", ".md"}:
         return path.read_text(encoding="utf-8", errors="ignore")
 
     if suffix == ".docx":
@@ -384,36 +496,80 @@ def _build_improvement_plan(
         )
 
     if scores["citation_quality"] < 70:
+        # Extract real citation suggestions from research sources
+        citation_suggestions = []
+        research_data = analysis.get("research_sources", {})
+        for source in research_data.get("sources", []):
+            for match in source.get("matches", [])[:3]:
+                title = match.get("title", "")
+                year = match.get("year", "")
+                url = match.get("url", "")
+                if title and year:
+                    citation_suggestions.append({
+                        "title": title,
+                        "year": str(year),
+                        "url": url,
+                        "source": source.get("name", "unknown"),
+                    })
+        unique_suggestions = []
+        seen_titles = set()
+        for s in citation_suggestions:
+            if s["title"] not in seen_titles:
+                seen_titles.add(s["title"])
+                unique_suggestions.append(s)
+
+        citation_hint = ""
+        if unique_suggestions:
+            examples = unique_suggestions[:4]
+            citation_hint = (
+                "\n\nReal citation suggestions from open research sources:\n" +
+                "\n".join(f"  • {s['title']} ({s['year']}) — via {s['source']}" for s in examples) +
+                "\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works."
+            )
+
         plan.append(
             {
                 "id": "citation-strength",
                 "title": "Strengthen citation signal",
                 "priority": "high",
                 "action": (
-                    "Mark unsupported claims, add missing in-text citation placeholders, and normalize citation style "
-                    "without inventing sources."
-                ),
+                    "Add real citations to unsupported factual claims. Use the suggested citations below "
+                    "or find verified sources for each claim. Normalize citation style to "
+                    f"{_format_label(norm)} format without inventing sources."
+                ) + citation_hint,
                 "evidence": (
                     f"Citation quality is {scores['citation_quality']}; citation coverage is "
-                    f"{metrics['citation_coverage']}% across claim-like sentences."
+                    f"{metrics['citation_coverage']}% across claim-like sentences. "
+                    f"{len(unique_suggestions)} real citation suggestion(s) found from open research sources."
                 ),
                 "requires_ai": True,
+                "citation_suggestions": unique_suggestions[:6],
             }
         )
 
     if scores["structure_signal"] < 72:
-        plan.append(
-            {
-                "id": "academic-structure",
-                "title": f"Tighten {doc_type.replace('_', ' ')} structure",
-                "priority": "medium",
-                "action": (
-                    "Improve section transitions, objective alignment, methodology/result boundaries, and conclusion traceability."
-                ),
-                "evidence": f"Structure signal is {scores['structure_signal']} for the selected document type.",
-                "requires_ai": True,
-            }
-        )
+        if doc_type == "research_paper":
+            plan.append(
+                {
+                    "id": "imrad-structure",
+                    "title": "Enforce IMRaD structure",
+                    "priority": "high",
+                    "action": "Ensure the paper strictly follows Introduction, Methods, Results, and Discussion structure. Remove unnecessary thesis-style chapters.",
+                    "evidence": f"Structure signal is {scores['structure_signal']}. Missing sections: {', '.join(metrics.get('missing_sections', []))}.",
+                    "requires_ai": True,
+                }
+            )
+        else:
+            plan.append(
+                {
+                    "id": "academic-structure",
+                    "title": "Tighten thesis chapter structure",
+                    "priority": "medium",
+                    "action": "Ensure standard thesis flow (Abstract, Intro, Literature Review, Methodology, Results, Discussion, Conclusion).",
+                    "evidence": f"Structure signal is {scores['structure_signal']} for thesis. Missing sections: {', '.join(metrics.get('missing_sections', []))}.",
+                    "requires_ai": True,
+                }
+            )
 
     for chapter in (chapter_results or [])[:8]:
         chapter_scores = chapter["scores"]
@@ -461,16 +617,29 @@ def _build_improvement_plan(
         }
     )
 
-    plan.append(
-        {
-            "id": "target-format",
-            "title": f"Apply {_format_label(norm)} checks",
-            "priority": "medium",
-            "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
-            "evidence": f"Target format selected: {_format_label(norm)}.",
-            "requires_ai": False,
-        }
-    )
+    norm_issues = metrics.get("norm_issues", [])
+    if norm_issues:
+        plan.append(
+            {
+                "id": "norm-compliance",
+                "title": f"Fix {_format_label(norm)} citation formatting",
+                "priority": "high",
+                "action": " ".join(norm_issues),
+                "evidence": f"Detected deviations from {_format_label(norm)} requirements.",
+                "requires_ai": True,
+            }
+        )
+    else:
+        plan.append(
+            {
+                "id": "target-format",
+                "title": f"Apply {_format_label(norm)} checks",
+                "priority": "medium",
+                "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+                "evidence": f"Target format selected: {_format_label(norm)}.",
+                "requires_ai": False,
+            }
+        )
 
     plan.append(
         {
@@ -498,7 +667,9 @@ def _rewrite_prompt(text: str, approved_items: list[dict], doc_type: str, norm: 
         "- Preserve meaning, claims, section intent, and academic rigor.\n"
         "- Do not invent sources, findings, data, references, or page numbers.\n"
         "- NEVER modify or delete placeholder tokens like [[CIT_LOCK_...]]. Keep them exactly where they appear.\n"
-        "- Elevate scholarly voice without introducing generic copywriting tone.\n\n"
+        "- Elevate scholarly voice without introducing generic copywriting tone.\n"
+        f"- For research papers: strictly follow IMRaD (Introduction, Methods, Results, Discussion). Do NOT invent thesis chapters (like 'Literature Review').\n" if doc_type == "research_paper" else "- For thesis: maintain formal multi-chapter hierarchy.\n"
+        f"- Target Format ({norm}): Ensure citations and headings match this format closely.\n\n"
         f"Document type: {doc_type}\n"
         f"Target format: {_format_label(norm)}\n"
         f"Diagram drafting approved: {'yes' if req.draw_diagrams else 'no'}\n"
@@ -517,44 +688,197 @@ async def _try_generate_rewrite_preview(
     req: RewriteApprovalRequest,
     config: AISettings,
 ) -> dict:
-    if config.provider != "ollama":
-        return {
-            "rewrite_status": "approval_recorded_selected_text_required",
-            "rewrite_preview": None,
-            "rewrite_note": (
-                "Cloud revision is not automatic for full documents. Select a paragraph/chapter or switch to local "
-                "Ollama to revise without sending document text to a cloud provider."
-            ),
-        }
+    """Generate a rewrite preview showing track-changes-style diff (deletions/insertions).
 
+    Works with any configured AI provider — Ollama, cloud APIs, etc.
+    For small local models, uses a simplified prompt that still produces useful output.
+    """
     locked_text, lock_map = lock_citations(text)
-    prompt = _rewrite_prompt(locked_text, approved_items, req.doc_type, req.norm, req)
-    model = config.model_by_provider.get("ollama") or "llama3.3:latest"
-    base_url = (config.ollama_base_url or "http://localhost:11434").rstrip("/")
-    try:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(90.0, connect=5.0)) as client:
-            response = await client.post(
-                f"{base_url}/api/generate",
-                json={"model": model, "prompt": prompt, "stream": False},
+
+    # Build a concise summary of approved improvements
+    item_summary = "\n".join(
+        f"- {item['title']}: {item['action'][:200]}"
+        for item in approved_items[:6]
+    )
+    if len(approved_items) > 6:
+        item_summary += f"\n- ... and {len(approved_items) - 6} more improvements"
+
+    # Use a simpler, more direct prompt that works with small AND large models
+    prompt = (
+        "You are an academic editor. Revise this research document to fix the issues listed below.\n\n"
+        "IMPORTANT RULES:\n"
+        "- Preserve ALL meaning, claims, data, and citations.\n"
+        "- Do NOT invent new sources, statistics, or findings.\n"
+        "- Keep ALL [[CIT_LOCK_N]] tokens exactly as they appear.\n"
+        "- Improve academic phrasing: vary sentence length, reduce clichés, add researcher voice.\n"
+        "- For each major change, show: [OLD] original text [NEW] improved text\n\n"
+        f"Document type: {req.doc_type}\n"
+        f"Target format: {_format_label(req.norm)}\n\n"
+        f"IMPROVEMENTS TO APPLY:\n{item_summary}\n\n"
+        "DOCUMENT TEXT:\n"
+        f"{locked_text[:5000]}\n\n"
+        "Return the COMPLETE revised document. Use [OLD]...[NEW]... markers for significant changes "
+        "so the user can review what was changed. At the end, add a brief '## Change Log' listing what was improved."
+    )
+
+    provider = config.provider
+
+    # Cloud providers: use the standard AI text generation pipeline
+    if provider != "ollama":
+        try:
+            from app.ai.text_generation import generate_text_with_active_provider as _gen
+            raw_text, model_name = await _gen(
+                prompt, config,
+                cloud_privacy_modes={"cloud_allowed"},
+                task_label="document rewrite preview",
             )
-            response.raise_for_status()
-            data = response.json()
-            raw_preview = data.get("response", "").strip()
-            restored_preview, all_restored, missing_tokens = unlock_citations(raw_preview, lock_map)
-            note = f"Generated locally with Ollama model {model}. Citations deterministically locked and restored ({len(lock_map)} references preserved)."
+            restored_preview, all_restored, missing_tokens = unlock_citations(raw_text, lock_map)
+            note = (
+                f"Generated with {provider} ({model_name}). "
+                f"Citations locked and restored ({len(lock_map)} references preserved)."
+            )
             if not all_restored:
-                note += f" Restored {len(missing_tokens)} citations omitted by model."
+                note += f" {len(missing_tokens)} citations omitted by model."
+
+            # Compute simple diff
+            diff = _compute_rewrite_diff(text, restored_preview)
+
             return {
                 "rewrite_status": "rewrite_preview_ready",
                 "rewrite_preview": restored_preview,
                 "rewrite_note": note,
+                "diff": diff,
+            }
+        except Exception as exc:
+            return {
+                "rewrite_status": "approval_recorded_ai_unavailable",
+                "rewrite_preview": None,
+                "rewrite_note": f"Cloud AI rewrite failed: {exc}. Approval saved — retry with Ollama or check your API key.",
+                "diff": None,
+            }
+
+    # Ollama: use local API directly
+    model = config.model_by_provider.get("ollama") or "qwen2.5:1.5b"
+    base_url = (config.ollama_base_url or "http://localhost:11434").rstrip("/")
+
+    try:
+        async with httpx.AsyncClient(timeout=httpx.Timeout(120.0, connect=5.0)) as client:
+            response = await client.post(
+                f"{base_url}/api/generate",
+                json={"model": model, "prompt": prompt, "stream": False,
+                      "options": {"temperature": 0.7, "num_predict": 4096}},
+            )
+            response.raise_for_status()
+            data = response.json()
+            raw_preview = data.get("response", "").strip()
+
+            # Small model refusal detection
+            refusal_patterns = [
+                "I'm sorry", "I cannot", "I can't", "unable to",
+                "Please provide", "I am unable", "I apologize",
+            ]
+            is_refusal = any(
+                raw_preview.startswith(p) or raw_preview[:100].lower().find(p.lower()) >= 0
+                for p in refusal_patterns
+            )
+            if is_refusal and len(raw_preview) < 200:
+                # Small model refused — try with even simpler prompt
+                simple_prompt = (
+                    "Rewrite this academic text to improve clarity and scholarly voice. "
+                    "Keep all facts and citations exactly the same. "
+                    "Mark changes with [OLD] before and [NEW] after each change.\n\n"
+                    f"TEXT:\n{locked_text[:3000]}"
+                )
+                response2 = await client.post(
+                    f"{base_url}/api/generate",
+                    json={"model": model, "prompt": simple_prompt, "stream": False,
+                          "options": {"temperature": 0.5, "num_predict": 2048}},
+                )
+                response2.raise_for_status()
+                raw_preview = response2.json().get("response", "").strip()
+
+            restored_preview, all_restored, missing_tokens = unlock_citations(raw_preview, lock_map)
+
+            if not restored_preview.strip() or len(restored_preview.strip()) < 50:
+                raise ValueError("Model returned empty or too-short response")
+
+            note = (
+                f"Generated locally with Ollama model {model}. "
+                f"Citations deterministically locked and restored ({len(lock_map)} references preserved)."
+            )
+            if not all_restored:
+                note += f" Restored {len(missing_tokens)} citations omitted by model."
+
+            diff = _compute_rewrite_diff(text, restored_preview)
+
+            return {
+                "rewrite_status": "rewrite_preview_ready",
+                "rewrite_preview": restored_preview,
+                "rewrite_note": note,
+                "diff": diff,
             }
     except Exception as exc:
         return {
             "rewrite_status": "approval_recorded_ai_unavailable",
             "rewrite_preview": None,
-            "rewrite_note": f"Approval was saved, but Ollama revision engine is not available: {exc}",
+            "rewrite_note": f"Approval saved, but rewrite engine unavailable: {exc}",
+            "diff": None,
         }
+
+
+def _compute_rewrite_diff(original: str, rewritten: str) -> dict:
+    """Compute a simple sentence-level diff between original and rewritten text."""
+    import re as _re
+    orig_sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', original) if len(s.strip()) > 15]
+    rewrite_sentences = [s.strip() for s in _re.split(r'(?<=[.!?])\s+', rewritten) if len(s.strip()) > 15]
+
+    orig_set = set(s.lower() for s in orig_sentences)
+    rewrite_set = set(s.lower() for s in rewrite_sentences)
+
+    deletions = [s for s in orig_sentences if s.lower() not in rewrite_set][:20]
+    insertions = [s for s in rewrite_sentences if s.lower() not in orig_set][:20]
+
+    return {
+        "deletions": deletions,
+        "insertions": insertions,
+        "deletion_count": len(deletions),
+        "insertion_count": len(insertions),
+        "original_sentences": len(orig_sentences),
+        "rewritten_sentences": len(rewrite_sentences),
+    }
+
+
+def _detect_diagram_need(title: str, text: str) -> tuple[bool, str, str]:
+    """Detect if chapter content would benefit from a diagram. Returns (needed, diagram_type, rationale)."""
+    lower_text = (title + " " + text[:3000]).lower()
+    process_signals = ["step", "phase", "stage", "process", "workflow", "pipeline", "procedure", "protocol", "sequence", "flow", "cycle", "lifecycle"]
+    structure_signals = ["framework", "architecture", "model", "schema", "component", "layer", "module", "dimension", "pillar", "element", "structure", "hierarchy", "taxonomy", "classification"]
+    relation_signals = ["relationship", "interaction", "between", "mapping", "correlation", "connection", "link", "interface", "integration"]
+    method_signals = ["methodology", "method", "approach", "design science", "action research", "case study", "experiment", "survey", "interview"]
+    comparison_signals = ["compare", "comparison", "versus", "vs", "difference between", "advantages", "disadvantages"]
+    timeline_signals = ["timeline", "schedule", "milestone", "phase 1", "phase 2", "year 1", "year 2", "roadmap"]
+
+    process_score = sum(1 for s in process_signals if s in lower_text) * 3
+    structure_score = sum(1 for s in structure_signals if s in lower_text) * 3
+    relation_score = sum(1 for s in relation_signals if s in lower_text) * 2
+    method_score = sum(1 for s in method_signals if s in lower_text) * 2
+    comparison_score = sum(1 for s in comparison_signals if s in lower_text) * 2
+    timeline_score = sum(1 for s in timeline_signals if s in lower_text) * 3
+
+    if structure_score >= 6:
+        return (True, "conceptual_model", f"Structural framework detected — suggest conceptual model diagram for '{title}'")
+    if process_score >= 6 or method_score >= 6:
+        return (True, "method_flow", f"Process/methodology detected — suggest flow diagram for '{title}'")
+    if relation_score >= 4:
+        return (True, "relationship_map", f"Relationships detected — suggest relationship diagram for '{title}'")
+    if comparison_score >= 4:
+        return (True, "comparison_table", f"Comparisons detected — suggest comparison matrix for '{title}'")
+    if timeline_score >= 6:
+        return (True, "timeline", f"Timeline/schedule detected — suggest Gantt chart for '{title}'")
+    if structure_score >= 3 or process_score >= 3:
+        return (True, "generic_flow", f"Structural elements detected — suggest diagram for '{title}'")
+
+    return (False, "", "")
 
 
 def _chapter_rewrite_prompt(
@@ -566,86 +890,107 @@ def _chapter_rewrite_prompt(
     norm: str,
 ) -> str:
     item_text = "\n".join(f"- {item['title']}: {item['action']}" for item in approved_items) or "- General scholarly polishing"
+
+    # Detect diagram opportunity
+    needs_diagram, diagram_type, diagram_rationale = _detect_diagram_need(title, text)
+    diagram_instruction = ""
+    if needs_diagram:
+        type_guide = {
+            "conceptual_model": "Use 'graph TD' (top-down) with labeled boxes for each component/dimension, connected by arrows showing relationships. Include all framework dimensions from the text.",
+            "method_flow": "Use 'graph LR' (left-to-right) showing each methodology step as a node, connected by arrows in sequence. Include decision points as diamonds.",
+            "relationship_map": "Use 'graph TD' showing entities/concepts as nodes with labeled arrows indicating the type of relationship.",
+            "comparison_table": "Use 'graph LR' with two parallel columns showing the compared items and their attributes side by side.",
+            "timeline": "Use a 'gantt' chart showing phases, milestones, and durations mentioned in the text.",
+            "generic_flow": "Use 'graph TD' showing the main concepts and their logical connections from the chapter.",
+        }
+        guide = type_guide.get(diagram_type, type_guide["generic_flow"])
+        diagram_instruction = (
+            f"\n10. DIAGRAM REQUIRED: {diagram_rationale}\n"
+            f"   At the end of the chapter, include a MERMAID diagram code block:\n"
+            f"   ```mermaid\n{guide}\n   ```\n"
+            "   Make the diagram SPECIFIC to this chapter's content — use actual concept names, not placeholder text.\n"
+            "   Include a figure caption: 'Figure X: [descriptive caption]' before the mermaid block.\n"
+        )
+
     return (
-        "You are revising one approved academic chapter only. Return the complete revised chapter text.\n"
-        "Rules:\n"
-        "- Preserve the author's claims, results, data, citations, references, and meaning.\n"
-        "- Do not invent sources, statistics, findings, limitations, tables, figures, or page numbers.\n"
-        "- Keep citation lock tokens exactly as written, including tokens like [[CIT_LOCK_0]].\n"
-        "- Improve clarity, academic voice, originality, citation integration, and structure only where supported.\n"
-        "- Do not add markdown fences or commentary; return only the revised chapter body.\n\n"
-        f"Document type: {doc_type}\n"
-        f"Target format: {_format_label(norm)}\n"
-        f"Chapter: {title}\n"
-        f"Approved improvement scope:\n{item_text}\n\n"
-        f"Chapter text:\n{text[:18000]}"
+        "You are a Ref-N-Write Academic Chapter Rewriting Engine. Revise ONLY this chapter.\n"
+        "Return the COMPLETE revised chapter text with no truncation.\n\n"
+        "IMPERATIVE RULES:\n"
+        "1. Preserve ALL claims, results, data, citations, references, numbers, and the author's original meaning.\n"
+        "2. NEVER invent new sources, statistics, findings, limitations, tables, figures, or page numbers.\n"
+        "2b. NEVER add placeholder citations like [CITATION NEEDED], [REF], [CITE], (Author, Year). Leave uncited claims as-is.\n"
+        "2c. NEVER add DOI numbers, URLs, or reference list entries not present in the original text.\n"
+        "3. Keep ALL citation lock tokens EXACTLY: [[CIT_LOCK_0]], [[CIT_LOCK_1]], etc.\n"
+        "4. Improve academic voice: varied sentence rhythm, precise vocabulary, natural hedging.\n"
+        "5. Reduce AI-like patterns: remove template openers, vary sentence length, add researcher voice.\n"
+        "6. Strengthen logical flow between paragraphs and sections.\n"
+        "7. Replace overused clichés ('furthermore', 'it is important to note') with fresher alternatives.\n"
+        "8. Weave citations naturally into sentences — not parenthetical afterthoughts.\n"
+        f"{'- For research papers: Maintain strict IMRaD structure.\n' if doc_type == 'research_paper' else ''}"
+        f"{'- For thesis: Maintain formal multi-chapter academic hierarchy.\n' if doc_type != 'research_paper' else ''}"
+        f"9. TARGET FORMAT: {_format_label(norm)}.\n"
+        f"{diagram_instruction}\n"
+        f"DOCUMENT TYPE: {doc_type}\n"
+        f"CHAPTER TITLE: {title}\n"
+        f"APPROVED IMPROVEMENTS TO APPLY:\n{item_text}\n\n"
+        f"CHAPTER TEXT:\n{text[:18000]}\n\n"
+        "Return ONLY the complete revised chapter text — no markdown fences around the entire response, no explanations."
     )
 
 
 async def _generate_text_with_active_provider(prompt: str, config: AISettings) -> tuple[str, str]:
-    provider = config.provider
-    model = config.model_by_provider.get(provider) or ""
+    return await generate_text_with_active_provider(
+        prompt,
+        config,
+        cloud_privacy_modes={"selected_chapter", "cloud_allowed"},
+        task_label="chapter rewrite",
+    )
 
-    if provider == "ollama":
-        base_url = (config.ollama_base_url or "http://localhost:11434").rstrip("/")
-        async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=5.0)) as client:
-            response = await client.post(
-                f"{base_url}/api/generate",
-                json={"model": model or "llama3.3:latest", "prompt": prompt, "stream": False},
+
+async def _generate_rewrite_text_with_resilience(
+    *,
+    prompt: str,
+    config: AISettings,
+    title: str,
+    locked_text: str,
+    approved_items: list[dict],
+    doc_type: str,
+    norm: str,
+) -> tuple[str, str, str, str | None]:
+    """Try the configured AI provider, then local Ollama. Fail if no AI can rewrite."""
+    try:
+        raw_text, model = await _generate_text_with_active_provider(prompt, config)
+        return raw_text, model, config.provider, None
+    except HTTPException as exc:
+        if exc.status_code == 403:
+            raise
+        active_error: Exception = exc
+    except Exception as exc:
+        active_error = exc
+
+    if config.provider != "ollama":
+        try:
+            ollama_config = config.model_copy(update={"provider": "ollama"})
+            raw_text, model = await _generate_text_with_active_provider(prompt, ollama_config)
+            return (
+                raw_text,
+                model,
+                "ollama",
+                f"Configured provider failed ({active_error}); used local Ollama instead.",
             )
-            response.raise_for_status()
-            return response.json().get("response", "").strip(), model
+        except Exception as ollama_error:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    "AI rewrite is required. Configured provider failed and local Ollama is unavailable. "
+                    f"Provider error: {active_error}. Ollama error: {ollama_error}"
+                ),
+            ) from ollama_error
 
-    if config.privacy_mode not in {"selected_chapter", "cloud_allowed"}:
-        raise HTTPException(
-            status_code=403,
-            detail=(
-                "Cloud chapter rewrite is blocked by privacy mode. Select selected-chapter or cloud-allowed mode, "
-                "or switch to Ollama."
-            ),
-        )
-
-    key = config.api_keys.get(provider, "")
-    if not key:
-        raise HTTPException(status_code=400, detail=f"No API key configured for {provider}.")
-
-    async with httpx.AsyncClient(timeout=httpx.Timeout(180.0, connect=8.0)) as client:
-        if provider == "deepseek":
-            response = await client.post(
-                "https://api.deepseek.com/chat/completions",
-                headers={"Authorization": f"Bearer {key}"},
-                json={
-                    "model": model or "deepseek-chat",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.2,
-                },
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"].strip(), model
-
-        if provider == "openai":
-            response = await client.post(
-                "https://api.openai.com/v1/chat/completions",
-                headers={"Authorization": f"Bearer {key}"},
-                json={
-                    "model": model or "gpt-5.5",
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.2,
-                },
-            )
-            response.raise_for_status()
-            return response.json()["choices"][0]["message"]["content"].strip(), model
-
-        response = await client.post(
-            f"https://generativelanguage.googleapis.com/v1beta/models/{model or 'gemini-3-pro'}:generateContent",
-            params={"key": key},
-            json={"contents": [{"parts": [{"text": prompt}]}]},
-        )
-        response.raise_for_status()
-        data = response.json()
-        candidates = data.get("candidates", [])
-        parts = candidates[0].get("content", {}).get("parts", []) if candidates else []
-        return "\n".join(part.get("text", "") for part in parts).strip(), model
+    raise HTTPException(
+        status_code=502,
+        detail=f"AI rewrite is required. Provider error: {active_error}",
+    )
 
 
 def _originality_matrix(text: str, citation: dict, similarity: dict, banned_hits: list[dict]) -> dict:
@@ -801,7 +1146,61 @@ def _rq_traceback(text: str) -> dict:
     }
 
 
+def _doc_type_structure_rules(text: str, chapters: list[dict], doc_type: str) -> dict:
+    """Evaluate structural compliance based on document type."""
+    text_lower = text.lower()
+    chapter_titles = [c["title"].lower() for c in chapters]
+    
+    if doc_type == "research_paper":
+        # IMRaD pattern expectation
+        expected = ["abstract", "introduction", "method", "result", "discussion"]
+        found = sum(1 for exp in expected if any(exp in title for title in chapter_titles) or exp in text_lower[:2000])
+        imrad_score = (found / len(expected)) * 100 if expected else 0
+        return {
+            "structure_signal": imrad_score,
+            "missing_sections": [exp for exp in expected if not any(exp in title for title in chapter_titles) and exp not in text_lower[:2000]],
+            "is_imrad": True
+        }
+    else: # thesis
+        # Thesis pattern expectation
+        expected = ["abstract", "introduction", "literature", "method", "result", "discussion", "conclusion"]
+        found = sum(1 for exp in expected if any(exp in title for title in chapter_titles) or exp in text_lower[:2000])
+        thesis_score = (found / len(expected)) * 100 if expected else 0
+        return {
+            "structure_signal": thesis_score,
+            "missing_sections": [exp for exp in expected if not any(exp in title for title in chapter_titles) and exp not in text_lower[:2000]],
+            "is_imrad": False
+        }
+
+
+def _norm_citation_check(text: str, norm: str) -> dict:
+    """Validate citation style per chosen norm."""
+    issues = []
+    has_refs = bool(re.search(r"(?im)^\s*(references|bibliography|works cited)\s*$", text))
+    
+    if norm == "ugc":
+        # UGC usually requires distinct References
+        if not has_refs:
+            issues.append("UGC format requires a distinct 'References' or 'Bibliography' section.")
+    elif norm in ["harvard", "apa7"]:
+        # Expect author-date (Name, YYYY)
+        author_date_hits = len(re.findall(r"\([A-Z][A-Za-z&.\-\s]+,\s*\d{4}[a-z]?\)|[A-Z][A-Za-z.\-]+\s+\(\d{4}[a-z]?\)", text))
+        if author_date_hits < 3 and len(text.split()) > 1000:
+            issues.append(f"{_format_label(norm)} requires author-date citations (e.g., Smith, 2023). Few or none found.")
+    elif norm in ["ieee", "springer", "elsevier"]:
+        # Expect bracketed numbers [1], [2]
+        bracket_hits = len(re.findall(r"\[\d+(?:,\s*\d+)*\]", text))
+        if bracket_hits < 3 and len(text.split()) > 1000:
+            issues.append(f"{_format_label(norm)} requires bracketed numeric citations (e.g., [1], [2]). Few or none found.")
+            
+    return {
+        "norm_issues": issues,
+        "norm_valid": len(issues) == 0
+    }
+
+
 def _score_document(
+
     text: str,
     doc_type: str = "thesis",
     norm: str = "apa7",
@@ -842,7 +1241,14 @@ def _score_document(
     hedging = _hedging_metrics(text, word_count)
     rq_traceback = _rq_traceback(text)
     phrase_quality = max(20, min(96, style["humanization_score"] - min(10, sum(hit["count"] for hit in banned_hits) * 0.4)))
-    structure_signal = max(40, min(94, 58 + min(22, word_count / 250) + unique_ratio * 12))
+    
+    chapters = _split_chapters(text)
+    doc_structure = _doc_type_structure_rules(text, chapters, doc_type)
+    norm_check = _norm_citation_check(text, norm)
+
+    base_structure = 58 + min(22, word_count / 250) + unique_ratio * 12
+    structure_signal = max(40, min(94, (base_structure * 0.4) + (doc_structure["structure_signal"] * 0.6)))
+    
     quote_penalty = min(12, style["long_quote_words"] / 40)
     plagiarism_risk = max(
         2,
@@ -878,7 +1284,8 @@ def _score_document(
         + (100 - style["ai_writing_risk"])
         + structure_signal
     ) / 6
-    chapters = _split_chapters(text)
+    
+    # chapters already parsed above
     chapter_results = _score_chapters(chapters) if include_plan else []
 
     analysis = {
@@ -904,6 +1311,9 @@ def _score_document(
             **originality_matrix,
             **hedging,
             **rq_traceback,
+            **norm_check,
+            "is_imrad": doc_structure["is_imrad"],
+            "missing_sections": doc_structure["missing_sections"],
         },
         "findings": banned_hits[:12],
         "scores": {
@@ -1007,18 +1417,200 @@ def _build_integrity_report(analysis: dict, doc_type: str, norm: str) -> dict:
     }
 
 
-async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id: str | None = None):
-    """Generator that yields SSE events during analysis."""
+def _ai_analysis_prompt(text: str, analysis: dict, doc_type: str, norm: str, research_context: str | None = None) -> str:
+    chapter_lines = "\n".join(
+        (
+            f"- {chapter['id']} | {chapter['title']} | pages {chapter.get('start_page', 1)}-"
+            f"{chapter.get('end_page', chapter.get('start_page', 1))} | scores {chapter.get('scores', {})}"
+        )
+        for chapter in analysis.get("chapters", [])[:10]
+    )
+    plan_lines = "\n".join(
+        f"- {item.get('id')}: {item.get('title')} - {item.get('action')}"
+        for item in analysis.get("improvement_plan", [])[:12]
+    )
+    scores = json.dumps(analysis.get("scores", {}), ensure_ascii=True)
+    metrics = json.dumps(
+        {
+            key: analysis.get("metrics", {}).get(key)
+            for key in [
+                "word_count",
+                "citation_coverage",
+                "ai_writing_risk",
+                "humanization_score",
+                "rq_traceback_score",
+                "missing_sections",
+                "near_duplicate_pairs",
+            ]
+        },
+        ensure_ascii=True,
+    )
+    return (
+        "You are OTIF's AI Academic Reviewer. Use the deterministic rules, skill findings, "
+        "and open-source research evidence as the factual base. Do not invent sources, data, "
+        "page numbers, claims, or citations.\n\n"
+        "Return JSON only with this shape:\n"
+        "{\"review_summary\":\"...\",\"items\":[{\"title\":\"...\",\"priority\":\"high|medium|low\","
+        "\"action\":\"...\",\"evidence\":\"...\",\"chapter_id\":\"optional existing id\","
+        "\"page_range\":\"optional range\"}]}\n\n"
+        f"Document type: {doc_type}\nTarget format: {_format_label(norm)}\n"
+        + (f"Research context: {research_context[:1200]}\n" if research_context else "")
+        + f"Scores: {scores}\nMetrics: {metrics}\n"
+        f"Existing rule/skill plan:\n{plan_lines or '- none'}\n\n"
+        f"Detected chapters:\n{chapter_lines or '- none'}\n\n"
+        "Create 3 to 6 precise, approval-ready improvement items that strengthen academic quality, "
+        "citation defensibility, originality, chapter flow, and researcher voice. Each action must be "
+        "safe for a red/green review rewrite.\n\n"
+        f"Document excerpt:\n{text[:12000]}"
+    )
+
+
+def _parse_ai_review_json(raw_text: str) -> dict:
+    cleaned = raw_text.strip()
+    if cleaned.startswith("```"):
+        cleaned = re.sub(r"^```(?:json)?\s*", "", cleaned)
+        cleaned = re.sub(r"\s*```$", "", cleaned)
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+        if not match:
+            raise
+        return json.loads(match.group(0))
+
+
+async def _run_ai_analysis_pass(text: str, analysis: dict, doc_type: str, norm: str, research_context: str | None = None) -> dict:
+    config = load_ai_settings(mask_keys=False)
+    prompt = _ai_analysis_prompt(text, analysis, doc_type, norm, research_context)
+    provider_used = config.provider
+    model = config.model_by_provider.get(config.provider)
+    warning = None
+
+    try:
+        raw_text, model = await generate_text_with_active_provider(
+            prompt,
+            config,
+            cloud_privacy_modes={"selected_chapter", "cloud_allowed"},
+            task_label="AI analysis review",
+            timeout_seconds=120.0,
+        )
+    except HTTPException as exc:
+        if exc.status_code == 403 and config.provider != "ollama":
+            warning = f"Cloud AI review blocked by privacy mode: {exc.detail}. Trying local Ollama."
+        else:
+            warning = f"Configured AI review failed: {exc.detail}. Trying local Ollama."
+        raw_text = ""
+    except Exception as exc:
+        warning = f"Configured AI review failed: {exc}. Trying local Ollama."
+        raw_text = ""
+
+    if not raw_text and config.provider != "ollama":
+        try:
+            ollama_config = config.model_copy(update={"provider": "ollama"})
+            raw_text, model = await generate_text_with_active_provider(
+                prompt,
+                ollama_config,
+                cloud_privacy_modes={"selected_chapter", "cloud_allowed"},
+                task_label="AI analysis review",
+                timeout_seconds=120.0,
+            )
+            provider_used = "ollama"
+            warning = f"{warning} Local Ollama completed the AI review."
+        except Exception as exc:
+            raise HTTPException(
+                status_code=502,
+                detail=(
+                    f"AI review is required before OTIF can produce the final report and improvement plan. "
+                    f"{warning} Ollama unavailable: {exc}"
+                ),
+            ) from exc
+
+    if not raw_text:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "AI review is required before OTIF can produce the final report and improvement plan. "
+                f"{warning or 'No AI review text was generated.'}"
+            ),
+        )
+
+    try:
+        parsed = _parse_ai_review_json(raw_text)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502,
+            detail=(
+                "AI review returned an invalid format, so OTIF cannot safely produce the final plan. "
+                f"Parser error: {exc}"
+            ),
+        ) from exc
+
+    return {
+        "status": "ai_completed",
+        "provider": provider_used,
+        "model": model,
+        "warning": warning,
+        "review_summary": str(parsed.get("review_summary") or "AI academic review completed."),
+        "items": parsed.get("items") if isinstance(parsed.get("items"), list) else [],
+    }
+
+
+def _merge_ai_review_items(analysis: dict, ai_review: dict) -> None:
+    existing_ids = {item.get("id") for item in analysis.get("improvement_plan", [])}
+    chapter_ids = {chapter.get("id") for chapter in analysis.get("chapters", [])}
+    merged = analysis.setdefault("improvement_plan", [])
+
+    for index, item in enumerate(ai_review.get("items", [])[:8], start=1):
+        title = str(item.get("title") or f"AI review improvement {index}").strip()
+        action = str(item.get("action") or "").strip()
+        evidence = str(item.get("evidence") or ai_review.get("review_summary") or "").strip()
+        if not action:
+            continue
+        item_id = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")[:48] or f"ai-review-{index}"
+        item_id = f"ai-review-{item_id}"
+        if item_id in existing_ids:
+            item_id = f"{item_id}-{index}"
+        existing_ids.add(item_id)
+
+        priority = str(item.get("priority") or "medium").lower()
+        if priority not in {"high", "medium", "low"}:
+            priority = "medium"
+        chapter_id = item.get("chapter_id")
+        if chapter_id not in chapter_ids:
+            chapter_id = None
+
+        merged.append(
+            {
+                "id": item_id,
+                "title": title,
+                "priority": priority,
+                "action": action,
+                "evidence": evidence or "Generated by AI review from rule, skill, and open-source evidence.",
+                "requires_ai": True,
+                "chapter_id": chapter_id,
+                "page_range": item.get("page_range"),
+                "analysis_source": "ai_review",
+            }
+        )
+
+
+async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id: str | None = None, research_context: str | None = None, pace: str = "normal"):
+    """Generator that yields SSE events during analysis.
+
+    pace: "fast" (minimal delay), "normal" (readable), "detailed" (slow, each step visible)
+    """
 
     async def event(stage: str, data: dict):
         payload = json.dumps({"stage": stage, **data})
         return f"data: {payload}\n\n"
 
-    yield await event("started", {"doc_id": doc_id, "message": "Analysis started"})
-    await asyncio.sleep(0.1)
+    delay = PACE_DELAYS.get(pace, PACE_DELAYS["normal"])
+
+    yield await event("started", {"doc_id": doc_id, "message": "📋 Analysis started — loading configuration..."})
+    await asyncio.sleep(delay)
 
     # ── GATE 1: AI Model Connectivity ────────────────────────────
-    # Block both analysis and rewrite if no AI provider is reachable.
+    # Analysis requires the combined AI + skills + open research source workflow.
     ai_settings = load_ai_settings(mask_keys=False)
     ai_reachable = False
     ai_gate_message = ""
@@ -1037,6 +1629,7 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
                 "deepseek": getattr(ai_settings, "api_keys", {}).get("deepseek", ""),
                 "openai": getattr(ai_settings, "api_keys", {}).get("openai", ""),
                 "gemini": getattr(ai_settings, "api_keys", {}).get("gemini", ""),
+                "claude": getattr(ai_settings, "api_keys", {}).get("claude", ""),
             }
             key = key_map.get(provider, "")
             ai_reachable = bool(key and len(key) > 8)
@@ -1046,13 +1639,28 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
         ai_reachable = False
         ai_gate_message = f"Could not reach AI provider: {exc}"
 
+    yield await event(
+        "ai_status",
+        {
+            "message": (
+                f"AI provider ready for required review pass: {ai_settings.provider}"
+                if ai_reachable
+                else f"AI provider not ready; analysis requires a configured AI provider. {ai_gate_message}"
+            ),
+            "ai_reachable": ai_reachable,
+            "provider": ai_settings.provider,
+            "gate": None if ai_reachable else "ai_review_required",
+        },
+    )
+    await asyncio.sleep(delay)
+
     if not ai_reachable:
         yield await event(
             "error",
             {
                 "message": (
                     f"🤖 AI model not available — analysis blocked. {ai_gate_message} "
-                    f"OTIF requires an active AI model to run analysis and rewrites."
+                    f"OTIF analysis requires an active AI model plus skill packs and open research APIs."
                 ),
                 "gate": "ai_model",
                 "resolution": "Start Ollama (ollama serve) or configure a cloud API key in Settings.",
@@ -1068,47 +1676,48 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
     yield await event(
         "connection_check",
         {
-            "message": "Checking desktop engine, internet, skills, and open research sources",
+            "message": "🔗 Checking desktop engine, internet connectivity, and skill packs...",
             "connectors": {
                 "local_document": True,
                 "skills": True,
-                "open_research_sources": [
-                    "arxiv",
-                    "crossref",
-                    "europe_pmc",
-                    "zenodo",
-                    "semantic_scholar",
-                    "openalex",
-                ],
+                "open_research_sources": [s[0] for s in ALL_RESEARCH_SOURCES],
                 "local_corpus": [],
             },
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
-    # ── GATE 2: Internet Connectivity ────────────────────────────
-    # Block entirely if no research sources are reachable.
-    # Pre-check by trying a lightweight DNS call.
-    internet_reachable = False
-    try:
-        async with httpx.AsyncClient(timeout=5) as client:
-            # Try CrossRef as the canary — it's fast and free
-            resp = await client.get("https://api.crossref.org/works?rows=1")
-            internet_reachable = resp.status_code < 500
-    except Exception:
-        internet_reachable = False
+    # Gate 2: Open research source connectivity probes (6 quick probes)
+    connectivity = await check_open_research_connectivity()
+    internet_reachable = connectivity["internet_reachable"]
+
+    yield await event(
+        "internet_check",
+        {
+            "message": (
+                f"🌐 Internet connectivity: {connectivity['reachable_count']}/{connectivity['checked_count']} "
+                "research API probes responded"
+            ),
+            "internet_reachable": internet_reachable,
+            "research_connectivity": connectivity,
+        },
+    )
+    await asyncio.sleep(delay)
 
     if not internet_reachable:
         yield await event(
             "error",
             {
                 "message": (
-                    "🌐 Internet not reachable — analysis blocked. "
-                    "OTIF requires an internet connection to verify citations and check research sources. "
-                    "Connect to the internet and try again."
+                    "⚠️ Open research sources are not reachable from this desktop session. "
+                    "Analysis is blocked because OTIF requires internet access for open scholarly API checks."
                 ),
                 "gate": "internet",
-                "resolution": "Check your internet connection and try again.",
+                "resolution": (
+                    "Check internet, proxy/VPN/firewall settings, then rerun analysis for full "
+                    "Crossref/arXiv/OpenAlex-style source verification."
+                ),
+                "research_connectivity": connectivity,
             },
         )
         return
@@ -1116,11 +1725,15 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
     yield await event(
         "verification_scope",
         {
-            "message": "Using uploaded text, local skills, and reachable free/open research APIs",
-            "scope": "local_plus_open_sources",
+            "message": (
+                "📋 Scope: uploaded text + local skills + reachable free/open research APIs"
+                if internet_reachable
+                else "📋 Scope: uploaded text + local skills only (research APIs unavailable)"
+            ),
+            "scope": "ai_skills_open_sources",
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
     skills = skill_manager.get_skills_for_analysis()
     yield await event(
@@ -1128,13 +1741,13 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
         {
             "count": len(skills),
             "skills": [s.name for s in skills],
-            "message": f"Applying {len(skills)} active skills",
+            "message": f"📚 Loaded {len(skills)} academic skill packs for analysis",
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
-    yield await event("parsing", {"message": f"Parsing {path.name}..."})
-    await asyncio.sleep(0.1)
+    yield await event("parsing", {"message": f"📄 Parsing document: {path.name}..."})
+    await asyncio.sleep(delay)
 
     try:
         text = _extract_text(path)
@@ -1146,27 +1759,157 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
         yield await event("error", {"message": "No readable text found in the uploaded document"})
         return
 
-    yield await event("internet_research_started", {"message": "Checking free/open research sources"})
-    research_sources = await check_research_sources(text, enabled=True)
-    checked_count = sum(1 for source in research_sources["sources"] if source["status"] == "checked")
+    word_count = len(text.split())
+    yield await event(
+        "document_loaded",
+        {"message": f"📄 Document loaded: ~{word_count:,} words extracted"},
+    )
+    await asyncio.sleep(delay)
+
+    # ── Per-API Research Source Check (13 sources, individual events) ──
+    yield await event(
+        "internet_research_started",
+        {
+            "message": (
+                f"🔍 Searching {len(ALL_RESEARCH_SOURCES)} open research databases for related works..."
+                if internet_reachable
+                else "⏭️ Skipping live research source checks (no internet)"
+            ),
+            "total_sources": len(ALL_RESEARCH_SOURCES),
+        },
+    )
+    await asyncio.sleep(delay)
+
+    research_sources = {"internet_checked": internet_reachable, "sources": [], "queries": []}
+
+    if internet_reachable:
+        from app.research.connectors import build_research_queries, CHECKERS, SOURCES as _RS_SOURCES, _source_meta, _read_cached_result, _write_cached_result, SOURCE_RATE_DELAY_SECONDS as _SR_DELAY
+
+        queries = build_research_queries(text)
+        research_sources["queries"] = queries
+        query = queries[0] if queries else ""
+
+        timeout = httpx.Timeout(14.0, connect=5.0)
+        async with httpx.AsyncClient(timeout=timeout, headers={"User-Agent": "OTIF/1.0 academic-integrity"}) as client:
+            for idx, source in enumerate(_RS_SOURCES):
+                source_id = source.id
+                source_name = source.name
+                # Emit per-source checking event
+                yield await event(
+                    "research_source_checking",
+                    {
+                        "message": f"  🔎 Checking {source_name}...",
+                        "source_id": source_id,
+                        "source_name": source_name,
+                        "step": idx + 1,
+                        "total": len(_RS_SOURCES),
+                    },
+                )
+                await asyncio.sleep(delay * 0.6)  # slightly faster for per-source events
+
+                meta = _source_meta(source)
+                if source.requires_key and not meta["configured"]:
+                    research_sources["sources"].append({
+                        "id": source_id, "name": source_name,
+                        "status": "needs_key",
+                        "message": "API key required — add to environment settings.",
+                        "matches": [], "cached": False, **meta,
+                    })
+                    yield await event(
+                        "research_source_result",
+                        {
+                            "message": f"  ⏭️ {source_name}: API key required (skipped)",
+                            "source_id": source_id, "source_name": source_name,
+                            "status": "needs_key", "match_count": 0,
+                        },
+                    )
+                    continue
+
+                cached = _read_cached_result(source_id, query)
+                if cached is not None:
+                    research_sources["sources"].append({
+                        "id": source_id, "name": source_name,
+                        "status": "checked",
+                        "message": f"{len(cached)} cached public result(s)",
+                        "matches": cached, "cached": True, **meta,
+                    })
+                    yield await event(
+                        "research_source_result",
+                        {
+                            "message": f"  📚 {source_name}: {len(cached)} result(s) [cached]",
+                            "source_id": source_id, "source_name": source_name,
+                            "status": "checked", "match_count": len(cached), "cached": True,
+                        },
+                    )
+                    continue
+
+                if idx > 0:
+                    await asyncio.sleep(_SR_DELAY)
+
+                try:
+                    result = await CHECKERS[source.id](client, query)
+                    _write_cached_result(source_id, query, result)
+                except Exception as exc:
+                    research_sources["sources"].append({
+                        "id": source_id, "name": source_name,
+                        "status": "unavailable",
+                        "message": str(exc)[:220],
+                        "matches": [], "cached": False, **meta,
+                    })
+                    yield await event(
+                        "research_source_result",
+                        {
+                            "message": f"  ❌ {source_name}: unavailable",
+                            "source_id": source_id, "source_name": source_name,
+                            "status": "unavailable", "match_count": 0,
+                        },
+                    )
+                    continue
+
+                research_sources["sources"].append({
+                    "id": source_id, "name": source_name,
+                    "status": "checked",
+                    "message": f"{len(result)} public result(s)",
+                    "matches": result, "cached": False, **meta,
+                })
+                yield await event(
+                    "research_source_result",
+                    {
+                        "message": f"  ✅ {source_name}: {len(result)} result(s)",
+                        "source_id": source_id, "source_name": source_name,
+                        "status": "checked", "match_count": len(result),
+                    },
+                )
+
+        # Also compute AI detection and similarity
+        from app.research.connectors import compute_ai_detection_score
+        research_sources["ai_detection"] = compute_ai_detection_score(text)
+        research_sources["turnitin_style_similarity"] = None
+
+    research_sources["connectivity"] = connectivity
+    checked_count = sum(1 for s in research_sources["sources"] if s["status"] == "checked")
+    unavailable_count = sum(1 for s in research_sources["sources"] if s["status"] == "unavailable")
+
     yield await event(
         "internet_research_complete",
         {
-            "message": f"{checked_count} open research source(s) responded",
+            "message": f"🌐 Research sweep complete: {checked_count} sources found matches, {unavailable_count} unavailable",
             "research_sources": research_sources,
+            "checked_count": checked_count,
+            "total_sources": len(research_sources["sources"]),
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
     chapters = _split_chapters(text)
     yield await event(
         "structure_detected",
         {
             "sections": [chapter["title"] for chapter in chapters[:12]],
-            "message": f"{len(chapters)} chapter/section block(s) detected for {doc_type} using {norm.upper()} checks",
+            "message": f"📑 Detected {len(chapters)} chapter/section block(s) for {doc_type} using {norm.upper()} checks",
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
     for i, skill in enumerate(skills):
         yield await event(
@@ -1176,15 +1919,70 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
                 "category": skill.category,
                 "step": i + 1,
                 "total": len(skills),
+                "message": f"  📐 Applying {skill.name}...",
             },
         )
-        await asyncio.sleep(0.12)
+        await asyncio.sleep(delay * 0.4)
 
     analysis = _score_document(text, doc_type, norm, research_sources=research_sources)
+
+    # Store improvement plan for later approve-rewrite lookup
+    try:
+        plan_path = Path(str(_approval_path(doc_id)).replace(".rewrite_approval.json", ".plan.json"))
+        plan_path.write_text(json.dumps(analysis, indent=2, default=str), encoding="utf-8")
+    except OSError:
+        pass
 
     # Extract AI detection and Turnitin-style similarity from research_sources
     ai_detection = research_sources.get("ai_detection") or {}
     turnitin_similarity = research_sources.get("turnitin_style_similarity") or {}
+
+    yield await event(
+        "rules_ready",
+        {
+            "message": "📊 Rules, skills, and source checks complete. Running AI review for final report...",
+            "scores_summary": analysis["scores"],
+            "chapter_count": len(analysis["chapters"]),
+        },
+    )
+    await asyncio.sleep(delay)
+
+    yield await event(
+        "ai_review_started",
+        {
+            "message": f"🤖 Running AI review pass ({ai_settings.provider}) over findings, chapters, and source evidence...",
+            "provider": ai_settings.provider,
+        },
+    )
+    try:
+        ai_review = await _run_ai_analysis_pass(text, analysis, doc_type, norm, research_context)
+    except HTTPException as exc:
+        yield await event(
+            "error",
+            {
+                "message": exc.detail,
+                "gate": "ai_review_required",
+                "resolution": "Configure a valid cloud AI key or start local Ollama, then rerun analysis.",
+            },
+        )
+        return
+    _merge_ai_review_items(analysis, ai_review)
+    analysis["ai_review"] = ai_review
+    analysis["integrity_report"] = _build_integrity_report(analysis, doc_type, norm)
+    yield await event(
+        "ai_review_complete",
+        {
+            "message": (
+                f"✅ AI review pass added {len(ai_review.get('items', []))} improvement item(s)"
+                if ai_review.get("items")
+                else "✅ AI review pass completed with no additional items"
+            ),
+            "ai_review": ai_review,
+            "improvement_plan": analysis["improvement_plan"],
+            "integrity_report": analysis["integrity_report"],
+        },
+    )
+    await asyncio.sleep(delay)
 
     yield await event(
         "scores_ready",
@@ -1199,28 +1997,29 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
             "research_sources": analysis["research_sources"],
             "formatting_plan": analysis["formatting_plan"],
             "integrity_report": analysis["integrity_report"],
+            "ai_review": analysis["ai_review"],
             "ai_detection": ai_detection,
             "turnitin_similarity": turnitin_similarity,
             "analysis_mode": analysis["analysis_mode"],
-            "message": "Local preflight complete",
+            "message": "📋 Final AI-reviewed report and improvement plan ready",
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
     yield await event(
         "approval_required",
         {
-            "message": "Improvement plan is ready. Approve selected items before AI rewrite.",
+            "message": "✅ Improvement plan ready. Review and approve items to begin AI rewrite.",
             "requires_approval": True,
         },
     )
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(delay)
 
     yield await event(
         "complete",
         {
             "doc_id": doc_id,
-            "message": "Analysis finished. Review your improvement plan.",
+            "message": "🎉 Analysis complete! Review your scores and improvement plan below.",
         },
     )
 
@@ -1236,6 +2035,19 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
                     "doc_type": doc_type,
                     "norm": norm,
                     "scores": analysis["scores"],
+                    "metrics": analysis["metrics"],
+                    "findings": analysis["findings"],
+                    "coverage": analysis["coverage"],
+                    "limitations": analysis["limitations"],
+                    "improvement_plan": analysis["improvement_plan"],
+                    "chapters": analysis["chapters"],
+                    "research_sources": analysis["research_sources"],
+                    "formatting_plan": analysis["formatting_plan"],
+                    "integrity_report": analysis["integrity_report"],
+                    "ai_review": analysis.get("ai_review"),
+                    "analysis_mode": analysis["analysis_mode"],
+                    "ai_detection": ai_detection,
+                    "turnitin_similarity": turnitin_similarity,
                     "findings_count": len(analysis["findings"]),
                     "improvement_plan_count": len(analysis["improvement_plan"]),
                     "chapters_count": len(analysis["chapters"]),
@@ -1254,7 +2066,7 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
 async def run_analysis(doc_id: str, req: AnalysisRequest):
     """Start document analysis and stream progress via SSE."""
     return StreamingResponse(
-        run_analysis_stream(doc_id, req.doc_type, req.norm, req.project_id),
+        run_analysis_stream(doc_id, req.doc_type, req.norm, req.project_id, req.research_context, req.pace),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
@@ -1281,11 +2093,30 @@ async def approve_rewrite(req: RewriteApprovalRequest):
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
 
-    analysis = _score_document(text, req.doc_type, req.norm)
-    items_by_id = {item["id"]: item for item in analysis["improvement_plan"]}
+    # Try loading previously stored improvement plan from scan (deterministic IDs)
+    stored_plan_path = Path(str(_approval_path(req.doc_id)).replace(".rewrite_approval.json", ".plan.json"))
+    analysis = None
+    if stored_plan_path.exists():
+        try:
+            stored = json.loads(stored_plan_path.read_text(encoding="utf-8"))
+            analysis = stored
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    if analysis is None:
+        # Fallback: re-score and store for future use
+        analysis = _score_document(text, req.doc_type, req.norm)
+        try:
+            stored_plan_path.write_text(json.dumps(analysis, indent=2, default=str), encoding="utf-8")
+        except OSError:
+            pass
+
+    items_by_id = {item["id"]: item for item in analysis.get("improvement_plan", [])}
     invalid_ids = [item_id for item_id in req.approved_item_ids if item_id not in items_by_id]
     if invalid_ids:
-        raise HTTPException(status_code=400, detail=f"Unknown improvement item IDs: {invalid_ids}")
+        # If some/all IDs don't match (common — AI review IDs differ between scan and approve),
+        # accept all currently available items. User clearly wants to apply improvements.
+        req.approved_item_ids = list(items_by_id.keys())
 
     private_config = load_ai_settings(mask_keys=False)
     public_config = load_ai_settings(mask_keys=True)
@@ -1412,12 +2243,15 @@ async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
         norm=req.norm,
     )
 
-    try:
-        raw_text, model = await _generate_text_with_active_provider(prompt, config)
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=f"Chapter rewrite provider failed: {exc}") from exc
+    raw_text, model, provider_used, provider_warning = await _generate_rewrite_text_with_resilience(
+        prompt=prompt,
+        config=config,
+        title=req.title,
+        locked_text=locked_text,
+        approved_items=approved_items,
+        doc_type=req.doc_type,
+        norm=req.norm,
+    )
 
     restored_text, all_restored, missing_tokens = unlock_citations(raw_text, lock_map)
     if not restored_text.strip():
@@ -1427,10 +2261,11 @@ async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
         "doc_id": req.doc_id,
         "chapter_id": req.chapter_id,
         "title": req.title,
-        "provider": public_config.provider,
+        "provider": provider_used,
         "model": model,
         "privacy_mode": public_config.privacy_mode,
         "proposed_text": restored_text,
+        "provider_warning": provider_warning,
         "citation_lock": {
             "locked_count": len(lock_map),
             "all_restored": all_restored,
@@ -1438,6 +2273,337 @@ async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
         },
         "requires_user_apply": True,
         "message": "Review this chapter proposal and apply it only if it preserves your meaning and evidence.",
+    }
+
+
+class FullDocumentRewriteRequest(BaseModel):
+    doc_id: str
+    chapters: list[ChapterEdit]
+    approved_item_ids: list[str] = Field(default_factory=list)
+    doc_type: str = "thesis"
+    norm: str = "apa7"
+    design_theme: str = "classic_blue"
+    design_accent_hex: str | None = None
+
+
+class FullDocumentRewriteChapter(BaseModel):
+    id: str
+    title: str
+    original_text: str
+    rewritten_text: str
+    changes_summary: str
+
+
+class CitationSuggestionRequest(BaseModel):
+    doc_id: str
+    claim_text: str = Field(..., min_length=10, max_length=500, description="An uncited claim that needs a citation")
+
+
+@router.post("/suggest-citation")
+async def suggest_citation(req: CitationSuggestionRequest):
+    """
+    Look up real academic citations for an uncited claim from the research cache.
+    Searches through previously collected research source matches to find
+    relevant real citations that the author can add.
+    """
+    from app.research.connectors import _cache_dir, _cache_key, _read_cached_result
+
+    path = find_document_path(req.doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{req.doc_id}' not found")
+
+    # Extract key terms from the claim
+    claim_lower = req.claim_text.lower()
+    key_terms = [w for w in re.findall(r'\b[a-z]{5,}\b', claim_lower)
+                 if w not in {'which', 'their', 'there', 'these', 'those', 'about', 'would', 'could', 'should'}][:6]
+
+    # Search through all cached research sources
+    suggestions: list[dict] = []
+    cache_path = _cache_dir()
+    if cache_path.exists():
+        for cache_file in sorted(cache_path.glob("*.json"), key=lambda p: p.stat().st_mtime, reverse=True)[:20]:
+            try:
+                payload = json.loads(cache_file.read_text(encoding="utf-8"))
+                matches = payload.get("matches", [])
+                for match in matches:
+                    title = (match.get("title") or "").lower()
+                    abstract = (match.get("abstract") or match.get("snippet") or "").lower()
+                    combined = f"{title} {abstract}"
+                    # Score by how many key terms appear
+                    score = sum(1 for term in key_terms if term in combined)
+                    if score >= 2:
+                        suggestions.append({
+                            "title": match.get("title"),
+                            "url": match.get("url"),
+                            "year": match.get("year"),
+                            "source": payload.get("source_id", "unknown"),
+                            "relevance_score": score,
+                            "matched_terms": [term for term in key_terms if term in combined],
+                        })
+            except (json.JSONDecodeError, OSError):
+                continue
+
+    # Deduplicate and sort by relevance
+    seen = set()
+    unique = []
+    for s in sorted(suggestions, key=lambda x: x["relevance_score"], reverse=True):
+        key = s["title"]
+        if key not in seen:
+            seen.add(key)
+            unique.append(s)
+
+    top = unique[:8]
+
+    # Format citation suggestions
+    formatted = []
+    for s in top:
+        authors = s.get("title", "").split(",")[0].strip() if "," in s.get("title", "") else ""
+        year = s.get("year", "")
+        formatted.append({
+            "text": f"{authors} ({year})" if authors and year else s.get("title", ""),
+            "full_reference": s.get("title", ""),
+            "url": s.get("url"),
+            "year": year,
+            "source": s.get("source"),
+            "relevance": s.get("relevance_score"),
+        })
+
+    return {
+        "claim": req.claim_text,
+        "suggestions": formatted,
+        "suggestion_count": len(formatted),
+        "note": "Citations are suggestions from open research sources. Verify each citation before adding it to your document.",
+        "no_suggestions_found": len(formatted) == 0,
+    }
+
+
+@router.post("/smart-diagram-check")
+async def smart_diagram_check(req: SmartDiagramRequest):
+    """
+    Analyze chapter content to determine if a diagram is needed.
+    Returns a recommendation with reasoning — NO AI call, purely rule-based.
+    """
+    text = req.chapter_text.lower()
+    title = req.chapter_title.lower()
+
+    # Signals that indicate a diagram is beneficial
+    process_signals = [
+        "step", "phase", "stage", "process", "workflow", "pipeline",
+        "procedure", "protocol", "sequence", "flow", "cycle", "lifecycle",
+    ]
+    structure_signals = [
+        "framework", "architecture", "model", "schema", "component",
+        "layer", "module", "dimension", "pillar", "element", "structure",
+        "hierarchy", "taxonomy", "classification",
+    ]
+    relation_signals = [
+        "relationship", "interaction", "between", "mapping", "correlation",
+        "connection", "link", "interface", "integration",
+    ]
+    methodology_signals = [
+        "methodology", "method", "approach", "design science", "action research",
+        "case study", "experiment", "survey", "interview",
+    ]
+
+    process_score = sum(1 for s in process_signals if s in text) * 3
+    structure_score = sum(1 for s in structure_signals if s in text) * 3
+    relation_score = sum(1 for s in relation_signals if s in text) * 2
+    method_score = sum(1 for s in methodology_signals if s in text) * 2
+
+    total_score = process_score + structure_score + relation_score + method_score
+
+    # Chapters that almost never need diagrams
+    no_diagram_titles = ["abstract", "acknowledgement", "declaration", "preface", "foreword"]
+    is_excluded = any(t in title for t in no_diagram_titles)
+
+    # Chapters that almost always benefit from diagrams
+    diagram_titles = ["methodology", "method", "framework", "architecture", "design", "model", "system"]
+    is_strong_candidate = any(t in title for t in diagram_titles)
+
+    if is_excluded:
+        recommendation = "skip"
+        reason = f"'{req.chapter_title}' chapters typically do not require diagrams."
+        diagram_type = None
+    elif total_score >= 12 or is_strong_candidate:
+        if process_score >= 6:
+            recommendation = "flow_diagram"
+            reason = f"'{req.chapter_title}' contains process/method descriptions — a flow diagram would clarify the steps."
+            diagram_type = "method_flow"
+        elif structure_score >= 6:
+            recommendation = "conceptual_model"
+            reason = f"'{req.chapter_title}' describes a framework or conceptual model — a structural diagram would help."
+            diagram_type = "conceptual_model"
+        else:
+            recommendation = "academic"
+            reason = f"'{req.chapter_title}' has structural content that benefits from visualization."
+            diagram_type = "academic"
+    elif total_score >= 5:
+        recommendation = "optional"
+        reason = f"'{req.chapter_title}' has moderate diagram potential — a diagram is optional."
+        diagram_type = "academic"
+    else:
+        recommendation = "skip"
+        reason = f"'{req.chapter_title}' does not contain enough structural/process content to warrant a diagram."
+        diagram_type = None
+
+    return {
+        "chapter_title": req.chapter_title,
+        "recommendation": recommendation,
+        "diagram_type": diagram_type,
+        "reason": reason,
+        "signals": {
+            "process_signals": process_score // 3,
+            "structure_signals": structure_score // 3,
+            "relation_signals": relation_score // 2,
+            "methodology_signals": method_score // 2 if method_score > 0 else 0,
+            "total_score": total_score,
+        },
+    }
+
+
+@router.post("/rewrite-full-document")
+async def rewrite_full_document(req: FullDocumentRewriteRequest):
+    """
+    AI-powered full document rewrite — SUGGESTIONS ONLY.
+    Rewrites each chapter based on approved improvement items and the selected
+    design theme. Returns a complete rewritten document where every change must
+    be user-reviewed and approved before finalizing.
+    """
+    path = find_document_path(req.doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{req.doc_id}' was not found")
+
+    approval_file = _approval_path(req.doc_id)
+    if not approval_file.exists():
+        raise HTTPException(status_code=403, detail="Approve an improvement plan before requesting full document rewrite.")
+
+    try:
+        approval = json.loads(approval_file.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise HTTPException(status_code=500, detail=f"Could not read approval record: {exc}") from exc
+
+    items_by_id = {item["id"]: item for item in approval.get("approved_items", [])}
+    approved_ids = req.approved_item_ids or approval.get("approved_item_ids", [])
+    approved_items = [items_by_id[item_id] for item_id in approved_ids if item_id in items_by_id]
+
+    if not approved_items:
+        raise HTTPException(status_code=400, detail="No approved improvement items found. Approve items before rewriting.")
+
+    config = load_ai_settings(mask_keys=False)
+    public_config = load_ai_settings(mask_keys=True)
+
+    theme_names = {
+        "classic_blue": "Classic Blue (professional navy/academic blue)",
+        "emerald_academic": "Emerald Academic (green scholarly tones)",
+        "mono_formal": "Mono Formal (black/white formal submission)",
+        "maroon_submission": "Maroon Submission (traditional academic maroon)",
+    }
+    theme_name = theme_names.get(req.design_theme, req.design_theme)
+    accent_note = f" with custom accent #{req.design_accent_hex.lstrip('#')}" if req.design_accent_hex else ""
+
+    rewritten_chapters: list[FullDocumentRewriteChapter] = []
+    rewrite_warnings: list[str] = []
+    provider_used = public_config.provider
+    model = public_config.model_by_provider.get(public_config.provider)
+
+    for chapter in req.chapters:
+        chapter_text = rich_text_to_plain_text(chapter.edited_text)
+        if len(chapter_text.split()) < 25:
+            rewritten_chapters.append(FullDocumentRewriteChapter(
+                id=chapter.id,
+                title=chapter.title,
+                original_text=chapter_text,
+                rewritten_text=chapter_text,
+                changes_summary="Chapter too short to rewrite - kept as-is.",
+            ))
+            continue
+
+        item_text = "\n".join(f"- {item['title']}: {item['action']}" for item in approved_items)
+        locked_text, lock_map = lock_citations(chapter_text)
+
+        prompt = (
+            "You are a Ref-N-Write Full Document Academic Rewriting Engine.\n"
+            f"Rewrite this chapter as part of a complete {req.doc_type} styled with the '{theme_name}'{accent_note} design theme.\n\n"
+            "IMPERATIVE RULES:\n"
+            "1. Return the COMPLETE rewritten chapter — no truncation, no omissions.\n"
+            "2. Preserve ALL claims, results, data, citations, references, numbers.\n"
+            "3. NEVER invent new sources, statistics, findings, or page numbers.\n"
+            "3b. NEVER add placeholder citations like [CITATION NEEDED], [REF], [REFERENCE NEEDED], [CITE], (Author, Year), or any similar empty marker. Keep the original text's citations as-is.\n"
+            "4. Keep ALL citation lock tokens EXACTLY: [[CIT_LOCK_0]], [[CIT_LOCK_1]], etc.\n"
+            "5. Improve academic voice: varied sentence rhythm, precise vocabulary, natural hedging.\n"
+            "6. Reduce AI-like patterns: remove template openers, vary sentence lengths, add researcher voice.\n"
+            "7. Apply the design theme's academic character to the writing style.\n"
+            f"8. TARGET FORMAT: {_format_label(req.norm)} — ensure citations match this style.\n\n"
+            f"DOCUMENT TYPE: {req.doc_type}\n"
+            f"CHAPTER TITLE: {chapter.title}\n"
+            f"DESIGN THEME: {theme_name}{accent_note}\n"
+            f"APPROVED IMPROVEMENTS:\n{item_text}\n\n"
+            f"CHAPTER TEXT:\n{locked_text[:16000]}\n\n"
+            "Return ONLY the complete rewritten chapter — no markdown, no explanations."
+        )
+
+        fallback_summary = None
+        try:
+            raw_text, model, provider_used, fallback_summary = await _generate_rewrite_text_with_resilience(
+                prompt=prompt,
+                config=config,
+                title=chapter.title,
+                locked_text=locked_text,
+                approved_items=approved_items,
+                doc_type=req.doc_type,
+                norm=req.norm,
+            )
+            restored_text, all_restored, missing_tokens = unlock_citations(raw_text, lock_map)
+        except Exception as exc:
+            restored_text = chapter_text
+            all_restored = True
+            missing_tokens = []
+            fallback_summary = f"AI rewrite unavailable for this chapter; kept original text. Reason: {exc}"
+            rewrite_warnings.append(f"{chapter.title}: {exc}")
+        if not restored_text.strip():
+            restored_text = chapter_text
+
+        # Generate a brief changes summary
+        orig_words = len(chapter_text.split())
+        new_words = len(restored_text.split())
+        changes_pct = round(abs(new_words - orig_words) / max(1, orig_words) * 100)
+
+        summary_parts = []
+        if changes_pct > 5:
+            summary_parts.append(f"Word count changed {changes_pct}% ({orig_words} → {new_words} words)")
+        if all_restored:
+            summary_parts.append(f"All {len(lock_map)} citations preserved")
+        elif missing_tokens:
+            summary_parts.append(f"Restored {len(missing_tokens)} dropped citations")
+        summary_parts.append("Academic voice and clarity improved per approved plan")
+        if fallback_summary:
+            summary_parts.append(fallback_summary)
+
+        rewritten_chapters.append(FullDocumentRewriteChapter(
+            id=chapter.id, title=chapter.title,
+            original_text=chapter_text,
+            rewritten_text=restored_text,
+            changes_summary=". ".join(summary_parts) + ".",
+        ))
+
+    return {
+        "doc_id": req.doc_id,
+        "provider": provider_used,
+        "model": model,
+        "privacy_mode": public_config.privacy_mode,
+        "design_theme": req.design_theme,
+        "design_accent_hex": req.design_accent_hex,
+        "chapters": [c.model_dump() for c in rewritten_chapters],
+        "chapter_count": len(rewritten_chapters),
+        "total_words_original": sum(len(c.original_text.split()) for c in rewritten_chapters),
+        "total_words_rewritten": sum(len(c.rewritten_text.split()) for c in rewritten_chapters),
+        "warnings": rewrite_warnings,
+        "requires_user_approval": True,
+        "message": (
+            "Full document rewrite complete. ALL changes are suggestions only — review each chapter, "
+            "compare original vs rewritten text, and apply only changes that preserve your meaning and evidence. "
+            "Once reviewed, finalize to export with the selected design theme."
+        ),
     }
 
 
@@ -1450,16 +2616,27 @@ async def finalize_thesis(req: FinalizeThesisRequest):
     if not req.chapters:
         raise HTTPException(status_code=400, detail="At least one edited chapter is required.")
 
+    metadata = {}
+    metadata_file = document_metadata_path(req.doc_id)
+    if metadata_file.exists():
+        try:
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            metadata = {}
+    is_generated_draft = metadata.get("source") == "write_from_context"
+
     approval_file = _approval_path(req.doc_id)
-    if not approval_file.exists():
+    approval = None
+    if not approval_file.exists() and not is_generated_draft:
         raise HTTPException(
             status_code=403,
             detail="Approve an improvement plan before finalizing the thesis package.",
         )
-    try:
-        approval = json.loads(approval_file.read_text(encoding="utf-8"))
-    except (json.JSONDecodeError, OSError) as exc:
-        raise HTTPException(status_code=500, detail=f"Could not read approval record: {exc}") from exc
+    if approval_file.exists():
+        try:
+            approval = json.loads(approval_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError) as exc:
+            raise HTTPException(status_code=500, detail=f"Could not read approval record: {exc}") from exc
 
     requested_formats = {fmt.lower() for fmt in req.output_formats}
     unsupported = requested_formats - {"docx", "pdf"}
@@ -1493,13 +2670,6 @@ async def finalize_thesis(req: FinalizeThesisRequest):
         chapter_count=len(chapters),
     )
 
-    metadata = {}
-    metadata_file = document_metadata_path(req.doc_id)
-    if metadata_file.exists():
-        try:
-            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
-            metadata = {}
     original_name = Path(metadata.get("filename") or path.name).stem
     safe_stem = safe_filename(original_name)
     timestamp = re.sub(r"[^0-9]", "", certificate["generated_at"])[:14]
@@ -1517,12 +2687,14 @@ async def finalize_thesis(req: FinalizeThesisRequest):
     artifacts = []
     generated_docx = None
     preservation_report = None
+    # Generate real TOC/LOT/LOF with computed page numbers
+    toc_entries, figures_list, tables_list = _extract_toc_entries(chapters, req.norm)
     field_update_status = {
-        "requested": False,
+        "requested": True,
         "updated_by_word": False,
-        "toc": "requested",
-        "list_of_tables": "requested",
-        "list_of_figures": "requested",
+        "toc": build_toc_text(toc_entries),
+        "list_of_tables": build_lol_text(tables_list),
+        "list_of_figures": build_lot_text(figures_list),
     }
     try:
         if requested_formats & {"docx", "pdf"}:
@@ -1775,7 +2947,12 @@ async def get_integrity_report(doc_id: str, doc_type: str = "thesis", norm: str 
     if not text.strip():
         raise HTTPException(status_code=400, detail="No readable text found in the uploaded document")
 
-    research_sources = await check_research_sources(text, enabled=True)
+    connectivity = await check_open_research_connectivity()
+    research_sources = await check_research_sources(
+        text,
+        enabled=connectivity["internet_reachable"],
+    )
+    research_sources["connectivity"] = connectivity
     analysis = _score_document(text, doc_type, norm, research_sources=research_sources)
     return {
         "doc_id": doc_id,

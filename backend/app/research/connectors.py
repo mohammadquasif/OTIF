@@ -54,7 +54,14 @@ SOURCES = [
     ResearchSource("doaj", "DOAJ", "https://doaj.org/api/search/articles", coverage="open access journals"),
     ResearchSource("core", "CORE", "https://api.core.ac.uk/v3/search/works", requires_key=True, coverage="open access repository records"),
     ResearchSource("base", "BASE", "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi", coverage="repository metadata"),
+    # ── Scholar-focused sources ──
+    ResearchSource("inspire_hep", "INSPIRE-HEP", "https://inspirehep.net/api", coverage="high-energy physics, astrophysics, particle physics", docs_url="https://github.com/inspirehep/rest-api-doc"),
 ]
+
+# Optional sources not in main pipeline (can be enabled per-scan):
+# - "google_scholar": Google Scholar via scholarly.py (slow, may hang — not included in main SOURCES)
+# - "scienceopen": ScienceOpen API (endpoint changed, returns 404)
+# - "paperity": Paperity API (returns 403, blocked)
 
 RESEARCH_CACHE_TTL_SECONDS = 24 * 60 * 60
 SOURCE_RATE_DELAY_SECONDS = 0.35
@@ -906,20 +913,178 @@ async def _check_base(client: httpx.AsyncClient, query: str) -> list[dict]:
         return []
 
 
+# ─────────────────────────────────────────────────────────────────────────────
+# NEW: Scholar-Focused Source Checkers
+# ─────────────────────────────────────────────────────────────────────────────
+
+async def _check_google_scholar(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """Google Scholar via scholarly — unofficial but widely used in academic tools.
+
+    Runs scholarly's synchronous scraping in a thread to avoid blocking the async event loop.
+    Google may rate-limit or block. Falls back gracefully with empty results on any error.
+    """
+    import concurrent.futures
+
+    def _sync_search(q: str) -> list[dict]:
+        try:
+            from scholarly import scholarly as _gs
+            results = []
+            search_query = _gs.search_pubs(q)
+            for i, pub in enumerate(search_query):
+                if i >= 3:  # Limit to 3 for speed
+                    break
+                bib = pub.get('bib', {}) or {}
+                title = bib.get('title', '')
+                url = pub.get('pub_url', '') or pub.get('eprint_url', '')
+                year = bib.get('pub_year', '')
+                abstract = (bib.get('abstract', '') or '')[:400]
+                if title:
+                    results.append(_result_item(
+                        str(title),
+                        str(url) if url else None,
+                        str(year) if year else None,
+                        str(abstract),
+                    ))
+            return results
+        except Exception:
+            return []
+
+    try:
+        loop = asyncio.get_running_loop()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            future = loop.run_in_executor(pool, _sync_search, query)
+            results = await asyncio.wait_for(future, timeout=12.0)  # 12s timeout
+        return results
+    except (asyncio.TimeoutError, Exception):
+        return []
+
+
+async def _check_inspire_hep(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """INSPIRE-HEP — High-energy physics, astrophysics, particle physics."""
+    try:
+        data = await _get_json(
+            client,
+            "https://inspirehep.net/api/literature",
+            {"q": query, "size": 5, "sort": "mostrecent"},
+            headers={"Accept": "application/json"},
+        )
+        hits = data.get("hits", {}).get("hits", [])
+        items = []
+        for hit in hits[:5]:
+            metadata = hit.get("metadata", {})
+            title = metadata.get("titles", [{}])[0].get("title", "")
+            doi = metadata.get("dois", [{}])[0].get("value", "") if metadata.get("dois") else ""
+            url = f"https://doi.org/{doi}" if doi else None
+            year = str(metadata.get("publication_info", [{}])[0].get("year", "")) if metadata.get("publication_info") else None
+            abstract = (metadata.get("abstracts", [{}])[0].get("value", "") if metadata.get("abstracts") else "")[:400]
+            items.append(_result_item(title, url, year, abstract))
+        return items
+    except Exception:
+        return []
+
+
+async def _check_scienceopen(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """ScienceOpen — Open access articles with post-publication peer review."""
+    try:
+        data = await _get_json(
+            client,
+            "https://www.scienceopen.com/api/v1/search/publication",
+            {"q": query, "limit": 5, "order": "relevance"},
+        )
+        items_data = data.get("items", []) or data.get("results", [])
+        items = []
+        for item in items_data[:5]:
+            title = item.get("title", "")
+            doi = item.get("doi", "")
+            url = f"https://doi.org/{doi}" if doi else item.get("url", None)
+            year = str(item.get("publicationDate", ""))[:4] if item.get("publicationDate") else None
+            abstract = (item.get("abstract", "") or "")[:400]
+            items.append(_result_item(title, url, year, abstract))
+        return items
+    except Exception:
+        return []
+
+
+async def _check_paperity(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """Paperity — Open access multidisciplinary aggregator."""
+    try:
+        data = await _get_json(
+            client,
+            "https://paperity.org/api/search",
+            {"q": query, "limit": 5},
+        )
+        items_data = data.get("results", []) or data.get("items", [])
+        items = []
+        for item in items_data[:5]:
+            title = item.get("title", "")
+            url = item.get("url", "") or item.get("link", "")
+            year = str(item.get("year", ""))[:4] if item.get("year") else None
+            abstract = (item.get("abstract", "") or item.get("summary", "") or "")[:400]
+            items.append(_result_item(title, url, year, abstract))
+        return items
+    except Exception:
+        return []
+
+
+async def _check_semantic_scholar_retry(client: httpx.AsyncClient, query: str) -> list[dict]:
+    """Semantic Scholar with rate-limit retry (1s delay after 429)."""
+    try:
+        data = await _get_json(
+            client,
+            "https://api.semanticscholar.org/graph/v1/paper/search",
+            {"query": query, "limit": 5, "fields": "title,year,externalIds,abstract"},
+        )
+        items = []
+        for paper in data.get("data", [])[:5]:
+            doi = paper.get("externalIds", {}).get("DOI", "")
+            url = f"https://doi.org/{doi}" if doi else paper.get("url", "")
+            items.append(
+                _result_item(
+                    paper.get("title"),
+                    url,
+                    str(paper.get("year", "")) if paper.get("year") else None,
+                    (paper.get("abstract", "") or "")[:400],
+                )
+            )
+        return items
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 429:
+            await asyncio.sleep(1.5)  # Rate-limit backoff
+            try:
+                data = await _get_json(
+                    client,
+                    "https://api.semanticscholar.org/graph/v1/paper/search",
+                    {"query": query, "limit": 5, "fields": "title,year,externalIds,abstract"},
+                )
+                items = []
+                for paper in data.get("data", [])[:5]:
+                    doi = paper.get("externalIds", {}).get("DOI", "")
+                    url = f"https://doi.org/{doi}" if doi else paper.get("url", "")
+                    items.append(_result_item(paper.get("title"), url, str(paper.get("year", "")) if paper.get("year") else None, (paper.get("abstract", "") or "")[:400]))
+                return items
+            except Exception:
+                return []
+        return []
+    except Exception:
+        return []
+
+
 CHECKERS = {
-    "arxiv":            _check_arxiv,
-    "crossref":         _check_crossref,
-    "europe_pmc":       _check_europe_pmc,
-    "pubmed":           _check_pubmed,
-    "datacite":         _check_datacite,
-    "eric":             _check_eric,
-    "osf_preprints":    _check_osf_preprints,
-    "zenodo":           _check_zenodo,
-    "semantic_scholar": _check_semantic_scholar,
-    "openalex":         _check_openalex,
-    "doaj":             _check_doaj,
-    "core":             _check_core,
-    "base":             _check_base,
+    "arxiv":              _check_arxiv,
+    "crossref":           _check_crossref,
+    "europe_pmc":         _check_europe_pmc,
+    "pubmed":             _check_pubmed,
+    "datacite":           _check_datacite,
+    "eric":               _check_eric,
+    "osf_preprints":      _check_osf_preprints,
+    "zenodo":             _check_zenodo,
+    "semantic_scholar":   _check_semantic_scholar_retry,  # with rate-limit backoff
+    "openalex":           _check_openalex,
+    "doaj":               _check_doaj,
+    "core":               _check_core,
+    "base":               _check_base,
+    # ── Scholar-focused checkers ──
+    "inspire_hep":        _check_inspire_hep,
 }
 
 

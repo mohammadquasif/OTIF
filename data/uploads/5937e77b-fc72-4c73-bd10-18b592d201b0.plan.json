@@ -1,0 +1,1350 @@
+{
+  "analysis_mode": "local_preflight",
+  "coverage": {
+    "local_document_only": true,
+    "open_research_sources_checked": [
+      "arxiv",
+      "crossref",
+      "europe_pmc",
+      "pubmed",
+      "datacite",
+      "eric",
+      "osf_preprints",
+      "zenodo",
+      "semantic_scholar",
+      "doaj",
+      "base",
+      "inspire_hep"
+    ],
+    "local_corpus_checked": []
+  },
+  "limitations": [
+    "This preflight does not check against all research papers.",
+    "Similarity and originality require configured local corpora or open research connectors.",
+    "Scores are derived only from the uploaded document text and loaded local skill rules."
+  ],
+  "metrics": {
+    "word_count": 185,
+    "sentence_count": 14,
+    "unique_word_ratio": 0.659,
+    "avg_sentence_length": 13.2,
+    "citation_coverage": 12.5,
+    "citation_quality": 19.0,
+    "citation_sentence_count": 1,
+    "claim_sentence_count": 8,
+    "doi_count": 0,
+    "url_count": 0,
+    "references_present": true,
+    "paragraph_count": 1,
+    "near_duplicate_pairs": 0,
+    "internal_duplication_risk": 0,
+    "burstiness": 52.0,
+    "passive_voice_ratio": 0.0,
+    "template_opener_count": 0,
+    "researcher_voice_markers": 1,
+    "long_quote_words": 0,
+    "humanization_score": 93.7,
+    "ai_writing_risk": 6.3,
+    "originality_evidence_matrix": 10,
+    "originality_dimensions": {
+      "literature_gap": 0,
+      "applied_integration": 10,
+      "artefact_contribution": 0,
+      "methodological_boundary": 0,
+      "practical_implication": 0
+    },
+    "hedging_count": 1,
+    "hedging_density_per_1000": 5.4,
+    "hedging_risk": "healthy",
+    "rq_count": 0,
+    "rq_traceback_score": null,
+    "unanswered_rqs": [],
+    "norm_issues": [],
+    "norm_valid": true,
+    "is_imrad": true,
+    "missing_sections": []
+  },
+  "findings": [],
+  "scores": {
+    "plagiarism_risk": 19.2,
+    "originality_score": 39.4,
+    "originality_evidence_matrix": 10,
+    "citation_quality": 19.0,
+    "humanization_score": 93.7,
+    "ai_writing_risk": 6.3,
+    "ai_pattern_risk": 6.3,
+    "phrase_quality": 93.7,
+    "citation_signal": 19.0,
+    "structure_signal": 86.7,
+    "hedging_risk": "healthy",
+    "rq_traceback_score": null,
+    "overall_preflight": 68.9
+  },
+  "chapters": [
+    {
+      "id": "chapter-1",
+      "title": "Abstract",
+      "metrics": {
+        "word_count": 16,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 16.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 1,
+        "long_quote_words": 0,
+        "humanization_score": 89.5,
+        "ai_writing_risk": 10.5,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 89.5,
+        "ai_writing_risk": 10.5,
+        "ai_pattern_risk": 10.5,
+        "phrase_quality": 89.5,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.6
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-2",
+      "title": "Introduction",
+      "metrics": {
+        "word_count": 27,
+        "sentence_count": 2,
+        "unique_word_ratio": 0.963,
+        "avg_sentence_length": 13.5,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 1,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 40.7,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 91.3,
+        "ai_writing_risk": 8.7,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.1,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 91.3,
+        "ai_writing_risk": 8.7,
+        "ai_pattern_risk": 8.7,
+        "phrase_quality": 91.3,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 55.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-3",
+      "title": "Literature Review",
+      "metrics": {
+        "word_count": 31,
+        "sentence_count": 2,
+        "unique_word_ratio": 0.935,
+        "avg_sentence_length": 15.5,
+        "citation_coverage": 50.0,
+        "citation_quality": 36.0,
+        "citation_sentence_count": 1,
+        "claim_sentence_count": 2,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 1,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 3.2,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.3,
+        "ai_writing_risk": 11.7,
+        "originality_evidence_matrix": 10,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 10,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 1,
+        "hedging_density_per_1000": 32.3,
+        "hedging_risk": "excessive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 11.0,
+        "originality_score": 37.1,
+        "originality_evidence_matrix": 10,
+        "citation_quality": 36.0,
+        "humanization_score": 88.3,
+        "ai_writing_risk": 11.7,
+        "ai_pattern_risk": 11.7,
+        "phrase_quality": 88.3,
+        "citation_signal": 36.0,
+        "structure_signal": 40,
+        "hedging_risk": "excessive",
+        "rq_traceback_score": null,
+        "overall_preflight": 63.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-4",
+      "title": "Methodology",
+      "metrics": {
+        "word_count": 18,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 18.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-5",
+      "title": "Results",
+      "metrics": {
+        "word_count": 19,
+        "sentence_count": 2,
+        "unique_word_ratio": 0.947,
+        "avg_sentence_length": 9.5,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 26.3,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 90.1,
+        "ai_writing_risk": 9.9,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.0,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 90.1,
+        "ai_writing_risk": 9.9,
+        "ai_pattern_risk": 9.9,
+        "phrase_quality": 90.1,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.7
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-6",
+      "title": "Discussion",
+      "metrics": {
+        "word_count": 21,
+        "sentence_count": 1,
+        "unique_word_ratio": 0.905,
+        "avg_sentence_length": 21.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 1,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 29.7,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.0
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-7",
+      "title": "Conclusion",
+      "metrics": {
+        "word_count": 17,
+        "sentence_count": 1,
+        "unique_word_ratio": 1.0,
+        "avg_sentence_length": 17.0,
+        "citation_coverage": 0.0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 1,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 0.0,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.4,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 88.0,
+        "ai_writing_risk": 12.0,
+        "ai_pattern_risk": 12.0,
+        "phrase_quality": 88.0,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 54.1
+      },
+      "findings": []
+    },
+    {
+      "id": "chapter-8",
+      "title": "References",
+      "metrics": {
+        "word_count": 20,
+        "sentence_count": 4,
+        "unique_word_ratio": 0.95,
+        "avg_sentence_length": 5.0,
+        "citation_coverage": 0,
+        "citation_quality": 0.0,
+        "citation_sentence_count": 0,
+        "claim_sentence_count": 0,
+        "doi_count": 0,
+        "url_count": 0,
+        "references_present": false,
+        "paragraph_count": 0,
+        "near_duplicate_pairs": 0,
+        "internal_duplication_risk": 0,
+        "burstiness": 70.7,
+        "passive_voice_ratio": 0.0,
+        "template_opener_count": 0,
+        "researcher_voice_markers": 0,
+        "long_quote_words": 0,
+        "humanization_score": 93.7,
+        "ai_writing_risk": 6.3,
+        "originality_evidence_matrix": 0,
+        "originality_dimensions": {
+          "literature_gap": 0,
+          "applied_integration": 0,
+          "artefact_contribution": 0,
+          "methodological_boundary": 0,
+          "practical_implication": 0
+        },
+        "hedging_count": 0,
+        "hedging_density_per_1000": 0.0,
+        "hedging_risk": "over_assertive",
+        "rq_count": 0,
+        "rq_traceback_score": null,
+        "unanswered_rqs": [],
+        "norm_issues": [],
+        "norm_valid": true,
+        "is_imrad": false,
+        "missing_sections": [
+          "abstract",
+          "introduction",
+          "literature",
+          "method",
+          "result",
+          "discussion",
+          "conclusion"
+        ]
+      },
+      "scores": {
+        "plagiarism_risk": 22.0,
+        "originality_score": 30.0,
+        "originality_evidence_matrix": 0,
+        "citation_quality": 0.0,
+        "humanization_score": 93.7,
+        "ai_writing_risk": 6.3,
+        "ai_pattern_risk": 6.3,
+        "phrase_quality": 93.7,
+        "citation_signal": 0.0,
+        "structure_signal": 40,
+        "hedging_risk": "over_assertive",
+        "rq_traceback_score": null,
+        "overall_preflight": 55.9
+      },
+      "findings": []
+    }
+  ],
+  "research_sources": {
+    "internet_checked": true,
+    "sources": [
+      {
+        "id": "arxiv",
+        "name": "arXiv",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+            "url": "http://arxiv.org/abs/2107.08351v2",
+            "year": "2021",
+            "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+          },
+          {
+            "title": "Building and development of an organizational competence for digital transformation in SMEs",
+            "url": "http://arxiv.org/abs/2406.01615v1",
+            "year": "2024",
+            "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+          },
+          {
+            "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+            "url": "http://arxiv.org/abs/1910.08604v3",
+            "year": "2019",
+            "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+          },
+          {
+            "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+            "url": "http://arxiv.org/abs/2309.07064v2",
+            "year": "2023",
+            "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+          },
+          {
+            "title": "Digital Library Initiatives in North East India: A Survey",
+            "url": "http://arxiv.org/abs/2210.00203v1",
+            "year": "2022",
+            "abstract": "This is a survey of digital library initiative of North East India. The recent initiative by the government of India towards the digitization is reflected in various digitation programs. The secondary sources of data are used to map the 16 digital library initiatives in eight north east state of India. The study has observed that digital library in true sense is perhaps lacking. Many of the digita"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://export.arxiv.org/api/query",
+        "coverage": "preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://info.arxiv.org/help/api/index.html",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "crossref",
+        "name": "Crossref",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "The Role of Digital Transformation in Enhancing SME Performance and Competitiveness in India",
+            "url": "https://doi.org/10.21203/rs.3.rs-9990986/v1",
+            "year": null,
+            "abstract": "<title>Abstract</title> <p> This study investigates the relationship between digital transformation and economic outcomes for small and medium-sized enterprises (SMEs) in India, focusing on the mediating roles of operational performance, innovation capability, and market competitiveness. The study aims to align itself with the Sustainable Development Goal (SDG) 9 and, in particular, target 3, whic"
+          },
+          {
+            "title": "Digital transformation",
+            "url": "https://doi.org/10.18356/9789211073522c003",
+            "year": 2025,
+            "abstract": ""
+          },
+          {
+            "title": "Enabling a digital transformation",
+            "url": "https://doi.org/10.18356/9789211073522c006",
+            "year": 2025,
+            "abstract": ""
+          },
+          {
+            "title": "Digital transformation to enhance Indonesian SME performance: Exploring the impact of market competition and digital strategy",
+            "url": "https://doi.org/10.21511/ppm.22(2).2024.09",
+            "year": 2024,
+            "abstract": "<jats:p>In the current era, the challenges faced by SMEs in Indonesia are becoming increasingly complex. Previously, the primary challenge for SMEs has been to enhance performance. However, with the emergence of information technology, SMEs are now required to compete fiercely. SMEs in Indonesia are still in the process of digital transformation to improve their business strategies, thus limiting "
+          },
+          {
+            "title": "Internal capabilities, digital transformation, and SME export performance: Evidence from Vietnam\u2019s manufacturing industries",
+            "url": "https://doi.org/10.21511/ppm.24(2).2026.37",
+            "year": 2026,
+            "abstract": "<jats:p>Type of the article: Research ArticleAbstractExport upgrading has become a pressing concern for small and medium-sized enterprises (SMEs) in emerging economies. Digital transformation and artificial intelligence (AI) are often presented as fast-track solutions. Yet evidence on whether these technologies actually improve export performance remains inconclusive. In many industries, technolog"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.crossref.org/works",
+        "coverage": "DOI metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "europe_pmc",
+        "name": "Europe PMC",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search",
+        "coverage": "biomedical papers",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "pubmed",
+        "name": "PubMed / NCBI",
+        "status": "checked",
+        "message": "1 cached public result(s)",
+        "matches": [
+          {
+            "title": "Global, regional, and national burden of stroke and its risk factors, 1990-2021: a systematic analysis for the Global Burden of Disease Study 2021.",
+            "url": "https://pubmed.ncbi.nlm.nih.gov/39304265/",
+            "year": "2024",
+            "abstract": "The Lancet. Neurology"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+        "coverage": "biomedical citations",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://www.ncbi.nlm.nih.gov/books/NBK25501/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "datacite",
+        "name": "DataCite",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "Computer-Based Training (CBT): The Backbone of Modern Technical & Defence Training",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.20643643",
+            "year": 2026,
+            "abstract": "In today\u2019s technology-driven world,\u00a0Computer-Based Training (CBT)\u00a0has become an essential method for delivering structured, effective, and scalable learning especially in technical and defence environments. CBT enables personnel to gain indepth theoretical knowledge of systems, equipment, software, and machinery before ever touching the actual hardware, reducing risk, cost, and dependency on physi"
+          },
+          {
+            "title": "Computer-Based Training (CBT): The Backbone of Modern Technical & Defence Training",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.20643644",
+            "year": 2026,
+            "abstract": "In today\u2019s technology-driven world,\u00a0Computer-Based Training (CBT)\u00a0has become an essential method for delivering structured, effective, and scalable learning especially in technical and defence environments. CBT enables personnel to gain indepth theoretical knowledge of systems, equipment, software, and machinery before ever touching the actual hardware, reducing risk, cost, and dependency on physi"
+          },
+          {
+            "title": "Ledger-Anchored Validation Receipts (LAVR): Minimal Cryptographic Proof of Enforcement",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.18359198",
+            "year": 2026,
+            "abstract": "Abstract\n\nExisting accountability mechanisms based on audit logs, blockchains, and distributed ledgers\n\nattempt to prove compliance by recording what happened\u2014transactions, identities, timestamps,\n\nor state transitions. While tamper-resistant, these approaches inherently generate behavioural traces\n\nthat conflict with data-minimisation requirements and enable correlation, profiling, and surveillan"
+          },
+          {
+            "title": "Ledger-Anchored Validation Receipts (LAVR): Minimal Cryptographic Proof of Enforcement",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.18359199",
+            "year": 2026,
+            "abstract": "Abstract\n\nExisting accountability mechanisms based on audit logs, blockchains, and distributed ledgers\n\nattempt to prove compliance by recording what happened\u2014transactions, identities, timestamps,\n\nor state transitions. While tamper-resistant, these approaches inherently generate behavioural traces\n\nthat conflict with data-minimisation requirements and enable correlation, profiling, and surveillan"
+          },
+          {
+            "title": "The Great Job Migration \"The Impact of Offshoring on the U.S. Workforce and Society\"",
+            "url": "https://zenodo.org/doi/10.5281/zenodo.17355623",
+            "year": 2022,
+            "abstract": "The Great Job Migration: \u201cThe Impact of Offshoring on the U.S. Workforce and Society\u201dThe Great Job Migration\u201cThe Impact of Offshoring on the U.S. Workforce and Society\u201d\n\nRamy Ayoub\n\nNew York, 2022\n\nAbstract\n\n\u00a0\n\nFrom 2000 to 2022, the United States underwent one of the most destabilizing economic transformations in its modern history, as millions of jobs were exported overseas under the banner of g"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.datacite.org/dois",
+        "coverage": "datasets and DOI records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://support.datacite.org/docs/api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "eric",
+        "name": "ERIC",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "Identification of Constraints to Implementation of Entrepreneurship Digitalization Training: The Case of Batik SMEs in Indonesia",
+            "url": "https://eric.ed.gov/?id=ED652402",
+            "year": 2023,
+            "abstract": "The digital world in the creative industry has provided new opportunities for entrepreneurs to utilize and exploit products and services in a more transparent and widespread manner. Products and services can grow exponentially and be offered to all users and communities throughout the world without time and space limitations. Creative SMEs, especially batik SMEs, are currently required to keep abr"
+          },
+          {
+            "title": "Impact of Digital Transformation on Academicians&apos; Well-Being: A Study with the Moderating Role of Public and Private Universities in India",
+            "url": "https://eric.ed.gov/?id=EJ1388396",
+            "year": 2022,
+            "abstract": "This research is identifying and compares the impact of digital transformation on academicians' well-being in public and private Indian universities. To initiate the research, one exogenous construct namely 'virtual transformation in higher education,' and two endogenous constructs called 'workplace well-being' and 'psychological well-being' of academicians have been identified. The data has colle"
+          },
+          {
+            "title": "Digital Education Transformation: A Pedagogical Revolution",
+            "url": "https://eric.ed.gov/?id=EJ1274009",
+            "year": 2020,
+            "abstract": "India as a country has been the proponent of the Gurukul (a kind of residential school for select students) system where the 'guru-shishya' (Master - Student) method of teaching was adopted. Ever since, educational pedagogy has undergone a revolution which has primarily been technology driven with ICT at its forefront. IT firms are moving towards Social media, Mobility, Analytics and Cloud (SMAC) "
+          },
+          {
+            "title": "Action Learning in an SME: Appetite Comes with Eating",
+            "url": "https://eric.ed.gov/?id=EJ870289",
+            "year": 2009,
+            "abstract": "This account describes action learning in a small to medium-size enterprise (SME) that operates as a local power utility on an established market that is currently going through a process of radical transformation. The task of the action learning set was to improve the flow of information to employees about the evolving framework in which the company operates. The set was made up of participants f"
+          },
+          {
+            "title": "The Impact of Digital Transformation on Firm Performance: Evidence from Technology-Driven Business Management Practices",
+            "url": "https://eric.ed.gov/?id=EJ1507335",
+            "year": 2026,
+            "abstract": "This study investigates the impact of digital transformation on firm performance using panel data from 5120 firm-year observations between 2014 and 2024. Results show that digital transformation significantly enhances firm performance both directly and indirectly, with technology-driven business management practices playing a significant mediating role in this relationship. IT capability, human ca"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://api.ies.ed.gov/eric/",
+        "coverage": "education research",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://eric.ed.gov/?api",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "osf_preprints",
+        "name": "OSF Preprints",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://api.osf.io/v2/preprints/",
+        "coverage": "open preprints",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.osf.io/v2/docs/",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "zenodo",
+        "name": "Zenodo",
+        "status": "checked",
+        "message": "5 cached public result(s)",
+        "matches": [
+          {
+            "title": "KEY FACTORS OF COMPETITIVENESS IN SMES:  EVALUATION OF INNOVATION AND DIGITALIZATION  STRATEGIES",
+            "url": null,
+            "year": "2024",
+            "abstract": ""
+          },
+          {
+            "title": "THE RELATIONSHIP BETWEEN THE EXPORT POTENTIAL OF SMALL BUSINESS IN UZBEKISTAN AND THE ROLE OF THE POPULATION'S DIGITAL LITERACY",
+            "url": null,
+            "year": "2026",
+            "abstract": "<p>This article examines the relationship between the population's level of digital readiness and the realization of the export potential of small business entities in Uzbekistan amid the development of e-commerce. Based on an analysis of official statistical data and the results of the author's sociological survey (n=100), a disproportion is revealed between the contribution of small business to "
+          },
+          {
+            "title": "Navigating Digitalization Advancement at SMEs: The Moderating Role of Government Policy in Emerging Markets",
+            "url": null,
+            "year": "2025",
+            "abstract": "<p>This study investigates the influence of AI-driven automation and digital skill readiness on the digitalization process of SMEs in emerging economies, considering the moderating role of government policy. In light of the economic and infrastructural limitations common to these contexts, the study addresses a significant knowledge gap concerning how internal capabilities and external regulatory "
+          },
+          {
+            "title": "Digital Transformation in Business: Opportunities and Challenges for SMEs in Indonesia",
+            "url": null,
+            "year": "2026",
+            "abstract": "<p>This dataset contains primary data from a survey of 454 SME owners and managers in the Jabodetabek region (Jakarta, Bogor, Depok, Tangerang, Bekasi), Indonesia. This study aims to empirically examine the impact of digital transformation on SME performance using the Partial Least Squares Structural Equation Modeling (PLS-SEM) method. The data highlights the phenomenon of the &ldquo;digital matur"
+          },
+          {
+            "title": "Digital Transformation Barriers and Performance Enhancement in Indonesian Small and Medium Enterprises: A Structural Equation Modeling Approach",
+            "url": null,
+            "year": "2026",
+            "abstract": "<p>This dataset contains 650-response Indonesian SME survey on digital transformation barriers, management support, external assistance utilization, digital adoption success, and business performance. It includes item-level seven-point Likert responses, firm and respondent profile variables, 950-contact sampling frame, measurement-model checks, mediation analysis, and subgroup robustness checks.</"
+          }
+        ],
+        "cached": true,
+        "base_url": "https://zenodo.org/api/records",
+        "coverage": "research outputs and datasets",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "semantic_scholar",
+        "name": "Semantic Scholar",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://api.semanticscholar.org/graph/v1/paper/search",
+        "coverage": "literature graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://api.semanticscholar.org/api-docs/graph",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "openalex",
+        "name": "OpenAlex",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.openalex.org/works",
+        "coverage": "global scholarly graph",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://developers.openalex.org/",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "doaj",
+        "name": "DOAJ",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://doaj.org/api/search/articles",
+        "coverage": "open access journals",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "core",
+        "name": "CORE",
+        "status": "needs_key",
+        "message": "API key required \u2014 add to environment settings.",
+        "matches": [],
+        "cached": false,
+        "base_url": "https://api.core.ac.uk/v3/search/works",
+        "coverage": "open access repository records",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": true,
+        "configured": false
+      },
+      {
+        "id": "base",
+        "name": "BASE",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://api.base-search.net/cgi-bin/BaseHttpSearchInterface.fcgi",
+        "coverage": "repository metadata",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "",
+        "requires_key": false,
+        "configured": true
+      },
+      {
+        "id": "inspire_hep",
+        "name": "INSPIRE-HEP",
+        "status": "checked",
+        "message": "0 cached public result(s)",
+        "matches": [],
+        "cached": true,
+        "base_url": "https://inspirehep.net/api",
+        "coverage": "high-energy physics, astrophysics, particle physics",
+        "access_note": "Public metadata search; not a private full-text plagiarism database.",
+        "docs_url": "https://github.com/inspirehep/rest-api-doc",
+        "requires_key": false,
+        "configured": true
+      }
+    ],
+    "queries": [
+      "Digital Transformation and SME Performance in India",
+      "digital transformation performance india firms",
+      "india firms skill survey infrastructure"
+    ],
+    "ai_detection": {
+      "ai_detection_score": 16,
+      "confidence": "low",
+      "signals": {
+        "perplexity_risk": 48.4,
+        "burstiness_risk": 5.1,
+        "template_opener_risk": 0,
+        "passive_voice_risk": 0.0,
+        "researcher_voice_reduction": 0,
+        "repetition_risk": 0,
+        "uniform_length_risk": 14.3
+      },
+      "verdict": "Low AI-generation probability (16%). Writing patterns are consistent with human academic authorship.",
+      "turnitin_ai_equivalent": "Likely human-authored (<25% \u2014 equivalent to Turnitin AI low signal)"
+    },
+    "turnitin_style_similarity": null,
+    "connectivity": {
+      "internet_reachable": true,
+      "reachable_count": 4,
+      "checked_count": 6,
+      "sources": [
+        {
+          "id": "crossref",
+          "name": "Crossref",
+          "status": "unavailable",
+          "status_code": null,
+          "message": ""
+        },
+        {
+          "id": "arxiv",
+          "name": "arXiv",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "arXiv responded with HTTP 200"
+        },
+        {
+          "id": "datacite",
+          "name": "DataCite",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "DataCite responded with HTTP 200"
+        },
+        {
+          "id": "europe_pmc",
+          "name": "Europe PMC",
+          "status": "unavailable",
+          "status_code": null,
+          "message": ""
+        },
+        {
+          "id": "semantic_scholar",
+          "name": "Semantic Scholar",
+          "status": "reachable",
+          "status_code": 429,
+          "message": "Semantic Scholar responded with HTTP 429"
+        },
+        {
+          "id": "openalex",
+          "name": "OpenAlex",
+          "status": "reachable",
+          "status_code": 200,
+          "message": "OpenAlex responded with HTTP 200"
+        }
+      ]
+    }
+  },
+  "formatting_plan": {
+    "target": "APA 7",
+    "maintain_table_of_contents": true,
+    "maintain_list_of_tables": true,
+    "maintain_list_of_figures": true,
+    "export_formats": [
+      "docx",
+      "pdf"
+    ],
+    "design_themes": [
+      "classic_blue",
+      "mono_formal",
+      "emerald_academic",
+      "maroon_submission"
+    ]
+  },
+  "improvement_plan": [
+    {
+      "id": "originality-claim-strength",
+      "title": "Strengthen originality and contribution",
+      "priority": "high",
+      "action": "Convert descriptive material into synthesis: what is combined, what gap remains, and what the researcher contributes without overclaiming.",
+      "evidence": "Originality score is 39.4; contribution may not be sufficiently defended.",
+      "requires_ai": true
+    },
+    {
+      "id": "citation-strength",
+      "title": "Strengthen citation signal",
+      "priority": "high",
+      "action": "Add real citations to unsupported factual claims. Use the suggested citations below or find verified sources for each claim. Normalize citation style to APA 7 format without inventing sources.\n\nReal citation suggestions from open research sources:\n  \u2022 A Novel Approach to Analyze Fashion Digital Archive from Humanities (2021) \u2014 via arXiv\n  \u2022 Building and development of an organizational competence for digital transformation in SMEs (2024) \u2014 via arXiv\n  \u2022 Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society (2019) \u2014 via arXiv\n  \u2022 Digital transformation (2025) \u2014 via Crossref\n\nUse these or similar verified citations. Only add citations for claims that genuinely reference these works.",
+      "evidence": "Citation quality is 19.0; citation coverage is 12.5% across claim-like sentences. 14 real citation suggestion(s) found from open research sources.",
+      "requires_ai": true,
+      "citation_suggestions": [
+        {
+          "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+          "year": "2021",
+          "url": "http://arxiv.org/abs/2107.08351v2",
+          "source": "arXiv"
+        },
+        {
+          "title": "Building and development of an organizational competence for digital transformation in SMEs",
+          "year": "2024",
+          "url": "http://arxiv.org/abs/2406.01615v1",
+          "source": "arXiv"
+        },
+        {
+          "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+          "year": "2019",
+          "url": "http://arxiv.org/abs/1910.08604v3",
+          "source": "arXiv"
+        },
+        {
+          "title": "Digital transformation",
+          "year": "2025",
+          "url": "https://doi.org/10.18356/9789211073522c003",
+          "source": "Crossref"
+        },
+        {
+          "title": "Enabling a digital transformation",
+          "year": "2025",
+          "url": "https://doi.org/10.18356/9789211073522c006",
+          "source": "Crossref"
+        },
+        {
+          "title": "Global, regional, and national burden of stroke and its risk factors, 1990-2021: a systematic analysis for the Global Burden of Disease Study 2021.",
+          "year": "2024",
+          "url": "https://pubmed.ncbi.nlm.nih.gov/39304265/",
+          "source": "PubMed / NCBI"
+        }
+      ]
+    },
+    {
+      "id": "chapter-1-improvement",
+      "title": "Improve Abstract (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Abstract scores: AI risk 10.5, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-1",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-2-improvement",
+      "title": "Improve Introduction (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Introduction scores: AI risk 8.7, originality 30.1, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-2",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-3-improvement",
+      "title": "Improve Literature Review (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Literature Review scores: AI risk 11.7, originality 37.1, citation 36.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-3",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-4-improvement",
+      "title": "Improve Methodology (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Methodology scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-4",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-5-improvement",
+      "title": "Improve Results (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Results scores: AI risk 9.9, originality 30.0, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-5",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-6-improvement",
+      "title": "Improve Discussion (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Discussion scores: AI risk 12.0, originality 29.7, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-6",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-7-improvement",
+      "title": "Improve Conclusion (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] Conclusion scores: AI risk 12.0, originality 30.4, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-7",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "chapter-8-improvement",
+      "title": "Improve References (Pages 1\u201313)",
+      "priority": "high",
+      "action": "Revise pages 1\u201313 for citation support, original contribution, section structure while preserving claims, TOC headings, and citations.",
+      "evidence": "[Page-Wise Audit Pages 1\u201313] References scores: AI risk 6.3, originality 30.0, citation 0.0, structure 40.",
+      "requires_ai": true,
+      "chapter_id": "chapter-8",
+      "page_range": "1\u201313"
+    },
+    {
+      "id": "diagram-opportunities",
+      "title": "Identify and draft required diagrams",
+      "priority": "medium",
+      "action": "After approval, detect methodology/process/model sections and draft academic diagrams only where they clarify the argument.",
+      "evidence": "Diagram generation is optional and requires separate approval in the rewrite options.",
+      "requires_ai": true
+    },
+    {
+      "id": "target-format",
+      "title": "Apply APA 7 checks",
+      "priority": "medium",
+      "action": "Check headings, references, tables/figures, and style conventions against the selected target format.",
+      "evidence": "Target format selected: APA 7.",
+      "requires_ai": false
+    },
+    {
+      "id": "front-matter-integrity",
+      "title": "Maintain TOC, list of tables, and list of figures",
+      "priority": "medium",
+      "action": "Preserve heading hierarchy, table captions, figure captions, page-aware front matter, and export-ready DOCX/PDF structure.",
+      "evidence": "Required for APA 7 output and final submission polish.",
+      "requires_ai": false
+    }
+  ],
+  "integrity_report": {
+    "title": "OTIF Academic Integrity Evidence Report",
+    "doc_type": "research_paper",
+    "target_format": "APA 7",
+    "grade": "needs_integrity_review",
+    "scope": {
+      "local_document_analysis": true,
+      "open_research_sources_checked": [
+        "arXiv",
+        "Crossref",
+        "Europe PMC",
+        "PubMed / NCBI",
+        "DataCite",
+        "ERIC",
+        "OSF Preprints",
+        "Zenodo",
+        "Semantic Scholar",
+        "DOAJ",
+        "BASE",
+        "INSPIRE-HEP"
+      ],
+      "full_web_or_private_corpus_checked": false,
+      "ai_writing_score_is_risk_signal": true
+    },
+    "headline": {
+      "plagiarism_risk": 19.2,
+      "originality_score": 39.4,
+      "citation_quality": 19.0,
+      "humanization_score": 93.7,
+      "ai_writing_risk": 6.3
+    },
+    "evidence_summary": {
+      "citation_coverage": 12.5,
+      "near_duplicate_pairs": 0,
+      "open_source_matches": 26,
+      "possible_similarity_risk_matches": 0,
+      "researcher_voice_markers": 1,
+      "template_opener_count": 0,
+      "rq_traceback_score": null
+    },
+    "top_source_evidence": [
+      {
+        "title": "A Novel Approach to Analyze Fashion Digital Archive from Humanities",
+        "url": "http://arxiv.org/abs/2107.08351v2",
+        "year": "2021",
+        "abstract": "Fashion styles adopted every day are an important aspect of culture, and style trend analysis helps provide a deeper understanding of our societies and cultures. To analyze everyday fashion trends from the humanities perspective, we need a digital archive that includes images of what people wore in their daily lives over an extended period. In fashion research, building digital fashion image archi"
+      },
+      {
+        "title": "Building and development of an organizational competence for digital transformation in SMEs",
+        "url": "http://arxiv.org/abs/2406.01615v1",
+        "year": "2024",
+        "abstract": "Purpose: The new competitive environment characterized by innovation and constant change is forcing a new organizational behavior. This requires a digital transformation of SMEs based on collective performance determinants. SMEs have particular characteristics that differentiate them from large companies and a model that allows them to identify, leverage and develop their digital capabilities can "
+      },
+      {
+        "title": "Digital Democracy: Episode IV -- A New Hope, How a Corporation for Public Software Could Transform Digital Engagement for Government and Civil Society",
+        "url": "http://arxiv.org/abs/1910.08604v3",
+        "year": "2019",
+        "abstract": "Though successive generations of digital technology have become increasingly powerful in the past twenty years, digital democracy has yet to realize its potential for deliberative transformation. The undemocratic exploitation of massive social media systems continued this trend, but it only worsened an existing problem of modern democracies, which were already struggling to develop deliberative in"
+      },
+      {
+        "title": "A Comprehensive Analysis of the Role of Artificial Intelligence and Machine Learning in Modern Digital Forensics and Incident Response",
+        "url": "http://arxiv.org/abs/2309.07064v2",
+        "year": "2023",
+        "abstract": "In the dynamic landscape of digital forensics, the integration of Artificial Intelligence (AI) and Machine Learning (ML) stands as a transformative technology, poised to amplify the efficiency and precision of digital forensics investigations. However, the use of ML and AI in digital forensics is still in its nascent stages. As a result, this paper gives a thorough and in-depth analysis that goes "
+      },
+      {
+        "title": "Digital Library Initiatives in North East India: A Survey",
+        "url": "http://arxiv.org/abs/2210.00203v1",
+        "year": "2022",
+        "abstract": "This is a survey of digital library initiative of North East India. The recent initiative by the government of India towards the digitization is reflected in various digitation programs. The secondary sources of data are used to map the 16 digital library initiatives in eight north east state of India. The study has observed that digital library in true sense is perhaps lacking. Many of the digita"
+      },
+      {
+        "title": "The Role of Digital Transformation in Enhancing SME Performance and Competitiveness in India",
+        "url": "https://doi.org/10.21203/rs.3.rs-9990986/v1",
+        "year": null,
+        "abstract": "<title>Abstract</title> <p> This study investigates the relationship between digital transformation and economic outcomes for small and medium-sized enterprises (SMEs) in India, focusing on the mediating roles of operational performance, innovation capability, and market competitiveness. The study aims to align itself with the Sustainable Development Goal (SDG) 9 and, in particular, target 3, whic"
+      },
+      {
+        "title": "Digital transformation",
+        "url": "https://doi.org/10.18356/9789211073522c003",
+        "year": 2025,
+        "abstract": ""
+      },
+      {
+        "title": "Enabling a digital transformation",
+        "url": "https://doi.org/10.18356/9789211073522c006",
+        "year": 2025,
+        "abstract": ""
+      }
+    ],
+    "recommended_next_actions": [
+      "Strengthen originality and contribution",
+      "Strengthen citation signal",
+      "Improve Abstract (Pages 1\u201313)",
+      "Improve Introduction (Pages 1\u201313)",
+      "Improve Literature Review (Pages 1\u201313)",
+      "Improve Methodology (Pages 1\u201313)"
+    ],
+    "limitations": [
+      "This preflight does not check against all research papers.",
+      "Similarity and originality require configured local corpora or open research connectors.",
+      "Scores are derived only from the uploaded document text and loaded local skill rules.",
+      "Open-source matches are discovery evidence, not a replacement for licensed institutional similarity databases.",
+      "AI-writing risk is a writing-pattern signal, not proof of authorship."
+    ]
+  }
+}

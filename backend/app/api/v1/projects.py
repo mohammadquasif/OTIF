@@ -58,9 +58,36 @@ async def get_project(project_id: str):
 @router.delete("/{project_id}")
 async def delete_project(project_id: str):
     """Delete a project and all its thread messages and discoveries."""
+    project = await local_db.get_project(project_id)
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+        
+    doc_id = project.get("doc_id")
+    
     deleted = await local_db.delete_project(project_id)
     if not deleted:
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+        raise HTTPException(status_code=500, detail=f"Failed to delete project '{project_id}'")
+        
+    # Cleanup document files if attached
+    if doc_id:
+        from app.api.v1.documents import find_document_path, document_metadata_path
+        import shutil
+        
+        doc_path = find_document_path(doc_id)
+        if doc_path and doc_path.exists():
+            doc_path.unlink()
+            
+        meta_path = document_metadata_path(doc_id)
+        if meta_path.exists():
+            meta_path.unlink()
+            
+        from app.export.thesis_exporter import export_dir
+        from app.config import settings
+        from pathlib import Path
+        export_path = export_dir(Path(settings.UPLOADS_PATH), doc_id)
+        if export_path.exists():
+            shutil.rmtree(export_path, ignore_errors=True)
+            
     return {"message": f"Project '{project_id}' deleted"}
 
 

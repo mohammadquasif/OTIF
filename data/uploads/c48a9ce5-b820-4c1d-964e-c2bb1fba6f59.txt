@@ -1,0 +1,20 @@
+# Test Paper
+
+## Abstract
+Digital transformation impact on SME performance in India using mixed methods.
+
+## Introduction
+SMEs form backbone of Indian economy contributing 30% to GDP.
+
+## Methods
+Survey of 200 SMEs across Maharashtra, Tamil Nadu, Gujarat.
+
+## Results
+78% response rate. Digital maturity correlates with revenue growth.
+
+## Conclusion
+Digital transformation positively impacts SME performance.
+
+## References
+Braun, V., & Clarke, V. (2006). Qualitative Research in Psychology, 3(2), 77-101.
+Vial, G. (2019). Journal of Strategic Information Systems, 28(2), 118-144.
