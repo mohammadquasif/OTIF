@@ -40,7 +40,7 @@ jobs:
       - name: Install frontend UI dependencies
         run: |
           cd apps/desktop
-          npm ci
+          npm ci --legacy-peer-deps
 
       - name: Sync version with git tag
         if: startsWith(github.ref, 'refs/tags/v')
