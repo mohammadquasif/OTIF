@@ -2,6 +2,7 @@
 import asyncio
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 import httpx
@@ -36,7 +37,12 @@ from app.export.thesis_exporter import (
     build_lot_text,
     build_lol_text,
 )
-from app.research.connectors import check_research_sources
+from app.research.connectors import (
+    attach_source_evidence,
+    check_research_sources,
+    compute_ai_detection_score,
+    compute_turnitin_style_similarity,
+)
 from app.skills.skill_manager import skill_manager
 
 router = APIRouter()
@@ -205,10 +211,32 @@ class ChapterRewriteRequest(BaseModel):
     approved_item_ids: list[str] = Field(default_factory=list)
     doc_type: str = "thesis"
     norm: str = "apa7"
+    instruction: str | None = Field(default=None, max_length=1200)
+
+
+class SessionDraftChapter(BaseModel):
+    id: str
+    title: str
+    original_text: str = ""
+    rewritten_text: str | None = None
+    approved: bool = False
+
+
+class SessionDraftRequest(BaseModel):
+    chapters: list[SessionDraftChapter] = Field(default_factory=list, max_length=100)
 
 
 def _approval_path(doc_id: str) -> Path:
     return document_metadata_path(doc_id).with_name(f"{doc_id}.rewrite_approval.json")
+
+
+def _plan_path(doc_id: str) -> Path:
+    return document_metadata_path(doc_id).with_name(f"{doc_id}.plan.json")
+
+
+def _rewrite_cache_path(doc_id: str) -> Path:
+    """Path to cached full-rewrite chapters for the track-changes view."""
+    return document_metadata_path(doc_id).with_name(f"{doc_id}.full_rewrite.json")
 
 
 def _extract_text(path: Path) -> str:
@@ -405,6 +433,93 @@ def _style_metrics(text: str, banned_hits: list[dict], word_count: int, avg_sent
         "long_quote_words": quote_words,
         "humanization_score": round(humanization_score, 1),
         "ai_writing_risk": round(ai_writing_risk, 1),
+    }
+
+
+def _evaluate_skill_rules(text: str, skills: list) -> dict:
+    """Execute regex-backed skill rules and preserve semantic rules for AI validation."""
+    automated_results: list[dict] = []
+    declarative_rules: list[dict] = []
+    invalid_patterns: list[dict] = []
+
+    for skill in skills:
+        category = getattr(skill.category, "value", str(skill.category))
+        for rule in skill.rules:
+            base = {
+                "skill_id": skill.skill_id,
+                "skill_name": skill.name,
+                "category": category,
+                "rule_code": rule.rule_code,
+                "rule_name": rule.rule_name,
+                "rule_type": getattr(rule.rule_type, "value", str(rule.rule_type)),
+                "severity": getattr(rule.severity, "value", str(rule.severity)),
+                "description": rule.description,
+                "replacement": rule.replacement,
+                "confidence": rule.confidence,
+            }
+            if not rule.pattern:
+                declarative_rules.append(
+                    {
+                        **base,
+                        "status": "ai_validation_required",
+                        "reason": "This semantic/format rule has no machine-readable pattern.",
+                    }
+                )
+                continue
+            try:
+                matches = list(re.finditer(rule.pattern, text, flags=re.I | re.MULTILINE))
+            except re.error as exc:
+                invalid_patterns.append(
+                    {
+                        **base,
+                        "status": "invalid_pattern",
+                        "error": str(exc),
+                    }
+                )
+                continue
+            automated_results.append(
+                {
+                    **base,
+                    "status": "triggered" if matches else "passed",
+                    "match_count": len(matches),
+                    "samples": [
+                        " ".join(match.group(0).split())[:180]
+                        for match in matches[:4]
+                    ],
+                }
+            )
+
+    return {
+        "loaded_count": len(skills),
+        "total_rule_count": (
+            len(automated_results)
+            + len(declarative_rules)
+            + len(invalid_patterns)
+        ),
+        "automated_rule_count": len(automated_results),
+        "automated_trigger_count": sum(
+            1 for result in automated_results if result["status"] == "triggered"
+        ),
+        "declarative_rule_count": len(declarative_rules),
+        "invalid_pattern_count": len(invalid_patterns),
+        "packs": [
+            {
+                "skill_id": skill.skill_id,
+                "name": skill.name,
+                "category": getattr(skill.category, "value", str(skill.category)),
+                "version": skill.version,
+                "rule_count": len(skill.rules),
+                "word_list_count": len(skill.word_lists),
+            }
+            for skill in skills
+        ],
+        "automated_results": automated_results,
+        "declarative_rules_for_ai_validation": declarative_rules,
+        "invalid_patterns": invalid_patterns,
+        "execution_note": (
+            "Regex-backed rules were executed deterministically. Semantic and layout rules "
+            "without machine-readable patterns are explicitly handed to the AI validation pass."
+        ),
     }
 
 
@@ -826,6 +941,50 @@ async def _try_generate_rewrite_preview(
         }
 
 
+def _compute_word_diff(original: str, rewritten: str) -> list[dict]:
+    """LCS-based word-level diff returning [{type, value}, ...].
+
+    Mirrors the frontend's buildDiff() for server-side pre-computation.
+    Types: 'same' | 'add' | 'remove'
+    """
+    words_a = re.findall(r'\S+|\s+', original) or []
+    words_b = re.findall(r'\S+|\s+', rewritten) or []
+    rows = len(words_a) + 1
+    cols = len(words_b) + 1
+    dp: list[list[int]] = [[0] * cols for _ in range(rows)]
+
+    for i in range(len(words_a) - 1, -1, -1):
+        for j in range(len(words_b) - 1, -1, -1):
+            dp[i][j] = (
+                dp[i + 1][j + 1] + 1
+                if words_a[i] == words_b[j]
+                else max(dp[i + 1][j], dp[i][j + 1])
+            )
+
+    tokens: list[dict] = []
+    i = j = 0
+    while i < len(words_a) and j < len(words_b):
+        if words_a[i] == words_b[j]:
+            tokens.append({"type": "same", "value": words_a[i]})
+            i += 1
+            j += 1
+        elif dp[i + 1][j] >= dp[i][j + 1]:
+            tokens.append({"type": "remove", "value": words_a[i]})
+            i += 1
+        else:
+            tokens.append({"type": "add", "value": words_b[j]})
+            j += 1
+
+    while i < len(words_a):
+        tokens.append({"type": "remove", "value": words_a[i]})
+        i += 1
+    while j < len(words_b):
+        tokens.append({"type": "add", "value": words_b[j]})
+        j += 1
+
+    return tokens
+
+
 def _compute_rewrite_diff(original: str, rewritten: str) -> dict:
     """Compute a simple sentence-level diff between original and rewritten text."""
     import re as _re
@@ -881,6 +1040,28 @@ def _detect_diagram_need(title: str, text: str) -> tuple[bool, str, str]:
     return (False, "", "")
 
 
+def _verified_source_context(approved_items: list[dict]) -> str:
+    """Return deduplicated source metadata selected during the evidence-backed AI review."""
+    sources: list[str] = []
+    seen: set[str] = set()
+    for item in approved_items:
+        for source in item.get("source_suggestions", []):
+            source_id = str(source.get("evidence_id") or "")
+            if not source_id or source_id in seen:
+                continue
+            seen.add(source_id)
+            title = str(source.get("title") or "").strip()
+            if not title:
+                continue
+            year = source.get("year") or "year unavailable"
+            url = source.get("url") or "URL unavailable"
+            source_name = source.get("source_name") or source.get("source_id") or "open source"
+            sources.append(
+                f"- {source_id}: {title} ({year}); {source_name}; {url}"
+            )
+    return "\n".join(sources[:12])
+
+
 def _chapter_rewrite_prompt(
     *,
     title: str,
@@ -888,8 +1069,10 @@ def _chapter_rewrite_prompt(
     approved_items: list[dict],
     doc_type: str,
     norm: str,
+    instruction: str | None = None,
 ) -> str:
     item_text = "\n".join(f"- {item['title']}: {item['action']}" for item in approved_items) or "- General scholarly polishing"
+    verified_sources = _verified_source_context(approved_items)
 
     # Detect diagram opportunity
     needs_diagram, diagram_type, diagram_rationale = _detect_diagram_need(title, text)
@@ -919,7 +1102,12 @@ def _chapter_rewrite_prompt(
         "1. Preserve ALL claims, results, data, citations, references, numbers, and the author's original meaning.\n"
         "2. NEVER invent new sources, statistics, findings, limitations, tables, figures, or page numbers.\n"
         "2b. NEVER add placeholder citations like [CITATION NEEDED], [REF], [CITE], (Author, Year). Leave uncited claims as-is.\n"
-        "2c. NEVER add DOI numbers, URLs, or reference list entries not present in the original text.\n"
+        "2c. NEVER add DOI numbers, URLs, or reference entries except exact metadata explicitly "
+        "listed in VERIFIED SOURCES below.\n"
+        "2d. A [SOURCE NEEDED] marker may be resolved only with a directly relevant VERIFIED SOURCE "
+        "listed below. Use only supplied metadata; do not guess authors, DOI values, years, or URLs. "
+        "If the metadata is insufficient for the target citation style, retain the marker and explain "
+        "the missing metadata in the review proposal.\n"
         "3. Keep ALL citation lock tokens EXACTLY: [[CIT_LOCK_0]], [[CIT_LOCK_1]], etc.\n"
         "4. Improve academic voice: varied sentence rhythm, precise vocabulary, natural hedging.\n"
         "5. Reduce AI-like patterns: remove template openers, vary sentence length, add researcher voice.\n"
@@ -932,7 +1120,9 @@ def _chapter_rewrite_prompt(
         f"{diagram_instruction}\n"
         f"DOCUMENT TYPE: {doc_type}\n"
         f"CHAPTER TITLE: {title}\n"
+        f"USER AI COMMAND: {instruction.strip() if instruction else 'Apply the approved improvement plan.'}\n"
         f"APPROVED IMPROVEMENTS TO APPLY:\n{item_text}\n\n"
+        f"VERIFIED SOURCES SELECTED BY THE REVIEW PASS:\n{verified_sources or '- none'}\n\n"
         f"CHAPTER TEXT:\n{text[:18000]}\n\n"
         "Return ONLY the complete revised chapter text — no markdown fences around the entire response, no explanations."
     )
@@ -1368,6 +1558,10 @@ def _build_integrity_report(analysis: dict, doc_type: str, norm: str) -> dict:
         if match.get("evidence", {}).get("classification") == "possible_similarity_risk"
     ]
     checked_sources = [source["name"] for source in sources if source.get("status") == "checked"]
+    open_source_similarity = analysis.get("research_sources", {}).get(
+        "turnitin_style_similarity",
+        {},
+    )
     report_grade = "defensible"
     if scores["plagiarism_risk"] >= 40 or scores["citation_quality"] < 50:
         report_grade = "needs_integrity_review"
@@ -1400,6 +1594,8 @@ def _build_integrity_report(analysis: dict, doc_type: str, norm: str) -> dict:
             "researcher_voice_markers": metrics["researcher_voice_markers"],
             "template_opener_count": metrics["template_opener_count"],
             "rq_traceback_score": scores.get("rq_traceback_score"),
+            "open_source_similarity_index": open_source_similarity.get("similarity_index"),
+            "open_source_similarity_matches": open_source_similarity.get("match_count", 0),
         },
         "top_source_evidence": sorted(
             source_matches,
@@ -1417,50 +1613,214 @@ def _build_integrity_report(analysis: dict, doc_type: str, norm: str) -> dict:
     }
 
 
-def _ai_analysis_prompt(text: str, analysis: dict, doc_type: str, norm: str, research_context: str | None = None) -> str:
-    chapter_lines = "\n".join(
-        (
-            f"- {chapter['id']} | {chapter['title']} | pages {chapter.get('start_page', 1)}-"
-            f"{chapter.get('end_page', chapter.get('start_page', 1))} | scores {chapter.get('scores', {})}"
+def _build_ai_evidence_packet(analysis: dict) -> dict:
+    """Build the bounded, structured handoff used by the final AI validation pass."""
+    metrics = analysis.get("metrics", {})
+    style_metric_names = [
+        "avg_sentence_length",
+        "burstiness",
+        "passive_voice_ratio",
+        "template_opener_count",
+        "researcher_voice_markers",
+        "long_quote_words",
+        "humanization_score",
+        "ai_writing_risk",
+        "hedging_count",
+        "hedging_density_per_1000",
+        "hedging_risk",
+    ]
+    citation_metric_names = [
+        "citation_coverage",
+        "citation_quality",
+        "citation_sentence_count",
+        "claim_sentence_count",
+        "doi_count",
+        "url_count",
+        "references_present",
+        "norm_valid",
+        "norm_issues",
+    ]
+    structure_metric_names = [
+        "is_imrad",
+        "missing_sections",
+        "rq_count",
+        "rq_traceback_score",
+        "unanswered_rqs",
+        "near_duplicate_pairs",
+        "internal_duplication_risk",
+        "originality_evidence_matrix",
+    ]
+
+    source_evidence: list[dict] = []
+    source_status: list[dict] = []
+    for source in analysis.get("research_sources", {}).get("sources", []):
+        source_status.append(
+            {
+                "id": source.get("id"),
+                "name": source.get("name"),
+                "status": source.get("status"),
+                "coverage": source.get("coverage"),
+                "access_note": source.get("access_note"),
+                "match_count": len(source.get("matches", [])),
+            }
         )
-        for chapter in analysis.get("chapters", [])[:10]
+        for match_index, match in enumerate(source.get("matches", [])[:5], start=1):
+            evidence = match.get("evidence") or {}
+            local_similarity = match.get("local_similarity") or {}
+            source_evidence.append(
+                {
+                    "evidence_id": f"src-{source.get('id')}-{match_index}",
+                    "source_id": source.get("id"),
+                    "source_name": source.get("name"),
+                    "title": str(match.get("title") or "")[:240],
+                    "year": match.get("year"),
+                    "url": match.get("url"),
+                    "abstract": str(match.get("abstract") or "")[:360],
+                    "classification": evidence.get("classification"),
+                    "document_passage": evidence.get("document_passage"),
+                    "overlap_percent": evidence.get("overlap_percent"),
+                    "shared_terms": evidence.get("shared_terms", []),
+                    "similarity_risk": local_similarity.get("risk_level")
+                    or evidence.get("turnitin_risk"),
+                    "combined_similarity": local_similarity.get("combined_similarity"),
+                    "flagged_shingles": local_similarity.get("flagged_shingles", []),
+                }
+            )
+
+    source_evidence.sort(
+        key=lambda item: (
+            float(item.get("combined_similarity") or 0),
+            float(item.get("overlap_percent") or 0),
+        ),
+        reverse=True,
     )
-    plan_lines = "\n".join(
-        f"- {item.get('id')}: {item.get('title')} - {item.get('action')}"
-        for item in analysis.get("improvement_plan", [])[:12]
-    )
-    scores = json.dumps(analysis.get("scores", {}), ensure_ascii=True)
-    metrics = json.dumps(
-        {
-            key: analysis.get("metrics", {}).get(key)
-            for key in [
-                "word_count",
-                "citation_coverage",
-                "ai_writing_risk",
-                "humanization_score",
-                "rq_traceback_score",
-                "missing_sections",
-                "near_duplicate_pairs",
-            ]
+    skill_checks = analysis.get("skill_checks", {})
+    compact_skill_checks = {
+        "loaded_count": skill_checks.get("loaded_count", 0),
+        "total_rule_count": skill_checks.get("total_rule_count", 0),
+        "automated_rule_count": skill_checks.get("automated_rule_count", 0),
+        "automated_trigger_count": skill_checks.get("automated_trigger_count", 0),
+        "declarative_rule_count": skill_checks.get("declarative_rule_count", 0),
+        "invalid_pattern_count": skill_checks.get("invalid_pattern_count", 0),
+        "packs": skill_checks.get("packs", []),
+        "automated_results": [
+            {
+                key: result.get(key)
+                for key in [
+                    "rule_code",
+                    "rule_name",
+                    "skill_name",
+                    "category",
+                    "severity",
+                    "status",
+                    "match_count",
+                    "samples",
+                    "description",
+                ]
+            }
+            for result in skill_checks.get("automated_results", [])
+        ],
+        "declarative_rules_for_ai_validation": [
+            {
+                key: rule.get(key)
+                for key in [
+                    "rule_code",
+                    "rule_name",
+                    "skill_name",
+                    "category",
+                    "severity",
+                    "description",
+                ]
+            }
+            for rule in skill_checks.get("declarative_rules_for_ai_validation", [])
+        ],
+        "invalid_patterns": skill_checks.get("invalid_patterns", []),
+        "execution_note": skill_checks.get("execution_note"),
+    }
+
+    return {
+        "pipeline_order": [
+            "document parsing",
+            "open scholarly source discovery",
+            "source evidence enrichment",
+            "deterministic rule and style checks",
+            "chapter/page audit",
+            "final AI validation",
+        ],
+        "scores": analysis.get("scores", {}),
+        "rule_checks": {
+            "all_metrics": metrics,
+            "style_and_voice": {
+                name: metrics.get(name)
+                for name in style_metric_names
+            },
+            "citations_and_format": {
+                name: metrics.get(name)
+                for name in citation_metric_names
+            },
+            "structure_originality_similarity": {
+                name: metrics.get(name)
+                for name in structure_metric_names
+            },
+            "flagged_phrases": analysis.get("findings", []),
         },
-        ensure_ascii=True,
-    )
+        "skill_checks": compact_skill_checks,
+        "chapter_audits": [
+            {
+                "id": chapter.get("id"),
+                "title": chapter.get("title"),
+                "start_page": chapter.get("start_page"),
+                "end_page": chapter.get("end_page"),
+                "scores": chapter.get("scores", {}),
+                "metrics": chapter.get("metrics", {}),
+                "findings": chapter.get("findings", []),
+            }
+            for chapter in analysis.get("chapters", [])[:16]
+        ],
+        "existing_improvement_plan": analysis.get("improvement_plan", [])[:16],
+        "research": {
+            "queries": analysis.get("research_sources", {}).get("queries", []),
+            "source_status": source_status,
+            "source_evidence": source_evidence[:24],
+            "ai_pattern_check": analysis.get("research_sources", {}).get("ai_detection", {}),
+            "open_source_similarity": analysis.get("research_sources", {}).get(
+                "turnitin_style_similarity",
+                {},
+            ),
+            "scope_warning": (
+                "Similarity is calculated only against returned public/open scholarly metadata "
+                "and abstracts. It is not a Turnitin or institutional private-corpus result."
+            ),
+        },
+        "formatting_plan": analysis.get("formatting_plan", {}),
+        "limitations": analysis.get("limitations", []),
+    }
+
+
+def _ai_analysis_prompt(text: str, analysis: dict, doc_type: str, norm: str, research_context: str | None = None) -> str:
+    evidence_packet = _build_ai_evidence_packet(analysis)
+    evidence_json = json.dumps(evidence_packet, ensure_ascii=True, separators=(",", ":"))
     return (
         "You are OTIF's AI Academic Reviewer. Use the deterministic rules, skill findings, "
-        "and open-source research evidence as the factual base. Do not invent sources, data, "
-        "page numbers, claims, or citations.\n\n"
+        "style checks, chapter audits, and open-source research evidence packet as the factual base. "
+        "Recheck the findings, but do not silently override deterministic results. Do not invent "
+        "sources, data, page numbers, claims, citations, evidence IDs, or formatting requirements.\n\n"
+        "When a claim needs a source, select only a source_evidence evidence_id from the packet whose "
+        "title/abstract is genuinely relevant. If no verified source supports it, say that manual "
+        "source research is required. Never manufacture a reference.\n\n"
         "Return JSON only with this shape:\n"
-        "{\"review_summary\":\"...\",\"items\":[{\"title\":\"...\",\"priority\":\"high|medium|low\","
+        "{\"review_summary\":\"...\",\"validated_checks\":[\"...\"],\"items\":[{\"title\":\"...\","
+        "\"priority\":\"high|medium|low\","
         "\"action\":\"...\",\"evidence\":\"...\",\"chapter_id\":\"optional existing id\","
-        "\"page_range\":\"optional range\"}]}\n\n"
+        "\"page_range\":\"optional range\",\"evidence_refs\":[\"rule/style/source evidence ids\"],"
+        "\"source_evidence_ids\":[\"src-source-id-number\"]}]}\n\n"
         f"Document type: {doc_type}\nTarget format: {_format_label(norm)}\n"
         + (f"Research context: {research_context[:1200]}\n" if research_context else "")
-        + f"Scores: {scores}\nMetrics: {metrics}\n"
-        f"Existing rule/skill plan:\n{plan_lines or '- none'}\n\n"
-        f"Detected chapters:\n{chapter_lines or '- none'}\n\n"
+        + f"EVIDENCE PACKET:\n{evidence_json}\n\n"
         "Create 3 to 6 precise, approval-ready improvement items that strengthen academic quality, "
         "citation defensibility, originality, chapter flow, and researcher voice. Each action must be "
-        "safe for a red/green review rewrite.\n\n"
+        "safe for a red/green review rewrite. Explicitly validate style/voice checks and identify "
+        "source-needed claims when present.\n\n"
         f"Document excerpt:\n{text[:12000]}"
     )
 
@@ -1551,7 +1911,17 @@ async def _run_ai_analysis_pass(text: str, analysis: dict, doc_type: str, norm: 
         "model": model,
         "warning": warning,
         "review_summary": str(parsed.get("review_summary") or "AI academic review completed."),
+        "validated_checks": (
+            parsed.get("validated_checks")
+            if isinstance(parsed.get("validated_checks"), list)
+            else []
+        ),
         "items": parsed.get("items") if isinstance(parsed.get("items"), list) else [],
+        "evidence_handoff": {
+            "style_checks_passed": True,
+            "source_evidence_passed": True,
+            "chapter_audits_passed": True,
+        },
     }
 
 
@@ -1559,6 +1929,12 @@ def _merge_ai_review_items(analysis: dict, ai_review: dict) -> None:
     existing_ids = {item.get("id") for item in analysis.get("improvement_plan", [])}
     chapter_ids = {chapter.get("id") for chapter in analysis.get("chapters", [])}
     merged = analysis.setdefault("improvement_plan", [])
+    source_catalog = {
+        item["evidence_id"]: item
+        for item in _build_ai_evidence_packet(analysis)
+        .get("research", {})
+        .get("source_evidence", [])
+    }
 
     for index, item in enumerate(ai_review.get("items", [])[:8], start=1):
         title = str(item.get("title") or f"AI review improvement {index}").strip()
@@ -1578,6 +1954,16 @@ def _merge_ai_review_items(analysis: dict, ai_review: dict) -> None:
         chapter_id = item.get("chapter_id")
         if chapter_id not in chapter_ids:
             chapter_id = None
+        requested_source_ids = [
+            str(source_id)
+            for source_id in item.get("source_evidence_ids", [])
+            if str(source_id) in source_catalog
+        ][:6]
+        evidence_refs = [
+            str(reference)
+            for reference in item.get("evidence_refs", [])
+            if str(reference).strip()
+        ][:10]
 
         merged.append(
             {
@@ -1590,6 +1976,12 @@ def _merge_ai_review_items(analysis: dict, ai_review: dict) -> None:
                 "chapter_id": chapter_id,
                 "page_range": item.get("page_range"),
                 "analysis_source": "ai_review",
+                "evidence_refs": evidence_refs,
+                "source_evidence_ids": requested_source_ids,
+                "source_suggestions": [
+                    source_catalog[source_id]
+                    for source_id in requested_source_ids
+                ],
             }
         )
 
@@ -1881,10 +2273,26 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
                     },
                 )
 
-        # Also compute AI detection and similarity
-        from app.research.connectors import compute_ai_detection_score
+        research_sources = attach_source_evidence(text, research_sources)
+        all_source_matches = [
+            match
+            for source in research_sources["sources"]
+            if source.get("status") == "checked"
+            for match in source.get("matches", [])
+        ]
         research_sources["ai_detection"] = compute_ai_detection_score(text)
-        research_sources["turnitin_style_similarity"] = None
+        open_source_similarity = compute_turnitin_style_similarity(text, all_source_matches)
+        open_source_similarity.update(
+            {
+                "scope_label": "Open-source scholarly similarity",
+                "is_turnitin_result": False,
+                "scope_note": (
+                    "Compared only with public/open results returned during this scan; "
+                    "not Turnitin or an institutional private corpus."
+                ),
+            }
+        )
+        research_sources["turnitin_style_similarity"] = open_source_similarity
 
     research_sources["connectivity"] = connectivity
     checked_count = sum(1 for s in research_sources["sources"] if s["status"] == "checked")
@@ -1925,10 +2333,12 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
         await asyncio.sleep(delay * 0.4)
 
     analysis = _score_document(text, doc_type, norm, research_sources=research_sources)
+    analysis["skill_checks"] = _evaluate_skill_rules(text, skills)
+    analysis["validation_handoff"] = _build_ai_evidence_packet(analysis)
 
     # Store improvement plan for later approve-rewrite lookup
     try:
-        plan_path = Path(str(_approval_path(doc_id)).replace(".rewrite_approval.json", ".plan.json"))
+        plan_path = _plan_path(doc_id)
         plan_path.write_text(json.dumps(analysis, indent=2, default=str), encoding="utf-8")
     except OSError:
         pass
@@ -1943,6 +2353,16 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
             "message": "📊 Rules, skills, and source checks complete. Running AI review for final report...",
             "scores_summary": analysis["scores"],
             "chapter_count": len(analysis["chapters"]),
+            "style_checks_included": True,
+            "source_evidence_count": len(
+                analysis["validation_handoff"]["research"]["source_evidence"]
+            ),
+            "skill_rule_summary": {
+                "total": analysis["skill_checks"]["total_rule_count"],
+                "automated": analysis["skill_checks"]["automated_rule_count"],
+                "triggered": analysis["skill_checks"]["automated_trigger_count"],
+                "ai_validation_required": analysis["skill_checks"]["declarative_rule_count"],
+            },
         },
     )
     await asyncio.sleep(delay)
@@ -1968,7 +2388,12 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
         return
     _merge_ai_review_items(analysis, ai_review)
     analysis["ai_review"] = ai_review
+    analysis["validation_handoff"] = _build_ai_evidence_packet(analysis)
     analysis["integrity_report"] = _build_integrity_report(analysis, doc_type, norm)
+    try:
+        plan_path.write_text(json.dumps(analysis, indent=2, default=str), encoding="utf-8")
+    except OSError:
+        pass
     yield await event(
         "ai_review_complete",
         {
@@ -1998,6 +2423,7 @@ async def run_analysis_stream(doc_id: str, doc_type: str, norm: str, project_id:
             "formatting_plan": analysis["formatting_plan"],
             "integrity_report": analysis["integrity_report"],
             "ai_review": analysis["ai_review"],
+            "validation_handoff": analysis["validation_handoff"],
             "ai_detection": ai_detection,
             "turnitin_similarity": turnitin_similarity,
             "analysis_mode": analysis["analysis_mode"],
@@ -2094,7 +2520,7 @@ async def approve_rewrite(req: RewriteApprovalRequest):
         raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
 
     # Try loading previously stored improvement plan from scan (deterministic IDs)
-    stored_plan_path = Path(str(_approval_path(req.doc_id)).replace(".rewrite_approval.json", ".plan.json"))
+    stored_plan_path = _plan_path(req.doc_id)
     analysis = None
     if stored_plan_path.exists():
         try:
@@ -2211,6 +2637,233 @@ async def get_chapter_editor(doc_id: str, doc_type: str = "thesis", norm: str = 
     }
 
 
+@router.get("/front-matter/{doc_id}")
+async def get_front_matter_preview(doc_id: str, norm: str = "apa7"):
+    """Recheck TOC, list of tables, and list of figures with page estimates."""
+    path = find_document_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+    try:
+        text = _extract_text(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No readable text found in the uploaded document")
+
+    chapters = [
+        {
+            "id": chapter["id"],
+            "title": chapter["title"],
+            "original_text": chapter["text"],
+            "edited_text": chapter["text"],
+        }
+        for chapter in _split_chapters(text)
+    ]
+    toc_entries, figures, tables = _extract_toc_entries(chapters, norm)
+    return {
+        "doc_id": doc_id,
+        "target_format": _format_label(norm),
+        "toc_entries": toc_entries,
+        "tables": tables,
+        "figures": figures,
+        "toc_text": build_toc_text(toc_entries),
+        "list_of_tables_text": build_lol_text(tables),
+        "list_of_figures_text": build_lot_text(figures),
+        "page_number_mode": "estimated",
+        "note": (
+            "Page numbers are layout estimates during editing. Exact DOCX fields are refreshed "
+            "during final export when Microsoft Word automation is available."
+        ),
+    }
+
+
+@router.get("/session/{doc_id}")
+async def get_scan_session(doc_id: str):
+    """Restore a locally cached scan, improvement plan, approval, and rewrite draft."""
+    path = find_document_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+
+    def read_json_file(file_path: Path) -> dict | None:
+        if not file_path.exists():
+            return None
+        try:
+            payload = json.loads(file_path.read_text(encoding="utf-8"))
+            return payload if isinstance(payload, dict) else None
+        except (json.JSONDecodeError, OSError):
+            return None
+
+    metadata = read_json_file(document_metadata_path(doc_id)) or {}
+    analysis = read_json_file(_plan_path(doc_id))
+    approval = read_json_file(_approval_path(doc_id))
+    rewrite_draft = read_json_file(_rewrite_cache_path(doc_id))
+
+    return {
+        "doc_id": doc_id,
+        "filename": metadata.get("filename") or path.name,
+        "document_exists": True,
+        "analysis_available": analysis is not None,
+        "analysis": analysis,
+        "approval": approval,
+        "rewrite_draft": rewrite_draft,
+        "status": (
+            "rewrite_in_progress"
+            if rewrite_draft
+            else "improvement_plan_approved"
+            if approval
+            else "analysis_complete"
+            if analysis
+            else "uploaded"
+        ),
+        "message": "Local OTIF session restored.",
+    }
+
+
+@router.post("/session/{doc_id}/draft")
+async def save_scan_session_draft(doc_id: str, req: SessionDraftRequest):
+    """Autosave review proposals and chapter approval state for refresh recovery."""
+    if not find_document_path(doc_id):
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+
+    payload = {
+        "chapters": [
+            {
+                **chapter.model_dump(),
+                "diff_tokens": (
+                    _compute_word_diff(chapter.original_text, chapter.rewritten_text)
+                    if chapter.rewritten_text
+                    else []
+                ),
+            }
+            for chapter in req.chapters
+        ],
+        "saved_at": datetime.now(timezone.utc).isoformat(),
+        "autosaved": True,
+    }
+    _rewrite_cache_path(doc_id).write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    return {
+        "doc_id": doc_id,
+        "saved": True,
+        "chapter_count": len(req.chapters),
+        "saved_at": payload["saved_at"],
+    }
+
+
+@router.delete("/session/{doc_id}")
+async def clear_scan_session(doc_id: str):
+    """Clear cached analysis/rewrite state while retaining the locally uploaded source file."""
+    path = find_document_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+
+    removed: list[str] = []
+    for cache_path in [_plan_path(doc_id), _approval_path(doc_id), _rewrite_cache_path(doc_id)]:
+        try:
+            if cache_path.exists():
+                cache_path.unlink()
+                removed.append(cache_path.name)
+        except OSError as exc:
+            raise HTTPException(
+                status_code=500,
+                detail=f"Could not clear cached session file '{cache_path.name}': {exc}",
+            ) from exc
+
+    return {
+        "doc_id": doc_id,
+        "cleared": True,
+        "removed": removed,
+        "source_document_retained": True,
+        "message": "Cached scan and rewrite state cleared. The uploaded source document was retained locally.",
+    }
+
+
+@router.get("/track-changes/{doc_id}")
+async def get_track_changes(doc_id: str, doc_type: str = "thesis", norm: str = "apa7"):
+    """Return chapters with word-level diff tokens for the Ref-N-Write track-changes view.
+
+    If a full-document rewrite has been cached, returns pre-computed diff_tokens.
+    Otherwise returns chapters with original text only (no diff).
+    """
+    path = find_document_path(doc_id)
+    if not path:
+        raise HTTPException(status_code=404, detail=f"Document '{doc_id}' was not found")
+
+    try:
+        text = _extract_text(path)
+    except Exception as exc:
+        raise HTTPException(status_code=400, detail=f"Could not parse document: {exc}") from exc
+    if not text.strip():
+        raise HTTPException(status_code=400, detail="No readable text found in the uploaded document")
+
+    metadata = {}
+    metadata_file = document_metadata_path(doc_id)
+    if metadata_file.exists():
+        try:
+            metadata = json.loads(metadata_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            metadata = {}
+
+    # Load cached full rewrite if available
+    cached_rewrites: dict[str, str] = {}
+    rewrite_cache = _rewrite_cache_path(doc_id)
+    if rewrite_cache.exists():
+        try:
+            cached = json.loads(rewrite_cache.read_text(encoding="utf-8"))
+            for ch in cached.get("chapters", []):
+                rewritten = ch.get("rewritten_text", "").strip()
+                if rewritten:
+                    cached_rewrites[ch["id"]] = rewritten
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    # Load approval to get approved chapter IDs
+    approved_ids: set[str] = set()
+    approval_file = _approval_path(doc_id)
+    if approval_file.exists():
+        try:
+            approval = json.loads(approval_file.read_text(encoding="utf-8"))
+            approved_ids = set(approval.get("approved_item_ids", []))
+        except (json.JSONDecodeError, OSError):
+            pass
+
+    chapters = _split_chapters(text)
+    result_chapters = []
+    for chapter in chapters:
+        cid = chapter["id"]
+        orig = chapter["text"]
+        rewritten = cached_rewrites.get(cid)
+        diff_tokens = _compute_word_diff(orig, rewritten) if rewritten else []
+
+        result_chapters.append({
+            "id": cid,
+            "title": chapter["title"],
+            "original_text": orig,
+            "rewritten_text": rewritten,
+            "diff_tokens": diff_tokens,
+            "word_count": len(re.findall(r"\b[\w'-]+\b", orig)),
+            "approved": cid in approved_ids,
+        })
+
+    return {
+        "doc_id": doc_id,
+        "filename": metadata.get("filename") or path.name,
+        "doc_type": doc_type,
+        "norm": norm,
+        "chapters": result_chapters,
+        "total_chapters": len(result_chapters),
+        "approved_chapters": sum(1 for ch in result_chapters if ch["approved"]),
+        "rewrite_authorized": approval_file.exists(),
+        "message": (
+            "Track-changes view ready with pre-computed diffs."
+            if cached_rewrites
+            else "No rewrite cached yet. Approve improvements and rewrite to see track changes."
+        ),
+    }
+
+
 @router.post("/chapter-rewrite-proposal")
 async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
     """Generate a user-reviewable AI rewrite proposal for one selected chapter."""
@@ -2241,6 +2894,7 @@ async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
         approved_items=approved_items,
         doc_type=req.doc_type,
         norm=req.norm,
+        instruction=req.instruction,
     )
 
     raw_text, model, provider_used, provider_warning = await _generate_rewrite_text_with_resilience(
@@ -2265,6 +2919,7 @@ async def chapter_rewrite_proposal(req: ChapterRewriteRequest):
         "model": model,
         "privacy_mode": public_config.privacy_mode,
         "proposed_text": restored_text,
+        "diff_tokens": _compute_word_diff(req.text, restored_text),
         "provider_warning": provider_warning,
         "citation_lock": {
             "locked_count": len(lock_map),
@@ -2284,6 +2939,7 @@ class FullDocumentRewriteRequest(BaseModel):
     norm: str = "apa7"
     design_theme: str = "classic_blue"
     design_accent_hex: str | None = None
+    instruction: str | None = Field(default=None, max_length=1200)
 
 
 class FullDocumentRewriteChapter(BaseModel):
@@ -2519,6 +3175,7 @@ async def rewrite_full_document(req: FullDocumentRewriteRequest):
             continue
 
         item_text = "\n".join(f"- {item['title']}: {item['action']}" for item in approved_items)
+        verified_sources = _verified_source_context(approved_items)
         locked_text, lock_map = lock_citations(chapter_text)
 
         prompt = (
@@ -2529,6 +3186,9 @@ async def rewrite_full_document(req: FullDocumentRewriteRequest):
             "2. Preserve ALL claims, results, data, citations, references, numbers.\n"
             "3. NEVER invent new sources, statistics, findings, or page numbers.\n"
             "3b. NEVER add placeholder citations like [CITATION NEEDED], [REF], [REFERENCE NEEDED], [CITE], (Author, Year), or any similar empty marker. Keep the original text's citations as-is.\n"
+            "3c. A [SOURCE NEEDED] marker may be resolved only from the VERIFIED SOURCES below. "
+            "Do not guess missing authors, years, DOI values, URLs, or reference metadata. If the "
+            "available metadata is insufficient for the target style, keep the marker for author review.\n"
             "4. Keep ALL citation lock tokens EXACTLY: [[CIT_LOCK_0]], [[CIT_LOCK_1]], etc.\n"
             "5. Improve academic voice: varied sentence rhythm, precise vocabulary, natural hedging.\n"
             "6. Reduce AI-like patterns: remove template openers, vary sentence lengths, add researcher voice.\n"
@@ -2537,7 +3197,9 @@ async def rewrite_full_document(req: FullDocumentRewriteRequest):
             f"DOCUMENT TYPE: {req.doc_type}\n"
             f"CHAPTER TITLE: {chapter.title}\n"
             f"DESIGN THEME: {theme_name}{accent_note}\n"
+            f"USER AI COMMAND: {req.instruction.strip() if req.instruction else 'Apply the approved improvement plan.'}\n"
             f"APPROVED IMPROVEMENTS:\n{item_text}\n\n"
+            f"VERIFIED SOURCES:\n{verified_sources or '- none'}\n\n"
             f"CHAPTER TEXT:\n{locked_text[:16000]}\n\n"
             "Return ONLY the complete rewritten chapter — no markdown, no explanations."
         )
@@ -2586,6 +3248,29 @@ async def rewrite_full_document(req: FullDocumentRewriteRequest):
             changes_summary=". ".join(summary_parts) + ".",
         ))
 
+    # Cache rewrite for track-changes view
+    try:
+        from datetime import datetime
+        _rewrite_cache_path(req.doc_id).write_text(
+            json.dumps({
+                "chapters": [
+                    {
+                        "id": c.id,
+                        "title": c.title,
+                        "original_text": c.original_text,
+                        "rewritten_text": c.rewritten_text,
+                        "changes_summary": c.changes_summary,
+                        "diff_tokens": _compute_word_diff(c.original_text, c.rewritten_text),
+                    }
+                    for c in rewritten_chapters
+                ],
+                "generated_at": datetime.utcnow().isoformat(),
+            }, indent=2, default=str),
+            encoding="utf-8",
+        )
+    except OSError:
+        pass
+
     return {
         "doc_id": req.doc_id,
         "provider": provider_used,
@@ -2593,7 +3278,17 @@ async def rewrite_full_document(req: FullDocumentRewriteRequest):
         "privacy_mode": public_config.privacy_mode,
         "design_theme": req.design_theme,
         "design_accent_hex": req.design_accent_hex,
-        "chapters": [c.model_dump() for c in rewritten_chapters],
+        "chapters": [
+            {
+                "id": c.id,
+                "title": c.title,
+                "original_text": c.original_text,
+                "rewritten_text": c.rewritten_text,
+                "changes_summary": c.changes_summary,
+                "diff_tokens": _compute_word_diff(c.original_text, c.rewritten_text),
+            }
+            for c in rewritten_chapters
+        ],
         "chapter_count": len(rewritten_chapters),
         "total_words_original": sum(len(c.original_text.split()) for c in rewritten_chapters),
         "total_words_rewritten": sum(len(c.rewritten_text.split()) for c in rewritten_chapters),

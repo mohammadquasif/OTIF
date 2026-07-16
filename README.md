@@ -30,8 +30,11 @@ Writing a rigorous dissertation or journal manuscript requires navigating strict
 
 **OTIF bridges the gap** by providing a comprehensive, standalone diagnostic and revision environment running **entirely on your local machine**:
 - **Audit manuscripts locally** across 6 key dimensions: Plagiarism Risk, Originality Evidence, Citation Quality, Scholarly Authenticity, AI Writing Signatures, and Structural Depth.
+- **Validate scans through a structured evidence handoff** combining deterministic rules, skill patterns, semantic skill rules, style diagnostics, chapter/page audits, and open-source research evidence before final AI review.
 - **Lock citations deterministically** so that DOI, reference, and quote preservation can be checked during revision workflows.
 - **Verify literature claims** against 14 open scholarly sources, including OpenAlex, CrossRef, Semantic Scholar, Europe PMC, arXiv, Zenodo, PubMed, DataCite, ERIC, OSF Preprints, DOAJ, CORE, BASE, and INSPIRE-HEP.
+- **Resume scan and rewrite sessions after refresh** using local document, analysis-plan, approval, and rewrite-draft caches.
+- **Review AI proposals in a staged academic editor** with red removals, green additions, chapter-level approval, Tiptap editing, and explicit DOCX/PDF export.
 - **Generate publication-ready exports** (DOCX/PDF) styled with academic formatting themes (Classical, Modern, Minimal, Technical) along with formal **CRediT AI Disclosure Statements** required by peer-reviewed journals.
 
 ---
@@ -97,6 +100,21 @@ The application window will open automatically with live hot-reloading enabled f
 
 ---
 
+## Analysis and AI Validation Pipeline
+
+OTIF does not send only the uploaded text to the configured AI provider. Each completed scan follows a staged, evidence-backed workflow:
+
+1. **Local document parsing:** Extract text, chapters, headings, citations, figures, tables, and structural signals.
+2. **Open scholarly discovery:** Query public research connectors and enrich returned records with title, year, URL, relevant passage, shared terms, and local overlap evidence.
+3. **Deterministic checks:** Calculate citation coverage, internal duplication, originality evidence, researcher voice, burstiness, passive voice, hedging, AI-pattern risk, structure, and target-format compliance.
+4. **Skill-pack execution:** Execute every machine-readable regex rule. Semantic or layout rules without executable patterns are explicitly included in the AI validation packet.
+5. **Final AI validation:** The configured AI model receives the structured evidence packet, rechecks the findings, identifies source-needed claims, and creates approval-ready improvement items.
+6. **User-controlled revision:** Nothing is applied automatically. The user approves the plan, generates red/green proposals, edits or rejects them, and exports only accepted changes.
+
+> **Similarity scope:** OTIF's similarity index is calculated only against public/open records returned during the scan. It is not a Turnitin, iThenticate, Copyleaks, or institutional private-corpus result.
+
+---
+
 ## 📊 What You Can Expect After Analyzing & Rewriting
 
 When you submit a dissertation chapter or journal manuscript to OTIF, the engine executes a multi-layered diagnostic sweep and produces an actionable, verifiable audit report. Here is what you receive:
@@ -116,15 +134,31 @@ Instead of a single vague score, OTIF segments your document into chapters (e.g.
 ### 3. Prioritized Improvement Plan & Evidence Audit
 OTIF translates analytical flaws into concrete, prioritized action items:
 - **Exact Evidence:** Shows the precise paragraph, page range, and diagnostic rule that triggered the recommendation.
+- **Verified Source Suggestions:** AI improvement items may reference source evidence IDs selected from open scholarly results. Unverified or incomplete references are never fabricated.
 - **Interactive Approval:** You retain 100% editorial authority. Review each item and explicitly click **Approve** or **Dismiss**.
 
-### 4. Byte-Identical Citation-Locked Revision
+### 4. Persistent Scan Session
+OTIF stores the active session locally so browser or desktop refreshes do not discard completed work:
+- Restores the uploaded document, scores, improvement plan, approved items, rewrite proposals, and chapter approval state.
+- Autosaves edited rewrite proposals to the local backend cache.
+- Provides **New Session** and confirmed **Clear Session** controls.
+- Clearing a scan removes cached analysis and rewrite state while retaining the original uploaded source document.
+
+### 5. Academic Improvement Workspace
+After the improvement plan is approved, OTIF opens a staged document workspace:
+- Academic ribbon for source search, similarity evidence, dashboard, phrase ideas, proofreading, paraphrasing, AI-pattern review, researcher voice, and integrity reporting.
+- Tiptap-based proposal editing.
+- Red strikethrough removals and green additions.
+- Separate generate, approve, reject, accept-all, and export actions.
+- TOC, List of Tables, and List of Figures agents with page estimates during editing and field refresh during final DOCX export when Word automation is available.
+
+### 6. Byte-Identical Citation-Locked Revision
 When you execute an approved rewriting task:
 1. OTIF extracts all empirical citations, DOIs, equations, and verbatim quotes and swaps them with cryptographic placeholder tokens.
 2. The language engine polishes syntactic flow, removes repetitive filler, and enhances academic formality.
 3. Citations and quotes are restored from the secure lock map, with export certificates reporting preservation status for reviewer verification.
 
-### 5. Publication-Ready Export & Formal Disclosure
+### 7. Publication-Ready Export & Formal Disclosure
 - **DOCX / PDF Export:** Download your revised manuscript formatted in your choice of 4 curated academic themes (**Classical Academic**, **Modern Crisp**, **Minimalist Research**, or **Technical / Engineering**).
 - **CRediT AI Disclosure Statement:** Automatically generates a journal-compliant transparency declaration detailing exact sections where assistive revision was utilized, ready for submission to IEEE, Elsevier, Springer, or Wiley.
 
@@ -141,7 +175,9 @@ Commercial writing and checking tools were built either for undergraduate essay 
 | **Citation Preservation** | N/A (Reader only) | Frequently breaks academic citations | Corrupts DOIs, names, and quotes | **Deterministic Byte-Identical Locking** |
 | **Constructive Roadmap** | None (Static similarity percentage) | Surface-level sentence rewrites | Random word substitution (spinning) | **Prioritized, evidence-backed action plan** |
 | **Originality Evaluation** | None | None | None | **5-Dimension Evidence Matrix scoring** |
-| **Scholarly API Verification**| Proprietary closed database | None | None | **Live checks via 14 open research sources** |
+| **Scholarly API Verification**| Proprietary closed database | None | None | **Live evidence discovery via 14 open research sources** |
+| **Persistent Review Session** | Platform dependent | Cloud account dependent | Platform dependent | **Local scan, plan, approval, and rewrite recovery** |
+| **Tracked Academic Revision** | Reader/report workflow | Generic suggestions | Automatic rewriting | **User-approved red/green chapter proposals** |
 | **Diagram Studio** | No | No | No | **Integrated Mermaid Academic Studio** |
 | **Journal Compliance** | No | No | No | **Auto-generates CRediT AI Disclosures** |
 
@@ -161,7 +197,7 @@ OTIF enforces strict engineering boundaries to safeguard academic integrity:
 
 ## 🧠 Academic Skill Pack Engine
 
-OTIF derives its intelligence from 9+ specialized academic skill sets synced dynamically and verified locally on launch:
+OTIF derives its intelligence from 11 specialized academic skill sets synced dynamically and verified locally on launch:
 
 | Skill Pack | Domain & Diagnostic Scope |
 |:---|:---|
@@ -174,6 +210,8 @@ OTIF derives its intelligence from 9+ specialized academic skill sets synced dyn
 | `07_citation` | Bibliographic completeness, DOI formatting, reference section health |
 | `08_design_rewrite` | Structural chapter flow and visual diagram conceptualization |
 | `09_academic_design` | Academic document structure, design consistency, and export readiness |
+| `10_indian_phd_standards` | UGC, AICTE, and IIT doctoral structure, formatting, and submission checks |
+| `11_indian_academic_journals` | UGC-CARE, Scopus, SCI/SCIE, predatory-journal, and Indian source-quality checks |
 
 ---
 

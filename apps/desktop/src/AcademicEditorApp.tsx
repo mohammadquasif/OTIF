@@ -5,14 +5,16 @@ import {
   Activity, UploadCloud, Sparkles, ShieldCheck, Download,
   Settings, Sun, Moon, X, CheckCircle2, AlertTriangle, Zap,
   FileText, BookOpen, Search, ChevronRight,
-  ArrowRight, Copy, Info, Loader2,
+  ArrowRight, Copy, Info, Loader2, Plus, Trash2,
 } from 'lucide-react';
 import { API_BASE } from './api';
 import { useTheme } from './contexts/ThemeContext';
 import type {
   SkillStatus, AIStatus, UploadResult,
-  PreflightScores, ImprovementItem, StreamEvent, FinalizeResult,
+  PreflightScores, ImprovementItem, StreamEvent, FinalizeResult, TrackChangesChapter,
+  AIDetectionResult, TurnitinSimilarity, FrontMatterPreview, ScanSessionRestore,
 } from './types';
+import { TrackChangesDocument } from './components/TrackChangesDocument';
 
 type ScannedExportChapter = {
   id: string;
@@ -27,6 +29,18 @@ type FullRewriteChapter = {
   original_text: string;
   rewritten_text: string;
   changes_summary: string;
+};
+
+const ACTIVE_SCAN_SESSION_KEY = 'otif.activeScanSession.v1';
+
+type ActiveScanPointer = {
+  doc_id: string;
+  filename: string;
+  doc_type: string;
+  norm: string;
+  pace: string;
+  approved_chapter_ids: string[];
+  updated_at: string;
 };
 
 // ── Constants ─────────────────────────────────────────────────
@@ -54,12 +68,12 @@ const NORMS = [
 ];
 
 const SCAN_DIMENSIONS = [
-  { key: 'plagiarism_risk', label: 'Plagiarism Risk', icon: Search, desc: 'Near-duplicate phrases, attribution gaps, verbatim quotes' },
+  { key: 'plagiarism_risk', label: 'Plagiarism Risk', icon: Search, desc: 'Near-duplicate phrases, attribution gaps, verbatim quotes', inverse: true },
   { key: 'ai_writing_risk', label: 'AI Writing Signature', icon: Sparkles, desc: 'Formulaic templates, monotonous patterns, boilerplate detection' },
   { key: 'originality_score', label: 'Originality Evidence', icon: ShieldCheck, desc: 'Literature gap, methodology boundary, contribution clarity' },
   { key: 'citation_quality', label: 'Citation Quality', icon: BookOpen, desc: 'DOI presence, format consistency, reference coverage' },
-  { key: 'scholarly_voice', label: 'Scholarly Voice', icon: FileText, desc: 'Burstiness, vocabulary diversity, hedging balance' },
-  { key: 'structure_cohesion', label: 'Structure & Cohesion', icon: Zap, desc: 'Chapter transitions, heading hierarchy, IMRaD compliance' },
+  { key: 'humanization_score', label: 'Scholarly Voice', icon: FileText, desc: 'Burstiness, vocabulary diversity, hedging balance' },
+  { key: 'structure_signal', label: 'Structure & Cohesion', icon: Zap, desc: 'Chapter transitions, heading hierarchy, IMRaD compliance' },
 ];
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -445,9 +459,21 @@ export default function AcademicEditorApp() {
   const [scanLog, setScanLog] = useState<string[]>([]);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [researchApiStatus, setResearchApiStatus] = useState<Map<string, { name: string; status: string; matchCount: number; step: number }>>(new Map());
-  const [rewritePreview, setRewritePreview] = useState<string | null>(null);
-  const [rewriteDiff, setRewriteDiff] = useState<{ deletions: string[]; insertions: string[] } | null>(null);
+  const [aiPatternCheck, setAiPatternCheck] = useState<AIDetectionResult | null>(null);
+  const [openSourceSimilarity, setOpenSourceSimilarity] = useState<TurnitinSimilarity | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_rp, setRewritePreview] = useState<string | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_rd, setRewriteDiff] = useState<{ deletions: string[]; insertions: string[] } | null>(null);
   const [scanExportChapters, setScanExportChapters] = useState<ScannedExportChapter[]>([]);
+
+  // ── Track Changes (Ref-N-Write style) ──────────────────
+  const [diffViewChapters, setDiffViewChapters] = useState<TrackChangesChapter[]>([]);
+  const [chapterApprovals, setChapterApprovals] = useState<Set<string>>(new Set());
+  const [rewritingChapterId, setRewritingChapterId] = useState<string | null>(null);
+  const [planApproved, setPlanApproved] = useState(false);
+  const [sessionRestoring, setSessionRestoring] = useState(false);
+  const restoredSessionRef = useRef(false);
 
   // ── Computed ─────────────────────────────────────────────
   const aiProvider = aiDraft?.provider ?? aiStatus?.active_provider ?? 'deepseek';
@@ -653,6 +679,7 @@ export default function AcademicEditorApp() {
   const handleFileUpload = useCallback(async (file: File) => {
     setScanFilename(file.name);
     setRewritePreview(null); setRewriteDiff(null); setScanExportChapters([]);
+    setAiPatternCheck(null); setOpenSourceSimilarity(null); setPlanApproved(false);
     setScanPhase('scanning'); setScanLog([]); setIsBusy(true); setErrorMsg(null);
     try {
       setScanLog((p) => [...p, '📤 Uploading document...']);
@@ -716,6 +743,24 @@ export default function AcademicEditorApp() {
             setScanLog((p) => [...p, event.message!]);
           }
           if (event.scores) setScores(event.scores);
+          if (
+            event.ai_detection
+            && Number.isFinite(Number(event.ai_detection.ai_detection_score))
+          ) {
+            setAiPatternCheck({
+              ...event.ai_detection,
+              ai_detection_score: Number(event.ai_detection.ai_detection_score),
+            });
+          }
+          if (
+            event.turnitin_similarity
+            && Number.isFinite(Number(event.turnitin_similarity.similarity_index))
+          ) {
+            setOpenSourceSimilarity({
+              ...event.turnitin_similarity,
+              similarity_index: Number(event.turnitin_similarity.similarity_index),
+            });
+          }
           if (event.improvement_plan) { setImprovementPlan(event.improvement_plan); setApprovedIds([]); }
           if (event.stage === 'error') throw new Error(event.message ?? 'Analysis error');
         }
@@ -723,12 +768,342 @@ export default function AcademicEditorApp() {
       setScanLog((p) => [...p, '✅ Analysis complete']);
       setScanPhase('results');
       setNoticeMsg('Scan complete! Review the findings below.');
+      // Load chapters for Ref-N-Write track-changes view
+      void loadChaptersForDiff(docId);
     } catch (err) {
       setErrorMsg(err instanceof Error ? err.message : 'Scan failed.');
       setScanPhase('upload');
     } finally { setIsBusy(false); }
   }, [scanDocType, scanNorm, scanPace, needsSetup, aiOnline, internetOnline]);
   runScanRef.current = runScan;
+
+  // ── Track Changes: Load chapters after analysis ───────────
+  const loadChaptersForDiff = useCallback(async (
+    docId: string,
+    docType: string = scanDocType,
+    norm: string = scanNorm,
+  ) => {
+    try {
+      // The long-standing chapter-editor route is the compatibility-safe source
+      // for the initial review workspace. Track-change proposals are added locally.
+      const chapRes = await axios.get(
+        `${API_BASE}/analysis/chapter-editor/${docId}?doc_type=${docType}&norm=${norm}`,
+      );
+      const chapters: TrackChangesChapter[] = (chapRes.data?.chapters ?? []).map(
+        (ch: { id: string; title: string; original_text: string; word_count?: number }) => ({
+          id: ch.id,
+          title: ch.title,
+          original_text: ch.original_text,
+          rewritten_text: null,
+          diff_tokens: [],
+          word_count: ch.word_count ?? 0,
+          approved: false,
+        }),
+      );
+      setDiffViewChapters(chapters);
+      setChapterApprovals(new Set());
+      setPlanApproved(Boolean(chapRes.data?.approval));
+    } catch (error) {
+      setDiffViewChapters([]);
+      setChapterApprovals(new Set());
+      setPlanApproved(false);
+      setErrorMsg(
+        axios.isAxiosError(error)
+          ? String(error.response?.data?.detail ?? 'The document review workspace could not be loaded.')
+          : 'The document review workspace could not be loaded.',
+      );
+    }
+  }, [scanDocType, scanNorm]);
+
+  const restoreScanSession = useCallback(async (pointer: ActiveScanPointer) => {
+    setSessionRestoring(true);
+    try {
+      const response = await axios.get<ScanSessionRestore>(
+        `${API_BASE}/analysis/session/${pointer.doc_id}`,
+      );
+      const session = response.data;
+      const analysis = session.analysis;
+
+      setMode('scan');
+      setScanDocId(pointer.doc_id);
+      setScanFilename(session.filename || pointer.filename);
+      setScanDocType(pointer.doc_type || 'thesis');
+      setScanNorm(pointer.norm || 'apa7');
+      setScanPace(pointer.pace || 'normal');
+      setScores(analysis?.scores ?? null);
+      setImprovementPlan(analysis?.improvement_plan ?? []);
+      setApprovedIds(session.approval?.approved_item_ids ?? []);
+      setPlanApproved(Boolean(session.approval));
+
+      const restoredAiCheck = analysis?.research_sources?.ai_detection;
+      setAiPatternCheck(
+        restoredAiCheck && Number.isFinite(Number(restoredAiCheck.ai_detection_score))
+          ? { ...restoredAiCheck, ai_detection_score: Number(restoredAiCheck.ai_detection_score) }
+          : null,
+      );
+      const restoredSimilarity = analysis?.research_sources?.turnitin_style_similarity;
+      setOpenSourceSimilarity(
+        restoredSimilarity && Number.isFinite(Number(restoredSimilarity.similarity_index))
+          ? { ...restoredSimilarity, similarity_index: Number(restoredSimilarity.similarity_index) }
+          : null,
+      );
+
+      const draftChapters = session.rewrite_draft?.chapters ?? [];
+      if (draftChapters.length > 0) {
+        const pointerApprovals = new Set(pointer.approved_chapter_ids ?? []);
+        const chapters = draftChapters.map((chapter) => ({
+          ...chapter,
+          word_count: chapter.word_count
+            || chapter.original_text?.split(/\s+/).filter(Boolean).length
+            || 0,
+          approved: Boolean(chapter.approved || pointerApprovals.has(chapter.id)),
+          diff_tokens: chapter.diff_tokens ?? [],
+        }));
+        setDiffViewChapters(chapters);
+        setChapterApprovals(new Set(
+          chapters.filter((chapter) => chapter.approved).map((chapter) => chapter.id),
+        ));
+      } else {
+        await loadChaptersForDiff(
+          pointer.doc_id,
+          pointer.doc_type || 'thesis',
+          pointer.norm || 'apa7',
+        );
+      }
+
+      setScanPhase(analysis ? 'results' : 'upload');
+      setScanLog(analysis ? ['Session restored from local OTIF storage.'] : []);
+      setNoticeMsg(
+        analysis
+          ? `Restored scan session for ${session.filename || pointer.filename}.`
+          : 'The uploaded document was restored, but its scan was incomplete. Run the scan again.',
+      );
+    } catch (error) {
+      localStorage.removeItem(ACTIVE_SCAN_SESSION_KEY);
+      setErrorMsg(
+        axios.isAxiosError(error)
+          ? String(error.response?.data?.detail ?? 'Saved scan session could not be restored.')
+          : 'Saved scan session could not be restored.',
+      );
+    } finally {
+      setSessionRestoring(false);
+    }
+  }, [loadChaptersForDiff]);
+
+  useEffect(() => {
+    if (backendPhase !== 'ready' || restoredSessionRef.current) return;
+    restoredSessionRef.current = true;
+    const rawPointer = localStorage.getItem(ACTIVE_SCAN_SESSION_KEY);
+    if (!rawPointer) return;
+    try {
+      const pointer = JSON.parse(rawPointer) as ActiveScanPointer;
+      if (!pointer.doc_id) throw new Error('Missing document ID');
+      void restoreScanSession(pointer);
+    } catch {
+      localStorage.removeItem(ACTIVE_SCAN_SESSION_KEY);
+    }
+  }, [backendPhase, restoreScanSession]);
+
+  useEffect(() => {
+    if (!scanDocId || !scanFilename) return;
+    const pointer: ActiveScanPointer = {
+      doc_id: scanDocId,
+      filename: scanFilename,
+      doc_type: scanDocType,
+      norm: scanNorm,
+      pace: scanPace,
+      approved_chapter_ids: Array.from(chapterApprovals),
+      updated_at: new Date().toISOString(),
+    };
+    localStorage.setItem(ACTIVE_SCAN_SESSION_KEY, JSON.stringify(pointer));
+  }, [
+    scanDocId,
+    scanFilename,
+    scanDocType,
+    scanNorm,
+    scanPace,
+    chapterApprovals,
+  ]);
+
+  useEffect(() => {
+    if (!scanDocId || diffViewChapters.length === 0 || sessionRestoring) return;
+    if (
+      !diffViewChapters.some((chapter) => Boolean(chapter.rewritten_text))
+      && chapterApprovals.size === 0
+    ) return;
+    const timer = window.setTimeout(() => {
+      void axios.post(`${API_BASE}/analysis/session/${scanDocId}/draft`, {
+        chapters: diffViewChapters.map((chapter) => ({
+          id: chapter.id,
+          title: chapter.title,
+          original_text: chapter.original_text,
+          rewritten_text: chapter.rewritten_text,
+          approved: chapterApprovals.has(chapter.id),
+        })),
+      }).catch(() => {
+        // Best-effort local autosave; the active scan/report remains recoverable.
+      });
+    }, 900);
+    return () => window.clearTimeout(timer);
+  }, [scanDocId, diffViewChapters, chapterApprovals, sessionRestoring]);
+
+  // ── Track Changes: Generate one chapter proposal ──────────
+  const handleRewriteChapter = useCallback(async (chapterId: string, instruction?: string) => {
+    if (!scanDocId) return;
+    if (!planApproved) {
+      setErrorMsg('Approve at least one improvement-plan item before generating chapter changes.');
+      return;
+    }
+    const chapter = diffViewChapters.find(ch => ch.id === chapterId);
+    if (!chapter) return;
+
+    setRewritingChapterId(chapterId);
+    setErrorMsg(null);
+    try {
+      const res = await axios.post(`${API_BASE}/analysis/chapter-rewrite-proposal`, {
+        doc_id: scanDocId,
+        chapter_id: chapter.id,
+        title: chapter.title,
+        text: chapter.original_text,
+        approved_item_ids: approvedIds,
+        doc_type: scanDocType,
+        norm: scanNorm,
+        instruction: instruction || undefined,
+      }, { timeout: 120000 });
+
+      const rewrittenText: string = res.data.proposed_text || '';
+      setDiffViewChapters(prev => prev.map(ch =>
+        ch.id === chapterId
+          ? { ...ch, rewritten_text: rewrittenText, approved: false }
+          : ch
+      ));
+      setChapterApprovals(prev => {
+        const next = new Set(prev);
+        next.delete(chapterId);
+        return next;
+      });
+      setScanExportChapters([]);
+      setNoticeMsg(`"${chapter.title}" proposal is ready. Review red removals and green additions.`);
+    } catch (err) {
+      setErrorMsg(axios.isAxiosError(err)
+        ? String(err.response?.data?.detail ?? err.message)
+        : 'Chapter rewrite failed.');
+    } finally {
+      setRewritingChapterId(null);
+    }
+  }, [scanDocId, planApproved, diffViewChapters, approvedIds, scanDocType, scanNorm]);
+
+  const handleApproveChapter = useCallback((chapterId: string) => {
+    setDiffViewChapters(prev => prev.map(ch =>
+      ch.id === chapterId && ch.rewritten_text
+        ? { ...ch, approved: true }
+        : ch
+    ));
+    setChapterApprovals(prev => new Set(prev).add(chapterId));
+    setScanExportChapters([]);
+  }, []);
+
+  const handleRejectChapter = useCallback((chapterId: string) => {
+    setDiffViewChapters(prev => prev.map(ch =>
+      ch.id === chapterId
+        ? { ...ch, rewritten_text: null, diff_tokens: [], approved: false }
+        : ch
+    ));
+    setChapterApprovals(prev => {
+      const next = new Set(prev);
+      next.delete(chapterId);
+      return next;
+    });
+    setScanExportChapters([]);
+  }, []);
+
+  const handleUpdateChapterProposal = useCallback((chapterId: string, text: string) => {
+    setDiffViewChapters(prev => prev.map(ch =>
+      ch.id === chapterId
+        ? { ...ch, rewritten_text: text, approved: false }
+        : ch
+    ));
+    setChapterApprovals(prev => {
+      const next = new Set(prev);
+      next.delete(chapterId);
+      return next;
+    });
+    setScanExportChapters([]);
+  }, []);
+
+  // ── Track Changes: Generate proposals for all chapters ────
+  const handleRewriteAllChapters = useCallback(async (instruction?: string) => {
+    if (!scanDocId || diffViewChapters.length === 0) return;
+    if (!planApproved) {
+      setErrorMsg('Approve the improvement plan before rewriting the document.');
+      return;
+    }
+    setIsBusy(true);
+    setErrorMsg(null);
+    try {
+      const chaptersPayload = diffViewChapters.map(ch => ({
+        id: ch.id,
+        title: ch.title,
+        original_text: ch.original_text,
+        edited_text: ch.rewritten_text ?? ch.original_text,
+      }));
+
+      const fullRewrite = await axios.post(`${API_BASE}/analysis/rewrite-full-document`, {
+        doc_id: scanDocId,
+        chapters: chaptersPayload,
+        approved_item_ids: approvedIds,
+        doc_type: scanDocType,
+        norm: scanNorm,
+        design_theme: themeMode === 'dark' ? 'classic_blue' : 'mono_formal',
+        instruction: instruction || undefined,
+      }, { timeout: 300000 });
+
+      const rewrittenChapters: FullRewriteChapter[] = fullRewrite.data?.chapters ?? [];
+
+      setDiffViewChapters(prev => prev.map(ch => {
+        const rewritten = rewrittenChapters.find(rw => rw.id === ch.id);
+        if (rewritten && rewritten.rewritten_text) {
+          return { ...ch, rewritten_text: rewritten.rewritten_text, approved: false };
+        }
+        return { ...ch, approved: false };
+      }));
+      setChapterApprovals(new Set());
+      setScanExportChapters([]);
+      setNoticeMsg('Whole-document proposals are ready. Approve chapters after reviewing the tracked changes.');
+    } catch (err) {
+      setErrorMsg(axios.isAxiosError(err)
+        ? String(err.response?.data?.detail ?? err.message)
+        : 'Full rewrite failed.');
+    } finally {
+      setIsBusy(false);
+    }
+  }, [scanDocId, planApproved, diffViewChapters, approvedIds, scanDocType, scanNorm, themeMode]);
+
+  const handleApproveAllChapters = useCallback(() => {
+    const approvable = diffViewChapters.filter(ch => Boolean(ch.rewritten_text));
+    const approved = new Set(approvable.map(ch => ch.id));
+    setChapterApprovals(approved);
+    setDiffViewChapters(prev => prev.map(ch => ({
+      ...ch,
+      approved: approved.has(ch.id),
+    })));
+    setScanExportChapters(diffViewChapters.map(ch => ({
+      id: ch.id,
+      title: ch.title,
+      original_text: ch.original_text,
+      edited_text: ch.rewritten_text && approved.has(ch.id) ? ch.rewritten_text : ch.original_text,
+    })));
+    setScanPhase('exporting');
+    setNoticeMsg(`${approvable.length} chapter proposal(s) approved and ready to export.`);
+  }, [diffViewChapters]);
+
+  const handleRecheckFrontMatter = useCallback(async (): Promise<FrontMatterPreview> => {
+    if (!scanDocId) throw new Error('No document is loaded.');
+    const response = await axios.get<FrontMatterPreview>(
+      `${API_BASE}/analysis/front-matter/${scanDocId}?norm=${scanNorm}`,
+    );
+    return response.data;
+  }, [scanDocId, scanNorm]);
 
   const handleToggleApproval = useCallback((id: string) => {
     setApprovedIds((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
@@ -750,76 +1125,21 @@ export default function AcademicEditorApp() {
     if (!aiOnline) { setErrorMsg('AI provider is offline. Cannot apply AI improvements. Check Settings → AI Provider.'); setShowSettings(true); return; }
     setIsBusy(true); setNoticeMsg('Applying improvements with AI...');
     try {
-      const res = await axios.post(`${API_BASE}/analysis/approve-rewrite`, {
+      await axios.post(`${API_BASE}/analysis/approve-rewrite`, {
         doc_id: scanDocId,
         approved_item_ids: approvedIds,
         doc_type: scanDocType, norm: scanNorm,
         design_theme: themeMode === 'dark' ? 'classic_blue' : 'mono_formal',
         output_formats: ['docx'],
       });
-      const chapRes = await axios.get(`${API_BASE}/analysis/chapter-editor/${scanDocId}?doc_type=${scanDocType}&norm=${scanNorm}`);
-      const sourceChapters = (chapRes.data?.chapters ?? []).map((ch: { id: string; title: string; original_text: string }) => ({
-        id: ch.id,
-        title: ch.title,
-        original_text: ch.original_text,
-        edited_text: ch.original_text,
-      }));
-      if (sourceChapters.length === 0) {
-        throw new Error('No editable chapters were returned for export.');
-      }
-      const fullRewrite = await axios.post<{ chapters: FullRewriteChapter[]; warnings?: string[] }>(`${API_BASE}/analysis/rewrite-full-document`, {
-        doc_id: scanDocId,
-        chapters: sourceChapters,
-        approved_item_ids: approvedIds,
-        doc_type: scanDocType,
-        norm: scanNorm,
-        design_theme: themeMode === 'dark' ? 'classic_blue' : 'mono_formal',
-      }, { timeout: 300000 });
-      const rewrittenChapters = (fullRewrite.data?.chapters ?? []).map((ch) => ({
-        id: ch.id,
-        title: ch.title,
-        original_text: ch.original_text,
-        edited_text: ch.rewritten_text || ch.original_text,
-      }));
-      if (rewrittenChapters.length === 0) {
-        throw new Error('AI rewrite did not return any chapter text to export.');
-      }
-      setScanExportChapters(rewrittenChapters);
-      setRewritePreview(rewrittenChapters.map((ch) => `## ${ch.title}\n\n${ch.edited_text}`).join('\n\n'));
-      const rewriteWarnings = fullRewrite.data?.warnings ?? [];
-      if (rewriteWarnings.length > 0) {
-        setNoticeMsg(`Rewrite completed with ${rewriteWarnings.length} chapter warning(s). Review the updated preview before export.`);
-      }
-      const preview = res.data?.rewrite_preview;
-      if (preview && typeof preview === 'string' && preview.length > 50) {
-        // Use backend-computed diff if available, otherwise compute client-side
-        if (res.data?.diff) {
-          setRewriteDiff(res.data.diff);
-        } else {
-          try {
-            const chapRes = await axios.get(`${API_BASE}/analysis/chapter-editor/${scanDocId}?doc_type=${scanDocType}&norm=${scanNorm}`);
-            const chapters = chapRes.data?.chapters ?? [];
-            const originalText = chapters.map((ch: { original_text: string }) => ch.original_text ?? '').join('\n\n');
-            if (originalText.length > 100) {
-              const originalSentences = originalText.split(/(?<=[.!?])\s+/).filter((s: string) => s.length > 15);
-              const rewriteSentences = preview.split(/(?<=[.!?])\s+/).filter((s: string) => s.length > 15);
-              const origSet = new Set(originalSentences.map((s: string) => s.trim().toLowerCase()));
-              const rewriteSet = new Set(rewriteSentences.map((s: string) => s.trim().toLowerCase()));
-              const deletions = originalSentences.filter((s: string) => !rewriteSet.has(s.trim().toLowerCase()));
-              const insertions = rewriteSentences.filter((s: string) => !origSet.has(s.trim().toLowerCase()));
-              setRewriteDiff({ deletions, insertions });
-            }
-          } catch { /* diff computation is best-effort */ }
-        }
-      }
-      setScanPhase('exporting');
-      if ((fullRewrite.data?.warnings ?? []).length === 0) {
-        setNoticeMsg('Improvements applied! Review track changes below, then export.');
-      }
+      setPlanApproved(true);
+      await loadChaptersForDiff(scanDocId);
+      setScanPhase('results');
+      setNoticeMsg('Improvement plan approved. Use the AI command ribbon to rewrite one chapter or the whole document.');
     } catch (err) {
       setErrorMsg(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : 'Improvement failed.');
     } finally { setIsBusy(false); }
-  }, [scanDocId, approvedIds, scanDocType, scanNorm, themeMode, needsSetup, aiOnline]);
+  }, [scanDocId, approvedIds, scanDocType, scanNorm, themeMode, needsSetup, aiOnline, loadChaptersForDiff]);
 
   const handleExportScanned = useCallback(async (format: 'docx' | 'pdf') => {
     if (!scanDocId) return;
@@ -827,10 +1147,21 @@ export default function AcademicEditorApp() {
     try {
       let chaptersPayload = scanExportChapters;
       if (chaptersPayload.length === 0) {
-        const chapRes = await axios.get(`${API_BASE}/analysis/chapter-editor/${scanDocId}?doc_type=${scanDocType}&norm=${scanNorm}`);
-        chaptersPayload = (chapRes.data?.chapters ?? []).map((ch: { id: string; title: string; original_text: string }) => ({
-          id: ch.id, title: ch.title, original_text: ch.original_text, edited_text: ch.original_text,
-        }));
+        // Try using track-changes chapters (per-chapter approved)
+        const hasApprovedChapters = diffViewChapters.some(ch => ch.approved && ch.rewritten_text);
+        if (hasApprovedChapters) {
+          chaptersPayload = diffViewChapters.map(ch => ({
+            id: ch.id,
+            title: ch.title,
+            original_text: ch.original_text,
+            edited_text: ch.approved && ch.rewritten_text ? ch.rewritten_text : ch.original_text,
+          }));
+        } else {
+          const chapRes = await axios.get(`${API_BASE}/analysis/chapter-editor/${scanDocId}?doc_type=${scanDocType}&norm=${scanNorm}`);
+          chaptersPayload = (chapRes.data?.chapters ?? []).map((ch: { id: string; title: string; original_text: string }) => ({
+            id: ch.id, title: ch.title, original_text: ch.original_text, edited_text: ch.original_text,
+          }));
+        }
       }
       if (chaptersPayload.length === 0) {
         throw new Error('No chapter text is available to export.');
@@ -852,7 +1183,7 @@ export default function AcademicEditorApp() {
     } catch (err) {
       setErrorMsg(axios.isAxiosError(err) ? String(err.response?.data?.detail ?? err.message) : 'Export failed.');
     } finally { setIsBusy(false); }
-  }, [scanDocId, scanDocType, scanNorm, themeMode, scanExportChapters]);
+  }, [scanDocId, scanDocType, scanNorm, themeMode, scanExportChapters, diffViewChapters]);
 
   const handleFileChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -870,15 +1201,56 @@ export default function AcademicEditorApp() {
   }, [handleFileUpload]);
 
   const resetScan = useCallback(() => {
+    localStorage.removeItem(ACTIVE_SCAN_SESSION_KEY);
     setScanDocId(null); setScanFilename(''); setScores(null);
     setImprovementPlan([]); setApprovedIds([]); setScanPhase('upload'); setScanLog([]);
     setResearchApiStatus(new Map()); setRewritePreview(null); setRewriteDiff(null); setScanExportChapters([]);
-  }, [runScan]);
+    setAiPatternCheck(null); setOpenSourceSimilarity(null);
+    setDiffViewChapters([]); setChapterApprovals(new Set()); setRewritingChapterId(null);
+    setPlanApproved(false);
+  }, []);
+
+  const handleStartNewScanSession = useCallback(() => {
+    resetScan();
+    setMode('scan');
+    setNoticeMsg('New scan session started.');
+  }, [resetScan]);
+
+  const handleClearCurrentSession = useCallback(async () => {
+    if (!scanDocId) {
+      resetScan();
+      return;
+    }
+    const confirmed = window.confirm(
+      'Clear the current cached analysis, improvement plan, and rewrite proposals? '
+      + 'The original uploaded document will remain stored locally.',
+    );
+    if (!confirmed) return;
+
+    setIsBusy(true);
+    try {
+      await axios.delete(`${API_BASE}/analysis/session/${scanDocId}`);
+      resetScan();
+      setMode('scan');
+      setNoticeMsg('Current scan session cleared. The source document was retained locally.');
+    } catch (error) {
+      setErrorMsg(
+        axios.isAxiosError(error)
+          ? String(error.response?.data?.detail ?? 'Could not clear the current session.')
+          : 'Could not clear the current session.',
+      );
+    } finally {
+      setIsBusy(false);
+    }
+  }, [scanDocId, resetScan]);
 
   // Re-analyze the rewritten document
   const handleReAnalyze = useCallback(async () => {
     if (!scanDocId) return;
     setRewritePreview(null); setRewriteDiff(null); setScanExportChapters([]);
+    setAiPatternCheck(null); setOpenSourceSimilarity(null);
+    setDiffViewChapters([]); setChapterApprovals(new Set()); setRewritingChapterId(null);
+    setPlanApproved(false);
     setScanPhase('scanning'); setScanLog([]); setIsBusy(true); setErrorMsg(null);
     try {
       setScanLog((p) => [...p, '🔄 Re-analyzing rewritten document...']);
@@ -1071,7 +1443,7 @@ export default function AcademicEditorApp() {
                 ))}
               </div>
               <button
-                onClick={() => { setMode('scan'); resetScan(); }}
+                onClick={() => setMode('scan')}
                 disabled={aiOnline === false || internetOnline === false || checkingConnectivity}
                 style={(aiOnline === false || internetOnline === false || checkingConnectivity) ? { ...s.primaryBtnGreen, background: 'var(--bg-muted)', color: 'var(--text-muted)', cursor: 'not-allowed' } : s.primaryBtnGreen}
               >
@@ -1377,8 +1749,28 @@ export default function AcademicEditorApp() {
     return (
       <div style={s.shell}>
         <TopBar title={`Scan Document${scanFilename ? ` — ${scanFilename}` : ''}`}
-          onBack={() => { setMode('landing'); resetScan(); }}
+          onBack={() => setMode('landing')}
           action={<div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            {scanDocId && (
+              <span style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600, padding: '3px 7px', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: sessionRestoring ? 'var(--score-fair)' : 'var(--score-excellent)' }} />
+                {sessionRestoring ? 'Restoring' : 'Saved'}
+              </span>
+            )}
+            <button onClick={handleStartNewScanSession} disabled={isBusy} style={s.secondaryBtn}>
+              <Plus size={13} /> New
+            </button>
+            {scanDocId && (
+              <button
+                onClick={handleClearCurrentSession}
+                disabled={isBusy}
+                title="Clear current session"
+                aria-label="Clear current session"
+                style={{ ...s.iconBtn, color: 'var(--score-critical)', border: '1px solid hsla(352,85%,62%,0.25)' }}
+              >
+                <Trash2 size={14} />
+              </button>
+            )}
             {newSkillsAvailable && <button onClick={handleSkillSync} disabled={syncingSkills} style={{ fontSize: '10px', fontWeight: 700, padding: '3px 8px', borderRadius: 'var(--r-full)', border: 'none', background: 'hsla(38,95%,58%,0.15)', color: 'var(--score-fair)', cursor: 'pointer' }}>{syncingSkills ? '⏳' : '🔄'} Sync {skillCount}</button>}
             {aiOnline === false && <span style={{ fontSize: '10px', color: 'var(--score-critical)', fontWeight: 600, padding: '3px 10px', background: 'hsla(352,85%,62%,0.1)', borderRadius: 'var(--r-full)' }}>⚠ AI Offline</span>}
             {scanPhase === 'exporting' && (
@@ -1391,7 +1783,7 @@ export default function AcademicEditorApp() {
         />
 
         <div style={{ flex: 1, overflow: 'auto' }}>
-          <div style={{ maxWidth: '880px', margin: '0 auto', padding: '24px 24px 64px' }}>
+          <div style={{ maxWidth: '1280px', margin: '0 auto', padding: '24px 24px 64px' }}>
             <input ref={fileInputRef} type="file" accept=".docx,.pdf,.txt,.md" style={{ display: 'none' }} onChange={handleFileChange} />
 
             {/* UPLOAD PHASE */}
@@ -1505,22 +1897,21 @@ export default function AcademicEditorApp() {
             {/* RESULTS PHASE */}
             {(scanPhase === 'results' || scanPhase === 'exporting') && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                <h2 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-                  Analysis Results
-                </h2>
-
-                {/* Scores */}
+                {/* ── Collapsible Scores ──────────────────────── */}
                 {scores && (
-                  <div>
-                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)', margin: '0 0 ' + '12px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                  <details style={{ background: 'var(--bg-raised)', borderRadius: 'var(--r-md)', border: '1px solid var(--border-subtle)', padding: '12px 16px', cursor: 'pointer' }}>
+                    <summary style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ChevronRight size={14} style={{ transition: 'transform 0.2s' }} />
                       Dimension Scores
-                    </h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
+                      {scanPhase === 'exporting' && <span style={{ fontSize: '11px', color: 'var(--score-excellent)', fontWeight: 600 }}>✓ Analysis complete</span>}
+                    </summary>
+                    <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '10px' }}>
                       {SCAN_DIMENSIONS.map((dim) => {
                         const val = typeof scores[dim.key] === 'number' ? scores[dim.key] as number : null;
-                        const color = scoreColor(val);
-                        const label = scoreLabel(val);
-                        const bg = scoreBg(val);
+                        const qualityValue = dim.inverse && val !== null ? 100 - val : val;
+                        const color = scoreColor(qualityValue);
+                        const label = scoreLabel(qualityValue);
+                        const bg = scoreBg(qualityValue);
                         return (
                           <div key={dim.key} style={{ padding: '16px', background: bg, borderRadius: 'var(--r-md)', border: `1px solid ${color}20`, display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -1530,7 +1921,6 @@ export default function AcademicEditorApp() {
                               </div>
                               <span style={{ fontSize: '10px', fontWeight: 700, color, textTransform: 'uppercase' }}>{label}</span>
                             </div>
-                            {/* Bar */}
                             <div style={{ height: '5px', background: 'var(--bg-muted)', borderRadius: '3px', overflow: 'hidden' }}>
                               <div style={{ height: '100%', width: `${val ?? 0}%`, background: color, borderRadius: '3px', transition: 'width 1.5s ease' }} />
                             </div>
@@ -1542,93 +1932,164 @@ export default function AcademicEditorApp() {
                         );
                       })}
                     </div>
-                  </div>
+                  </details>
                 )}
 
-                {/* Improvement Plan */}
-                {improvementPlan.length > 0 && (
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                      <div>
-                        <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-secondary)', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                          Improvement Plan
-                        </h3>
-                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
-                          {approvedIds.length} of {improvementPlan.length} items approved — click items to review
-                        </p>
-                      </div>
-                      <button onClick={handleApproveAll} style={s.linkBtn}>
-                        {approvedIds.length === improvementPlan.length ? 'Deselect All' : 'Approve All'}
-                      </button>
-                    </div>
-
-                    {/* Progress */}
-                    <div style={{ height: '4px', background: 'var(--bg-muted)', borderRadius: '2px', marginBottom: '16px', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', width: `${Math.round((approvedIds.length / improvementPlan.length) * 100)}%`, background: 'var(--brand-500)', borderRadius: '2px', transition: 'width var(--t-normal)' }} />
-                    </div>
-
-                    {/* Items */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                      {improvementPlan.map((item) => {
-                        const approved = approvedIds.includes(item.id);
-                        const expanded = expandedItems.has(item.id);
-                        const priorityColor = item.priority === 'high' ? 'var(--score-critical)'
-                          : item.priority === 'medium' ? 'var(--score-fair)' : 'var(--score-good)';
-                        return (
-                          <div key={item.id} style={{ ...s.improvementItem, borderLeftColor: priorityColor, opacity: approved ? 0.5 : 1 }}>
-                            <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
-                              {/* Checkbox */}
-                              <button onClick={(e) => { e.stopPropagation(); handleToggleApproval(item.id); }}
-                                style={{ ...s.checkbox, background: approved ? 'var(--brand-500)' : 'transparent', borderColor: approved ? 'var(--brand-500)' : 'var(--border-default)' }}>
-                                {approved && <CheckCircle2 size={13} color="#fff" />}
-                              </button>
-
-                              {/* Content */}
-                              <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => toggleExpandItem(item.id)}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-                                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                                    {item.title}
-                                  </span>
-                                  <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px', borderRadius: 'var(--r-full)', color: priorityColor, background: `${priorityColor}15` }}>
-                                    {item.priority}
-                                  </span>
-                                  {item.page_range && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.page_range}</span>}
-                                </div>
-                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '4px' }}>
-                                  {item.action}
-                                </div>
-                                {expanded && item.evidence && (
-                                  <div style={{ marginTop: '8px', padding: '10px 12px', background: 'var(--bg-overlay)', borderRadius: 'var(--r-md)', border: '1px solid var(--border-subtle)' }}>
-                                    <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Evidence</div>
-                                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>
-                                      "{item.evidence}"
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-
-                              {/* Expand toggle */}
-                              <button onClick={() => toggleExpandItem(item.id)} style={{ ...s.iconBtn, width: '24px', height: '24px', alignSelf: 'flex-start', flexShrink: 0 }}>
-                                <ChevronRight size={14} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform var(--t-fast)' }} />
-                              </button>
-                            </div>
+                {(aiPatternCheck || openSourceSimilarity) && (
+                  <details open style={{ background: 'var(--bg-raised)', borderRadius: 'var(--r-md)', border: '1px solid var(--border-subtle)', padding: '12px 16px' }}>
+                    <summary style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer' }}>
+                      Validation evidence passed to AI
+                    </summary>
+                    <div style={{ marginTop: '12px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '10px' }}>
+                      {aiPatternCheck && Number.isFinite(aiPatternCheck.ai_detection_score) && (
+                        <div style={{ padding: '12px', borderRadius: 'var(--r-md)', background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>Local AI-pattern/style check</div>
+                          <div style={{ fontSize: '24px', fontWeight: 800, color: aiPatternCheck.ai_detection_score >= 50 ? 'var(--score-fair)' : 'var(--score-excellent)', margin: '5px 0' }}>
+                            {aiPatternCheck.ai_detection_score}%
                           </div>
-                        );
-                      })}
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                            {aiPatternCheck.verdict} This is a writing-pattern signal, not proof of authorship.
+                          </div>
+                        </div>
+                      )}
+                      {openSourceSimilarity && Number.isFinite(openSourceSimilarity.similarity_index) && (
+                        <div style={{ padding: '12px', borderRadius: 'var(--r-md)', background: 'var(--bg-overlay)', border: '1px solid var(--border-subtle)' }}>
+                          <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-primary)' }}>Open-source scholarly similarity</div>
+                          <div style={{ fontSize: '24px', fontWeight: 800, color: openSourceSimilarity.similarity_index >= 20 ? 'var(--score-fair)' : 'var(--score-excellent)', margin: '5px 0' }}>
+                            {openSourceSimilarity.similarity_index.toFixed(1)}%
+                          </div>
+                          <div style={{ fontSize: '10px', color: 'var(--text-muted)', lineHeight: 1.5 }}>
+                            {openSourceSimilarity.interpretation} Not a Turnitin or private institutional-corpus result.
+                          </div>
+                        </div>
+                      )}
                     </div>
+                  </details>
+                )}
 
-                    {/* Apply button */}
-                    <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' }}>
-                      <button onClick={handleApplyImprovements} disabled={isBusy} style={s.primaryBtn}>
-                        {isBusy ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
-                        {isBusy ? 'Applying...' : approvedIds.length > 0 ? `Apply ${approvedIds.length} Improvements with AI` : 'Select Improvements to Apply'}
-                      </button>
+                {/* ── Track Changes Document View ─────────────── */}
+                {diffViewChapters.length > 0 && planApproved && (
+                  <TrackChangesDocument
+                    chapters={diffViewChapters}
+                    approvedChapterIds={chapterApprovals}
+                    onRewriteChapter={handleRewriteChapter}
+                    onApproveChapter={handleApproveChapter}
+                    onRejectChapter={handleRejectChapter}
+                    onRewriteAll={handleRewriteAllChapters}
+                    onApproveAll={handleApproveAllChapters}
+                    onRejectAll={() => {
+                      setChapterApprovals(new Set());
+                      setDiffViewChapters(prev => prev.map(ch => ({
+                        ...ch,
+                        rewritten_text: null,
+                        diff_tokens: [],
+                        approved: false,
+                      })));
+                    }}
+                    onUpdateChapter={handleUpdateChapterProposal}
+                    isBusy={isBusy}
+                    rewritingChapterId={rewritingChapterId}
+                    rewriteAuthorized={planApproved}
+                    targetFormat={NORMS.find(norm => norm.id === scanNorm)?.label ?? scanNorm}
+                    onRecheckFrontMatter={handleRecheckFrontMatter}
+                    scores={scores}
+                    improvementPlan={improvementPlan}
+                    aiPatternCheck={aiPatternCheck}
+                    openSourceSimilarity={openSourceSimilarity}
+                    onOpenSettings={() => setShowSettings(true)}
+                    filename={scanFilename}
+                    onExport={handleExportScanned}
+                    docTitle={scanFilename ? `Analysis: ${scanFilename}` : undefined}
+                  />
+                )}
+
+                {/* ── Collapsible Improvement Plan (legacy) ──── */}
+                {improvementPlan.length > 0 && (
+                  <details style={{ background: 'var(--bg-raised)', borderRadius: 'var(--r-md)', border: '1px solid var(--border-subtle)', padding: '12px 16px' }}>
+                    <summary style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <ChevronRight size={14} style={{ transition: 'transform 0.2s' }} />
+                      Improvement Plan ({improvementPlan.length} items, {approvedIds.length} approved)
+                    </summary>
+                    <div style={{ marginTop: '12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                        <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                          Select improvement items to apply with AI rewrite
+                        </p>
+                        <button onClick={handleApproveAll} style={s.linkBtn}>
+                          {approvedIds.length === improvementPlan.length ? 'Deselect All' : 'Approve All'}
+                        </button>
+                      </div>
+
+                      <div style={{ height: '4px', background: 'var(--bg-muted)', borderRadius: '2px', marginBottom: '16px', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${Math.round((approvedIds.length / improvementPlan.length) * 100)}%`, background: 'var(--brand-500)', borderRadius: '2px', transition: 'width var(--t-normal)' }} />
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {improvementPlan.map((item) => {
+                          const approved = approvedIds.includes(item.id);
+                          const expanded = expandedItems.has(item.id);
+                          const priorityColor = item.priority === 'high' ? 'var(--score-critical)'
+                            : item.priority === 'medium' ? 'var(--score-fair)' : 'var(--score-good)';
+                          return (
+                            <div key={item.id} style={{ ...s.improvementItem, borderLeftColor: priorityColor, opacity: approved ? 0.5 : 1 }}>
+                              <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                                <button onClick={(e) => { e.stopPropagation(); handleToggleApproval(item.id); }}
+                                  style={{ ...s.checkbox, background: approved ? 'var(--brand-500)' : 'transparent', borderColor: approved ? 'var(--brand-500)' : 'var(--border-default)' }}>
+                                  {approved && <CheckCircle2 size={13} color="#fff" />}
+                                </button>
+                                <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => toggleExpandItem(item.id)}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                                    <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{item.title}</span>
+                                    <span style={{ fontSize: '9px', fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px', borderRadius: 'var(--r-full)', color: priorityColor, background: `${priorityColor}15` }}>{item.priority}</span>
+                                    {item.page_range && <span style={{ fontSize: '10px', color: 'var(--text-muted)' }}>{item.page_range}</span>}
+                                  </div>
+                                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: '4px' }}>{item.action}</div>
+                                  {expanded && item.evidence && (
+                                    <div style={{ marginTop: '8px', padding: '10px 12px', background: 'var(--bg-overlay)', borderRadius: 'var(--r-md)', border: '1px solid var(--border-subtle)' }}>
+                                      <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', textTransform: 'uppercase' }}>Evidence</div>
+                                      <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontStyle: 'italic', lineHeight: 1.6 }}>"{item.evidence}"</div>
+                                      {item.source_suggestions && item.source_suggestions.length > 0 && (
+                                        <div style={{ marginTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                          <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+                                            Verified open-source suggestions
+                                          </div>
+                                          {item.source_suggestions.map((source) => (
+                                            <a
+                                              key={source.evidence_id}
+                                              href={source.url || undefined}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              style={{ fontSize: '11px', color: 'var(--brand-400)', lineHeight: 1.5 }}
+                                            >
+                                              {source.title} {source.year ? `(${source.year})` : ''} · {source.source_name}
+                                            </a>
+                                          ))}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                                <button onClick={() => toggleExpandItem(item.id)} style={{ ...s.iconBtn, width: '24px', height: '24px', alignSelf: 'flex-start', flexShrink: 0 }}>
+                                  <ChevronRight size={14} style={{ transform: expanded ? 'rotate(90deg)' : 'none', transition: 'transform var(--t-fast)' }} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ display: 'flex', gap: '10px', marginTop: '20px', justifyContent: 'center' }}>
+                        <button onClick={handleApplyImprovements} disabled={isBusy} style={s.primaryBtn}>
+                          {isBusy ? <Loader2 size={16} className="spin" /> : <Zap size={16} />}
+                          {isBusy ? 'Applying...' : approvedIds.length > 0 ? `Apply ${approvedIds.length} Improvements with AI` : 'Select Improvements to Apply'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  </details>
                 )}
 
                 {/* No issues found */}
-                {improvementPlan.length === 0 && (
+                {improvementPlan.length === 0 && diffViewChapters.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                     <CheckCircle2 size={48} color="var(--score-excellent)" style={{ marginBottom: '12px' }} />
                     <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
@@ -1640,80 +2101,12 @@ export default function AcademicEditorApp() {
                   </div>
                 )}
 
-                {/* Export section after improvements applied */}
-                {scanPhase === 'exporting' && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                    {/* Track Changes Diff View */}
-                    {rewriteDiff && (rewriteDiff.deletions.length > 0 || rewriteDiff.insertions.length > 0) && (
-                      <div style={{ background: 'var(--bg-raised)', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-default)', padding: '20px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <Sparkles size={16} /> Track Changes Preview
-                        </h3>
-                        <p style={{ fontSize: '11px', color: 'var(--text-secondary)', margin: '0 0 14px' }}>
-                          <span style={{ color: 'var(--score-critical)', fontWeight: 600 }}>Red</span> = removed/rephrased &nbsp;|&nbsp;
-                          <span style={{ color: 'var(--score-excellent)', fontWeight: 600 }}>Green</span> = new/improved text
-                        </p>
-                        <div style={{ maxHeight: '400px', overflow: 'auto', padding: '12px', background: 'var(--bg-default)', borderRadius: 'var(--r-md)', fontSize: '12px', lineHeight: 1.8 }}>
-                          {rewriteDiff.deletions.length > 0 && (
-                            <div style={{ marginBottom: '12px' }}>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--score-critical)', marginBottom: '4px', textTransform: 'uppercase' }}>Removed / Rephrased:</div>
-                              {rewriteDiff.deletions.slice(0, 15).map((s, i) => (
-                                <div key={i} style={{ color: 'var(--score-critical)', background: 'hsla(352,85%,62%,0.06)', padding: '4px 8px', marginBottom: '3px', borderRadius: 'var(--r-sm)', borderLeft: '3px solid var(--score-critical)' }}>
-                                  {s}
-                                </div>
-                              ))}
-                              {rewriteDiff.deletions.length > 15 && <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>...and {rewriteDiff.deletions.length - 15} more</div>}
-                            </div>
-                          )}
-                          {rewriteDiff.insertions.length > 0 && (
-                            <div>
-                              <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--score-excellent)', marginBottom: '4px', textTransform: 'uppercase' }}>New / Improved:</div>
-                              {rewriteDiff.insertions.slice(0, 15).map((s, i) => (
-                                <div key={i} style={{ color: 'var(--score-excellent)', background: 'hsla(145,75%,55%,0.06)', padding: '4px 8px', marginBottom: '3px', borderRadius: 'var(--r-sm)', borderLeft: '3px solid var(--score-excellent)' }}>
-                                  {s}
-                                </div>
-                              ))}
-                              {rewriteDiff.insertions.length > 15 && <div style={{ fontSize: '10px', color: 'var(--text-muted)' }}>...and {rewriteDiff.insertions.length - 15} more</div>}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Updated document preview */}
-                    {rewritePreview && (
-                      <div style={{ background: 'var(--bg-raised)', borderRadius: 'var(--r-lg)', border: '1px solid var(--border-default)', padding: '20px' }}>
-                        <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 12px' }}>
-                          <Sparkles size={16} /> Updated Document Preview
-                        </h3>
-                        <div style={{ maxHeight: '500px', overflow: 'auto', padding: '16px', background: 'var(--bg-default)', borderRadius: 'var(--r-md)', fontSize: '13px', lineHeight: 1.8, whiteSpace: 'pre-wrap', color: 'var(--text-primary)' }}>
-                          {rewritePreview}
-                        </div>
-                      </div>
-                    )}
-
-                    <div style={{ textAlign: 'center', padding: '24px', background: 'hsla(145,75%,55%,0.08)', borderRadius: 'var(--r-lg)', border: '1px solid hsla(145,75%,55%,0.2)' }}>
-                      <CheckCircle2 size={28} color="var(--score-excellent)" style={{ marginBottom: '8px' }} />
-                      <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px' }}>
-                        Improvements Applied
-                      </h3>
-                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', margin: '0 0 16px' }}>
-                        Your revised document is ready. Export now or re-analyze to verify.
-                      </p>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                        <button onClick={() => handleExportScanned('docx')} style={s.primaryBtn}>
-                          <Download size={15} /> Download DOCX
-                        </button>
-                        <button onClick={() => handleExportScanned('pdf')} style={s.secondaryBtn}>
-                          <Download size={15} /> Download PDF
-                        </button>
-                        <button onClick={() => void handleReAnalyze()} disabled={isBusy} style={{ ...s.secondaryBtn, border: '1px solid var(--brand-400)', color: 'var(--brand-400)' }}>
-                          <Search size={15} /> Re-Analyze
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
+                {/* ── Re-analyze button (always visible) ──── */}
+                <div style={{ textAlign: 'center', padding: '16px 0' }}>
+                  <button onClick={() => void handleReAnalyze()} disabled={isBusy} style={{ ...s.secondaryBtn, border: '1px solid var(--brand-400)', color: 'var(--brand-400)' }}>
+                    <Search size={15} /> Re-Analyze
+                  </button>
+                </div>
               </div>
             )}
           </div>

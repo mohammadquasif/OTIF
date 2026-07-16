@@ -466,6 +466,39 @@ class SkillManager:
             for i, r in enumerate(data.get("rules", []))
         ]
 
+        raw_word_lists = data.get("word_lists", [])
+        if isinstance(raw_word_lists, dict):
+            normalized_word_lists = []
+            for group_name, entries in raw_word_lists.items():
+                list_type = (
+                    "banned"
+                    if group_name in {"banned", "predatory_journal_signals"}
+                    else "preferred"
+                    if group_name in {"preferred", "preferred_phrases"}
+                    else "neutral"
+                )
+                severity = "high" if list_type == "banned" else "medium"
+                for entry in entries or []:
+                    if isinstance(entry, str):
+                        normalized_word_lists.append(
+                            {
+                                "word_or_phrase": entry,
+                                "replacement": None,
+                                "severity": severity,
+                                "list_type": list_type,
+                                "confidence": 0.8,
+                            }
+                        )
+                    elif isinstance(entry, dict) and entry.get("word_or_phrase"):
+                        normalized_word_lists.append(
+                            {
+                                **entry,
+                                "severity": entry.get("severity", severity),
+                                "list_type": entry.get("list_type", list_type),
+                            }
+                        )
+            raw_word_lists = normalized_word_lists
+
         word_lists = [
             SkillWordEntry(
                 word_or_phrase=w["word_or_phrase"],
@@ -474,7 +507,7 @@ class SkillManager:
                 list_type=w.get("list_type", "banned"),
                 confidence=w.get("confidence", 0.8),
             )
-            for w in data.get("word_lists", [])
+            for w in raw_word_lists
         ]
 
         prompts = {
@@ -488,11 +521,15 @@ class SkillManager:
             for pt, pdata in data.get("prompts", {}).items()
         }
 
+        category_value = {
+            "research_quality": "quality",
+        }.get(data["category"], data["category"])
+
         return Skill(
             id=data.get("id", f"seed-{data['skill_id']}"),
             skill_id=data["skill_id"],
             name=data["name"],
-            category=SkillCategory(data["category"]),
+            category=SkillCategory(category_value),
             version=data.get("version", "1.0.0"),
             description=data.get("description", ""),
             ethical_boundary=data.get("ethical_boundary", ""),

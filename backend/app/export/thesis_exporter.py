@@ -606,6 +606,47 @@ def create_docx(
     section.left_margin = Inches(1)
     section.right_margin = Inches(1)
 
+    # ── Page border (accent color, subtle) ──────────────────
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    sect_pr = section._sectPr
+    pg_borders = OxmlElement('w:pgBorders')
+    pg_borders.set(qn('w:offsetFrom'), 'page')
+    for edge_name in ('top', 'left', 'bottom', 'right'):
+        edge = OxmlElement(f'w:{edge_name}')
+        edge.set(qn('w:val'), 'single')
+        edge.set(qn('w:sz'), '4')
+        edge.set(qn('w:space'), '18')
+        edge.set(qn('w:color'), theme['accent'])
+        pg_borders.append(edge)
+    sect_pr.append(pg_borders)
+
+    # ── Footer with page numbers ────────────────────────────
+    footer = section.footer
+    footer.is_linked_to_previous = False
+    fp = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
+    fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    fp_run = fp.add_run()
+    fp_run.font.size = Pt(10)
+    fp_run.font.color.rgb = muted
+    fld_char_begin = OxmlElement('w:fldChar')
+    fld_char_begin.set(qn('w:fldCharType'), 'begin')
+    fp_run._r.append(fld_char_begin)
+    instr = OxmlElement('w:instrText')
+    instr.set(qn('xml:space'), 'preserve')
+    instr.text = ' PAGE '
+    fp_run._r.append(instr)
+    fld_char_separate = OxmlElement('w:fldChar')
+    fld_char_separate.set(qn('w:fldCharType'), 'separate')
+    fp_run._r.append(fld_char_separate)
+    page_text = OxmlElement('w:t')
+    page_text.text = '1'
+    fp_run._r.append(page_text)
+    fld_char_end = OxmlElement('w:fldChar')
+    fld_char_end.set(qn('w:fldCharType'), 'end')
+    fp_run._r.append(fld_char_end)
+
     normal = doc.styles["Normal"]
     normal.font.name = "Times New Roman" if norm in {"ugc", "apa7"} else "Arial"
     normal.font.size = Pt(12)
@@ -643,11 +684,17 @@ def create_docx(
         p = doc.add_paragraph()
         p.paragraph_format.space_after = Pt(2)
         p.paragraph_format.space_before = Pt(1)
-        p.add_run(f"{indent}{entry['title']}").font.size = Pt(11)
-        # Dot leader
-        dot_run = p.add_run(f"  . . . . . . . . . . . . . . . . . . . .  {entry['page']}")
-        dot_run.font.size = Pt(9)
-        dot_run.font.color.rgb = muted
+        # Use proper tab-stop dot leader for cleaner TOC
+        p_pr_toc = p._p.get_or_add_pPr()
+        tabs = OxmlElement('w:tabs')
+        tab = OxmlElement('w:tab')
+        tab.set(qn('w:val'), 'right')
+        tab.set(qn('w:leader'), 'dot')
+        tab.set(qn('w:pos'), '9360')
+        tabs.append(tab)
+        p_pr_toc.append(tabs)
+        text_run = p.add_run(f"{indent}{entry['title']}\t{entry['page']}")
+        text_run.font.size = Pt(11)
 
     doc.add_page_break()
     doc.add_heading("List of Tables", level=1)
@@ -678,7 +725,18 @@ def create_docx(
     doc.add_page_break()
 
     for chapter in chapters:
-        doc.add_heading(str(chapter.get("title") or "Untitled chapter"), level=1)
+        heading = doc.add_heading(str(chapter.get("title") or "Untitled chapter"), level=1)
+        # Add accent-colored bottom border to heading
+        p_pr = heading._p.get_or_add_pPr()
+        p_bdr = OxmlElement('w:pBdr')
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'single')
+        bottom.set(qn('w:sz'), '8')
+        bottom.set(qn('w:color'), theme['accent'])
+        bottom.set(qn('w:space'), '4')
+        p_bdr.append(bottom)
+        p_pr.append(p_bdr)
+
         body = rich_text_to_plain_text(str(chapter.get("edited_text") or chapter.get("text") or ""))
         for block in re.split(r"\n\s*\n+", body):
             block = block.strip()
@@ -687,6 +745,15 @@ def create_docx(
             caption_match = re.match(r"^(table|figure)\s+\d*[:.\-\s]*(.*)", block, flags=re.I)
             if caption_match:
                 _add_caption(doc, caption_match.group(1).title(), caption_match.group(2) or block)
+                continue
+            # Detect sub-headings (## / ### markdown)
+            h2_match = re.match(r'^##\s+(.+)$', block)
+            if h2_match:
+                doc.add_heading(h2_match.group(1), level=2)
+                continue
+            h3_match = re.match(r'^###\s+(.+)$', block)
+            if h3_match:
+                doc.add_heading(h3_match.group(1), level=3)
                 continue
             doc.add_paragraph(block)
 

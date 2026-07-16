@@ -1,8 +1,8 @@
 """
-Free/open research source checks + Turnitin-style local similarity engine used by the analysis stream.
+Free/open research source checks + local similarity engine used by the analysis stream.
 
 Advanced Plagiarism Engine:
-  - N-gram similarity (Jaccard + cosine-style) simulating Turnitin methodology
+  - N-gram similarity (Jaccard + cosine-style) over returned public source records
   - AI text fingerprinting (burstiness, perplexity proxy, sentence entropy)
   - Open academic source checks (arXiv, Crossref, OpenAlex, Semantic Scholar,
     Europe PMC, PubMed, DataCite, ERIC, OSF Preprints, Zenodo, DOAJ, CORE, BASE)
@@ -111,11 +111,11 @@ def _write_cached_result(source_id: str, query: str, matches: list[dict]) -> Non
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Turnitin-Style Local Similarity Engine
+# Open-Source Local Similarity Engine
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _ngrams(text: str, n: int) -> set[str]:
-    """Generate character n-grams from text (simulates Turnitin fingerprinting)."""
+    """Generate character n-grams for local overlap fingerprinting."""
     clean = re.sub(r"\s+", " ", text.lower().strip())
     if len(clean) < n:
         return set()
@@ -123,7 +123,7 @@ def _ngrams(text: str, n: int) -> set[str]:
 
 
 def _word_shingles(text: str, k: int = 5) -> set[str]:
-    """Generate k-word shingles (Turnitin uses 5–8 word overlapping windows)."""
+    """Generate k-word shingles for deterministic overlap comparison."""
     words = re.findall(r"\b[a-z]{3,}\b", text.lower())
     if len(words) < k:
         return set()
@@ -209,10 +209,10 @@ def compute_local_similarity(
     source_abstract: str = "",
 ) -> dict:
     """
-    Turnitin-style multi-signal similarity between document and a known source.
+    Multi-signal local similarity between a document and one public source result.
 
     Signals:
-      1. 5-word shingle Jaccard (primary fingerprint — mimics Turnitin algorithm)
+      1. 5-word shingle Jaccard (primary local fingerprint)
       2. 10-gram character Jaccard (secondary fingerprint)
       3. Cosine TF similarity (semantic overlap)
       4. Combined weighted score
@@ -381,16 +381,16 @@ def compute_ai_detection_score(text: str) -> dict:
     # Verdict
     if ai_score >= 75:
         verdict = f"Very high AI-generation probability ({ai_score}%). Writing patterns strongly match AI-generated text. Recommend thorough review and humanization."
-        turnitin_eq = "Likely AI-generated (≥75% — equivalent to Turnitin AI ≥75%)"
+        turnitin_eq = "Very high local AI-pattern signal (not a Turnitin AI result)"
     elif ai_score >= 50:
         verdict = f"High AI-generation probability ({ai_score}%). Multiple AI writing signals detected. Author should strengthen researcher voice and reduce templated phrasing."
-        turnitin_eq = "Possible AI involvement (50–74% — equivalent to Turnitin AI mixed signal)"
+        turnitin_eq = "High local AI-pattern signal (not a Turnitin AI result)"
     elif ai_score >= 25:
         verdict = f"Moderate AI signals ({ai_score}%). Some sections may have been drafted or polished using AI tools. Review flagged sections."
-        turnitin_eq = "Low-moderate AI signals (25–49% — generally acceptable with review)"
+        turnitin_eq = "Moderate local AI-pattern signal (not a Turnitin AI result)"
     else:
         verdict = f"Low AI-generation probability ({ai_score}%). Writing patterns are consistent with human academic authorship."
-        turnitin_eq = "Likely human-authored (<25% — equivalent to Turnitin AI low signal)"
+        turnitin_eq = "Low local AI-pattern signal (not proof of authorship)"
 
     return {
         "ai_detection_score": ai_score,
@@ -411,12 +411,12 @@ def compute_ai_detection_score(text: str) -> dict:
 
 def compute_turnitin_style_similarity(document_text: str, source_matches: list[dict]) -> dict:
     """
-    Compute Turnitin-style aggregate similarity against all source matches.
-    Simulates the 'Similarity Index' that Turnitin reports.
+    Compute an aggregate open-source similarity index against returned source matches.
+    The field name is retained for API compatibility; this is not a Turnitin result.
 
     Returns:
       {
-        "similarity_index": float,          # 0–100 overall (like Turnitin %)
+        "similarity_index": float,          # 0–100 local open-source overlap index
         "match_count": int,
         "high_risk_matches": int,
         "medium_risk_matches": int,
@@ -460,7 +460,7 @@ def compute_turnitin_style_similarity(document_text: str, source_matches: list[d
     sorted_sims = sorted(per_source, key=lambda x: x["combined_similarity"], reverse=True)
     top_sims = [s["combined_similarity"] for s in sorted_sims[:5]]
     if top_sims:
-        # Turnitin uses the highest single match as primary, then adds contributions
+        # Use the highest single match as primary, then add smaller contributions.
         similarity_index = top_sims[0] * 0.6 + (sum(top_sims[1:]) / max(1, len(top_sims) - 1)) * 0.4
     else:
         similarity_index = 0.0
@@ -468,13 +468,13 @@ def compute_turnitin_style_similarity(document_text: str, source_matches: list[d
     similarity_index = round(min(100.0, similarity_index), 1)
 
     if similarity_index >= 40:
-        interpretation = f"⚠️ HIGH: {similarity_index}% similarity (equivalent to Turnitin red zone ≥40%). Significant overlap with external sources detected. Manual review required."
+        interpretation = f"HIGH: {similarity_index}% similarity against returned open-source records. Significant overlap detected; manual review is required."
     elif similarity_index >= 20:
-        interpretation = f"🟡 MEDIUM: {similarity_index}% similarity (equivalent to Turnitin yellow zone 20–39%). Moderate overlap — review flagged passages and verify citations are properly attributed."
+        interpretation = f"MEDIUM: {similarity_index}% similarity against returned open-source records. Review flagged passages and attribution."
     elif similarity_index >= 10:
-        interpretation = f"🟢 LOW: {similarity_index}% similarity (equivalent to Turnitin green zone 10–19%). Acceptable — typical for well-cited academic work."
+        interpretation = f"LOW: {similarity_index}% similarity against returned open-source records. Review matched passages in context."
     else:
-        interpretation = f"✅ VERY LOW: {similarity_index}% similarity (equivalent to Turnitin <10%). Excellent originality against open academic sources."
+        interpretation = f"VERY LOW: {similarity_index}% similarity against the public/open records returned during this scan."
 
     return {
         "similarity_index": similarity_index,
@@ -603,7 +603,7 @@ def attach_source_evidence(text: str, report: dict) -> dict:
                     best_overlap = overlap
                     best_passage = passage
                     best_terms = shared[:8]
-            # Also compute Turnitin-style shingle similarity
+            # Also compute local shingle similarity.
             local_sim = compute_local_similarity(text, title, match.get("abstract", "") or "")
             enriched_matches.append(
                 {
@@ -1186,7 +1186,7 @@ async def check_research_sources(text: str, enabled: bool = True) -> dict:
         "rate_limit_delay_seconds": SOURCE_RATE_DELAY_SECONDS,
     })
 
-    # Collect all source matches for Turnitin-style aggregate
+    # Collect all source matches for the open-source aggregate.
     all_source_matches = [
         match
         for src in source_results
@@ -1197,7 +1197,7 @@ async def check_research_sources(text: str, enabled: bool = True) -> dict:
     # Run AI detection
     ai_detection = compute_ai_detection_score(text)
 
-    # Run Turnitin-style aggregate similarity
+    # Run aggregate open-source similarity.
     turnitin_sim = compute_turnitin_style_similarity(text, all_source_matches)
 
     report["ai_detection"] = ai_detection

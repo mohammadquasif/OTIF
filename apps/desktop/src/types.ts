@@ -177,6 +177,17 @@ export interface ImprovementItem {
   chapter_id?: string;
   page_range?: string;
   analysis_source?: 'rules' | 'skills' | 'ai_review' | string;
+  evidence_refs?: string[];
+  source_evidence_ids?: string[];
+  source_suggestions?: Array<{
+    evidence_id: string;
+    source_id: string;
+    source_name: string;
+    title: string;
+    year: string | number | null;
+    url: string | null;
+    classification?: string | null;
+  }>;
 }
 
 export interface ChapterResult {
@@ -255,6 +266,7 @@ export interface StreamEvent {
   research_connectivity?: Record<string, unknown>;
   ai_detection?: AIDetectionResult;
   turnitin_similarity?: TurnitinSimilarity;
+  validation_handoff?: Record<string, unknown>;
 }
 
 export interface RewriteApprovalResult {
@@ -277,6 +289,64 @@ export interface EditableChapter {
   original_text: string;
   edited_text: string;
   word_count?: number;
+}
+
+export interface TrackChangesChapter {
+  id: string;
+  title: string;
+  original_text: string;
+  rewritten_text: string | null;
+  diff_tokens: DiffToken[];
+  word_count: number;
+  approved: boolean;
+}
+
+export interface TrackChangesResponse {
+  doc_id: string;
+  filename: string;
+  doc_type: string;
+  norm: string;
+  chapters: TrackChangesChapter[];
+  total_chapters: number;
+  approved_chapters: number;
+  rewrite_authorized: boolean;
+  message: string;
+}
+
+export interface FrontMatterPreview {
+  doc_id: string;
+  target_format: string;
+  toc_entries: Array<{ title: string; level?: number; page: number }>;
+  tables: Array<{ title?: string; caption?: string; page: number }>;
+  figures: Array<{ title?: string; caption?: string; page: number }>;
+  toc_text: string;
+  list_of_tables_text: string;
+  list_of_figures_text: string;
+  page_number_mode: 'estimated' | 'exact' | string;
+  note: string;
+}
+
+export interface ScanSessionRestore {
+  doc_id: string;
+  filename: string;
+  document_exists: boolean;
+  analysis_available: boolean;
+  analysis: {
+    scores?: PreflightScores;
+    improvement_plan?: ImprovementItem[];
+    research_sources?: {
+      ai_detection?: AIDetectionResult;
+      turnitin_style_similarity?: TurnitinSimilarity;
+    };
+  } | null;
+  approval: RewriteApprovalResult | null;
+  rewrite_draft: {
+    chapters?: Array<TrackChangesChapter & { changes_summary?: string }>;
+    saved_at?: string;
+    autosaved?: boolean;
+  } | null;
+  status: 'uploaded' | 'analysis_complete' | 'improvement_plan_approved' | 'rewrite_in_progress' | string;
+  message: string;
 }
 
 export interface ChapterEditorResult {
